@@ -1,7 +1,5 @@
-const CACHE = 'planner-v5';
+const CACHE = 'planner-v6';
 const ASSETS = [
-  './',
-  './index.html',
   './icon-192.png',
   './icon-512.png',
   'https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap',
@@ -23,6 +21,25 @@ self.addEventListener('activate', e => {
 });
 
 self.addEventListener('fetch', e => {
+  const url = e.request.url;
+  const isHtml = e.request.headers.get('accept')?.includes('text/html') ||
+                 url.endsWith('.html') || url.endsWith('/');
+
+  if (isHtml) {
+    // Network-first for HTML: always load fresh, cache as fallback
+    e.respondWith(
+      fetch(e.request).then(res => {
+        if (res && res.status === 200) {
+          const clone = res.clone();
+          caches.open(CACHE).then(c => c.put(e.request, clone));
+        }
+        return res;
+      }).catch(() => caches.match(e.request).then(c => c || caches.match('./index.html')))
+    );
+    return;
+  }
+
+  // Cache-first for static assets
   e.respondWith(
     caches.match(e.request).then(cached => {
       if (cached) return cached;
