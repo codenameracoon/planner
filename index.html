@@ -462,13 +462,16 @@ body.dark .block-subj-name:hover{background:rgba(255,255,255,.09)}
 
   /* blocks: tap-friendly */
   .block{min-height:44px;padding:3px 26px 14px 5px}
-  .block-done-btn{width:18px;height:18px;font-size:9px;border-radius:50%;
+  .block-done-btn{width:14px;height:14px;font-size:7px;border-radius:50%;
     top:3px;right:3px;opacity:.75}
   .block.completed .block-done-btn{opacity:1}
   .block-focus-btn{display:none!important}
   .block-subject{font-size:11px}
   .block-memo-text{font-size:11px}
   .block-duration{font-size:11px;font-weight:700}
+  /* show resize handles on selected blocks */
+  .block.selected .resize-s{opacity:1;height:18px}
+  .block.selected .resize-n{opacity:1;height:14px}
 
   /* no crosshair on mobile */
   .day-body{cursor:default}
@@ -1945,10 +1948,60 @@ function onTouchEnd(e){
   }
 }
 
+// ── mobile touch resize ───────────────────────────────────────────────────────
+let touchResizeState=null;
+
+function onResizeHandleTouchStart(e){
+  if(!isMobile())return;
+  const handle=e.target.closest('[data-rdir]');
+  if(!handle)return;
+  const dir=handle.dataset.rdir;
+  if(dir!=='s'&&dir!=='n')return;
+  const id=handle.dataset.rid;
+  const blk=getBlock(id);if(!blk)return;
+  e.preventDefault();e.stopPropagation();
+  if(longPressTimer){clearTimeout(longPressTimer);longPressTimer=null;}
+  touchState=null;
+  const ty=e.touches[0].clientY;
+  touchResizeState={dir,id};
+  document.addEventListener('touchmove',onResizeTouchMove,{passive:false});
+  document.addEventListener('touchend',onResizeTouchEnd);
+}
+
+function onResizeTouchMove(e){
+  if(!touchResizeState)return;
+  e.preventDefault();
+  const{dir,id}=touchResizeState;
+  const blk=getBlock(id);if(!blk)return;
+  const ty=e.touches[0].clientY;
+  const body=document.querySelector(`.day-body[data-day="${blk.day}"]`);if(!body)return;
+  const el=document.querySelector(`.block[data-id="${id}"]`);if(!el)return;
+  if(dir==='s'){
+    blk.endMin=Math.max(clampMin(snapMin(yToMin(bodyY(body,ty)))),blk.startMin+gran);
+    el.style.height=Math.max((blk.endMin-blk.startMin)*ppm(),14)+'px';
+    const lbl=el.querySelector('.block-time-label');if(lbl)lbl.textContent=`${fmtTime(blk.startMin)}–${fmtTime(blk.endMin)}`;
+  } else {
+    const ns=Math.min(clampMin(snapMin(yToMin(bodyY(body,ty)))),blk.endMin-gran);
+    blk.startMin=ns;
+    el.style.top=minToY(blk.startMin)+'px';
+    el.style.height=Math.max((blk.endMin-blk.startMin)*ppm(),14)+'px';
+    const lbl=el.querySelector('.block-time-label');if(lbl)lbl.textContent=`${fmtTime(blk.startMin)}–${fmtTime(blk.endMin)}`;
+  }
+}
+
+function onResizeTouchEnd(){
+  if(!touchResizeState)return;
+  document.removeEventListener('touchmove',onResizeTouchMove);
+  document.removeEventListener('touchend',onResizeTouchEnd);
+  pushUndo();saveWeek();renderBlocks();
+  touchResizeState=null;
+}
+
 // ── init ──────────────────────────────────────────────────────────────────────
 const daysArea=document.getElementById('daysArea');
 daysArea.addEventListener('mousedown',onMouseDown);
 daysArea.addEventListener('contextmenu',onContextMenu);
+daysArea.addEventListener('touchstart',onResizeHandleTouchStart,{passive:false});
 daysArea.addEventListener('touchstart',onTouchStart,{passive:true});
 daysArea.addEventListener('touchmove',onTouchMove,{passive:true});
 daysArea.addEventListener('touchend',onTouchEnd,{passive:true});
