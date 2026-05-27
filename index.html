@@ -3,7 +3,14 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Weekly Planner</title>
+<title>노무사 플래너</title>
+<meta name="theme-color" content="#F28B82">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="플래너">
+<link rel="manifest" href="manifest.json">
+<link rel="apple-touch-icon" href="icon-192.png">
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
 <style>
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
@@ -440,8 +447,17 @@ body.dark .block-subj-name:hover{background:rgba(255,255,255,.09)}
   /* no crosshair on mobile */
   .day-body{cursor:default}
 
-  /* prevent horizontal bounce */
-  .planner-wrapper{overflow-x:hidden}
+  /* day view: no horizontal scroll */
+  body[data-view="day"] .planner-wrapper{overflow-x:hidden}
+
+  /* week view: horizontal scroll with fixed time column */
+  body[data-view="week"] .planner-wrapper{overflow-x:auto;-webkit-overflow-scrolling:touch}
+  body[data-view="week"] .time-col{position:sticky;left:0;z-index:10}
+  body[data-view="week"] .day-col{flex:0 0 80px;min-width:80px}
+  body[data-view="week"] .day-header{position:sticky;top:0;z-index:5}
+
+  /* month view: no horizontal scroll */
+  body[data-view="month"] .planner-wrapper{overflow-x:hidden}
 }
 </style>
 </head>
@@ -1021,6 +1037,7 @@ function buildDdayGrid(){
 
 // ── render ────────────────────────────────────────────────────────────────────
 function render(){
+  document.body.dataset.view=viewMode;
   const pw=document.getElementById('plannerWrapper');
   const mw=document.getElementById('monthWrap');
   const ds=document.getElementById('dailySummary');
@@ -1807,6 +1824,10 @@ blocks=loadWeek(currentMonday);
 render();
 
 requestAnimationFrame(()=>{document.getElementById('plannerWrapper').scrollTop=minToY(7*60);});
+
+if('serviceWorker' in navigator){
+  navigator.serviceWorker.register('./sw.js').catch(()=>{});
+}
 </script>
 </body>
 </html>
