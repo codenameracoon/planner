@@ -419,11 +419,31 @@ body.dark .block-subj-name:hover{background:rgba(255,255,255,.09)}
     padding:2px 8px;white-space:nowrap;flex-shrink:0}
   body.dark .mobile-study-badge{background:#2D2D2D;color:#E8E8E6}
 
-  /* hide desktop-only panels */
-  #statsPanel,#tmplPanel,#weeklyRetro,#ddayGrid,#dailyRetro{display:none!important}
+  /* hide only non-essential panels on mobile */
+  #tmplPanel{display:none!important}
 
   /* hide daily goal rows — save vertical space */
   .daily-goal-row,.time-goal-spacer{display:none!important}
+
+  /* stats panel: stack columns vertically */
+  #statsPanel .stats-body{flex-direction:column;gap:10px;padding:6px 10px 10px}
+  #statsPanel .stats-col-goals{padding-right:0;width:100%}
+  #statsPanel .stats-col-hours{padding-left:0;border-left:none;border-top:1px solid #E9E9E7;padding-top:8px;width:100%}
+  #statsPanel .stats-hours-inner{flex-wrap:wrap;gap:8px}
+  #statsPanel .wgoal-grid{grid-template-columns:1fr}
+  #statsPanel .stats-completion-frac{border-left:none;padding-left:0;flex-direction:row;gap:10px;align-items:center}
+  #statsPanel .stats-completion-div{display:none}
+  body.dark #statsPanel .stats-col-hours{border-top-color:#2D2D2D}
+
+  /* retro panels: compact */
+  #weeklyRetro,#dailyRetro{padding:8px 10px}
+  #weeklyRetro .retro-row,#dailyRetro .retro-row{flex-direction:column;gap:2px}
+  #weeklyRetro .retro-label,#dailyRetro .retro-label{min-width:unset;font-size:11px}
+  #weeklyRetro .retro-input,#dailyRetro .retro-input{width:100%}
+
+  /* dday grid: limit to 2 rows height */
+  #ddayGrid{padding:6px 10px 8px}
+  #ddayGrid .dday-squares{max-height:34px;overflow:hidden}
 
   /* time axis */
   .time-col{width:40px}
