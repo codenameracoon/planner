@@ -620,12 +620,21 @@ async function syncToSupabase(key,valueStr){
   }catch(e){setSyncStatus('synced');}
 }
 
+function _isPlannerKey(k){
+  return k&&k!=='_planner_sync_meta'&&k!=='darkMode'&&(
+    k.startsWith('week_')||k==='weeklyGoals'||k==='templates'||
+    k.startsWith('weeklyTextGoals_')||k.startsWith('monthlyGoals_')||
+    k.startsWith('dailyGoals_')||k.startsWith('retro_')
+  );
+}
+
 async function _loadFromSupabase(){
-  if(!_sb)return false;
+  if(!_sb)return{updated:false,remoteKeys:new Set()};
   try{
     const{data,error}=await _sb.from('planner_data').select('*');
-    if(error||!data)return false;
+    if(error||!data)return{updated:false,remoteKeys:new Set()};
     const meta=_getSyncMeta();
+    const remoteKeys=new Set(data.map(r=>r.key));
     let updated=false;
     data.forEach(row=>{
       const localTs=meta[row.key];
@@ -635,8 +644,25 @@ async function _loadFromSupabase(){
         updated=true;
       }
     });
-    return updated;
-  }catch(e){return false;}
+    return{updated,remoteKeys};
+  }catch(e){return{updated:false,remoteKeys:new Set()};}
+}
+
+async function _pushMissingToSupabase(remoteKeys){
+  if(!_sb)return;
+  const rows=[];
+  for(let i=0;i<localStorage.length;i++){
+    const k=localStorage.key(i);
+    if(!_isPlannerKey(k)||remoteKeys.has(k))continue;
+    rows.push({key:k,value:localStorage.getItem(k),updated_at:new Date().toISOString()});
+  }
+  if(!rows.length)return;
+  setSyncStatus('saving');
+  try{
+    await _sb.from('planner_data').upsert(rows,{onConflict:'key'});
+    rows.forEach(r=>_setSyncMeta(r.key,r.updated_at));
+    setSyncStatus('synced');
+  }catch(e){setSyncStatus('synced');}
 }
 
 async function initAndSync(){
@@ -644,7 +670,8 @@ async function initAndSync(){
     if(!window.supabase)return;
     _sb=window.supabase.createClient(SUPABASE_URL,SUPABASE_ANON_KEY);
   }catch(e){_sb=null;return;}
-  const updated=await _loadFromSupabase();
+  const{updated,remoteKeys}=await _loadFromSupabase();
+  await _pushMissingToSupabase(remoteKeys);
   if(updated){
     weeklyGoals=loadWeeklyGoals();
     weeklyTextGoals=loadWeeklyTextGoals();
