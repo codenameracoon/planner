@@ -433,6 +433,9 @@ body.dark .block-subj-name:hover{background:rgba(255,255,255,.09)}
   .stats-col-label{cursor:pointer;user-select:none}
   .stats-col-goals.m-col-collapsed > *:not(.stats-col-label),
   .stats-col-hours.m-col-collapsed > *:not(.stats-col-label){display:none!important}
+  #statsPanel .wgoal-grid{grid-template-columns:1fr}
+  #statsPanel .stats-col-goals{min-width:200px}
+  #statsPanel .stats-col-hours{min-width:220px}
 
   /* dday grid: tap header to toggle squares */
   #ddayGrid .dday-grid-hdr{cursor:pointer;user-select:none}
@@ -469,7 +472,7 @@ body.dark .block-subj-name:hover{background:rgba(255,255,255,.09)}
   /* week view: horizontal scroll with fixed time column */
   body[data-view="week"] .planner-wrapper{overflow-x:auto;-webkit-overflow-scrolling:touch}
   body[data-view="week"] .time-col{position:sticky;left:0;z-index:10}
-  body[data-view="week"] .day-col{flex:0 0 80px;min-width:80px}
+  body[data-view="week"] .day-col{flex:0 0 120px;min-width:120px}
   body[data-view="week"] .day-header{position:sticky;top:0;z-index:5}
 
   /* month view: no horizontal scroll */
