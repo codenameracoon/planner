@@ -401,15 +401,15 @@ body.dark .block-subj-name:hover{background:rgba(255,255,255,.09)}
 
 /* ── mobile ──────────────────────────────────────────────────────────────── */
 @media(max-width:768px){
-  /* toolbar: hide desktop controls, keep nav + view toggle + dday + dark toggle */
-  .toolbar{padding:6px 10px;gap:6px;flex-wrap:wrap}
+  /* toolbar */
+  .toolbar{padding:5px 8px;gap:5px;flex-wrap:wrap}
   .toolbar-brand{display:none}
   .toolbar .sep,#copyPrevWeek,#resetWeek,#tmplToggleBtn,
   #undoBtn,#redoBtn,#granGroup{display:none!important}
-  #viewGroup{order:-1;flex-shrink:0}
-  #viewGroup .seg-btn{padding:3px 8px;font-size:13px}
-  .dday{margin-left:0;font-size:12px;padding:2px 7px}
-  .week-label{font-size:13px;min-width:90px}
+  #viewGroup .seg-btn{padding:3px 7px;font-size:12px}
+  .dday{margin-left:0;font-size:11px;padding:2px 5px}
+  .week-label{font-size:12px;min-width:80px}
+  .mobile-study-badge{font-size:11px}
   #syncBtn{margin-left:auto!important}
   #darkToggleBtn{margin-left:0!important}
 
@@ -451,17 +451,15 @@ body.dark .block-subj-name:hover{background:rgba(255,255,255,.09)}
   .day-name{font-size:11px}
   .day-date{font-size:15px;font-weight:700}
 
-  /* blocks: larger tap targets, min height */
-  .block{min-height:50px;padding:4px 52px 16px 6px}
-  .block-done-btn{width:36px;height:36px;font-size:16px;border-radius:50%;
-    top:4px;right:4px;opacity:.75}
+  /* blocks: tap-friendly */
+  .block{min-height:44px;padding:3px 44px 14px 5px}
+  .block-done-btn{width:32px;height:32px;font-size:14px;border-radius:50%;
+    top:3px;right:3px;opacity:.75}
   .block.completed .block-done-btn{opacity:1}
-  .block-focus-btn{width:30px;height:30px;font-size:12px;border-radius:3px;
-    top:4px;right:42px;opacity:.45}
-  .block:hover .block-focus-btn,.block .block-focus-btn{opacity:.45}
-  .block-subject{font-size:12px}
-  .block-memo-text{font-size:13px}
-  .block-duration{font-size:13px;font-weight:700}
+  .block-focus-btn{display:none!important}
+  .block-subject{font-size:11px}
+  .block-memo-text{font-size:11px}
+  .block-duration{font-size:11px;font-weight:700}
 
   /* no crosshair on mobile */
   .day-body{cursor:default}
@@ -472,7 +470,7 @@ body.dark .block-subj-name:hover{background:rgba(255,255,255,.09)}
   /* week view: horizontal scroll with fixed time column */
   body[data-view="week"] .planner-wrapper{overflow-x:auto;-webkit-overflow-scrolling:touch}
   body[data-view="week"] .time-col{position:sticky;left:0;z-index:10}
-  body[data-view="week"] .day-col{flex:0 0 120px;min-width:120px}
+  body[data-view="week"] .day-col{flex:0 0 110px;min-width:110px}
   body[data-view="week"] .day-header{position:sticky;top:0;z-index:5}
 
   /* month view: no horizontal scroll */
