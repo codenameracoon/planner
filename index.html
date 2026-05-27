@@ -419,31 +419,21 @@ body.dark .block-subj-name:hover{background:rgba(255,255,255,.09)}
     padding:2px 8px;white-space:nowrap;flex-shrink:0}
   body.dark .mobile-study-badge{background:#2D2D2D;color:#E8E8E6}
 
-  /* hide only non-essential panels on mobile */
+  /* hide only template panel on mobile */
   #tmplPanel{display:none!important}
 
   /* hide daily goal rows — save vertical space */
   .daily-goal-row,.time-goal-spacer{display:none!important}
 
-  /* stats panel: stack columns vertically */
-  #statsPanel .stats-body{flex-direction:column;gap:10px;padding:6px 10px 10px}
-  #statsPanel .stats-col-goals{padding-right:0;width:100%}
-  #statsPanel .stats-col-hours{padding-left:0;border-left:none;border-top:1px solid #E9E9E7;padding-top:8px;width:100%}
-  #statsPanel .stats-hours-inner{flex-wrap:wrap;gap:8px}
-  #statsPanel .wgoal-grid{grid-template-columns:1fr}
-  #statsPanel .stats-completion-frac{border-left:none;padding-left:0;flex-direction:row;gap:10px;align-items:center}
-  #statsPanel .stats-completion-div{display:none}
-  body.dark #statsPanel .stats-col-hours{border-top-color:#2D2D2D}
+  /* stats panel: show header as tap-to-toggle, body scrolls horizontally */
+  #statsPanel .stats-strip-head{display:flex!important;cursor:pointer;padding:5px 10px;align-items:center;border-bottom:1px solid #E9E9E7}
+  body.dark #statsPanel .stats-strip-head{border-bottom-color:#2D2D2D}
+  #statsPanel.m-collapsed .stats-body{display:none!important}
+  #statsPanel .stats-body{overflow-x:auto;-webkit-overflow-scrolling:touch}
 
-  /* retro panels: compact */
-  #weeklyRetro,#dailyRetro{padding:8px 10px}
-  #weeklyRetro .retro-row,#dailyRetro .retro-row{flex-direction:column;gap:2px}
-  #weeklyRetro .retro-label,#dailyRetro .retro-label{min-width:unset;font-size:11px}
-  #weeklyRetro .retro-input,#dailyRetro .retro-input{width:100%}
-
-  /* dday grid: limit to 2 rows height */
-  #ddayGrid{padding:6px 10px 8px}
-  #ddayGrid .dday-squares{max-height:34px;overflow:hidden}
+  /* dday grid: tap header to toggle squares */
+  #ddayGrid .dday-grid-hdr{cursor:pointer;user-select:none}
+  #ddayGrid.m-collapsed .dday-squares{display:none!important}
 
   /* time axis */
   .time-col{width:40px}
@@ -1944,6 +1934,39 @@ blocks=loadWeek(currentMonday);
 render();
 
 requestAnimationFrame(()=>{document.getElementById('plannerWrapper').scrollTop=minToY(7*60);});
+
+if(isMobile()){
+  // Stats panel: start collapsed, tap header to toggle
+  const _sp=document.getElementById('statsPanel');
+  const _sh=document.getElementById('statsHdr');
+  if(_sp&&_sh){
+    _sp.classList.add('m-collapsed');
+    const _stog=document.createElement('span');
+    _stog.style.cssText='font-size:11px;color:#9B9A97;margin-left:auto;pointer-events:none;white-space:nowrap';
+    _stog.textContent='펼치기 ▼';
+    _sh.appendChild(_stog);
+    _sh.addEventListener('click',e=>{
+      if(e.target.closest('.stats-tab-group'))return;
+      _sp.classList.toggle('m-collapsed');
+      _stog.textContent=_sp.classList.contains('m-collapsed')?'펼치기 ▼':'접기 ▲';
+    });
+  }
+  // D-day grid: start collapsed, tap header to toggle
+  const _dg=document.getElementById('ddayGrid');
+  const _dgh=document.getElementById('ddayGridHdr');
+  if(_dg&&_dgh){
+    _dg.classList.add('m-collapsed');
+    _dgh.addEventListener('click',()=>{
+      _dg.classList.toggle('m-collapsed');
+    });
+  }
+  // Weekly retro: already has collapse logic, just ensure header cursor
+  const _wr=document.getElementById('weeklyRetroHdr');
+  if(_wr)_wr.style.cursor='pointer';
+  // Daily retro: same
+  const _dr=document.getElementById('dailyRetroHdr');
+  if(_dr)_dr.style.cursor='pointer';
+}
 
 initAndSync();
 
