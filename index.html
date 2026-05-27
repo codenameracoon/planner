@@ -401,14 +401,17 @@ body.dark .block-subj-name:hover{background:rgba(255,255,255,.09)}
 
 /* ── mobile ──────────────────────────────────────────────────────────────── */
 @media(max-width:768px){
-  /* toolbar: hide desktop controls, keep nav + dday + dark toggle */
-  .toolbar{padding:6px 10px;gap:6px;flex-wrap:nowrap}
+  /* toolbar: hide desktop controls, keep nav + view toggle + dday + dark toggle */
+  .toolbar{padding:6px 10px;gap:6px;flex-wrap:wrap}
   .toolbar-brand{display:none}
-  #viewGroup,.toolbar .sep,#copyPrevWeek,#resetWeek,#tmplToggleBtn,
+  .toolbar .sep,#copyPrevWeek,#resetWeek,#tmplToggleBtn,
   #undoBtn,#redoBtn,#granGroup{display:none!important}
+  #viewGroup{order:-1;flex-shrink:0}
+  #viewGroup .seg-btn{padding:3px 8px;font-size:13px}
   .dday{margin-left:0;font-size:12px;padding:2px 7px}
   .week-label{font-size:13px;min-width:90px}
-  #darkToggleBtn{margin-left:auto!important}
+  #syncBtn{margin-left:auto!important}
+  #darkToggleBtn{margin-left:0!important}
 
   /* mobile study hours badge */
   .mobile-study-badge{display:inline-flex;align-items:center;font-size:12px;
@@ -1887,10 +1890,8 @@ templates=loadTemplates();
 if(localStorage.getItem('darkMode')==='1')applyDark(true);
 renderDday();
 if(isMobile()){
-  viewMode='day';
   currentDay=new Date();currentDay.setHours(0,0,0,0);
   currentMonday=getMondayOf(currentDay);
-  document.querySelectorAll('[data-view]').forEach(b=>b.classList.toggle('active',b.dataset.view==='day'));
 }
 blocks=loadWeek(currentMonday);
 render();
