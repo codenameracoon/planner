@@ -460,6 +460,7 @@ body.dark .block-subj-name:hover{background:rgba(255,255,255,.09)}
   body[data-view="month"] .planner-wrapper{overflow-x:hidden}
 }
 </style>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
 <body>
 
@@ -491,7 +492,8 @@ body.dark .block-subj-name:hover{background:rgba(255,255,255,.09)}
   </div>
   <div class="dday" id="ddayBadge">2차 시험 D-—</div>
   <span class="mobile-study-badge" id="mobileStudyBadge"></span>
-  <button class="btn btn-icon" id="darkToggleBtn" data-tooltip="다크 모드" style="margin-left:auto"><svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg></button>
+  <button class="btn btn-icon" id="syncBtn" data-tooltip="동기화 상태" style="margin-left:auto;color:#81C995;pointer-events:none"><svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M6.657 18c-2.572 0 -4.657 -2.007 -4.657 -4.483c0 -2.475 2.085 -4.482 4.657 -4.482c.393 -1.762 1.794 -3.2 3.675 -3.773c1.88 -.572 3.956 -.193 5.444 1c1.488 1.19 2.162 3.007 1.77 4.769h.99c1.913 0 3.464 1.56 3.464 3.486c0 1.927 -1.551 3.487 -3.465 3.487h-11.878"/><path d="M9 12l2 2l4 -4"/></svg></button>
+  <button class="btn btn-icon" id="darkToggleBtn" data-tooltip="다크 모드"><svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg></button>
 </div>
 
 <div id="statsPanel" class="stats-strip">
@@ -581,6 +583,76 @@ body.dark .block-subj-name:hover{background:rgba(255,255,255,.09)}
 <script>
 'use strict';
 
+// ── Supabase sync ──────────────────────────────────────────────────────────────
+const SUPABASE_URL='https://btnvhypirjlyqfmkeaes.supabase.co';
+const SUPABASE_ANON_KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJ0bnZoeXBpcmpseXFmbWtlYWVzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzk4NTUzMjUsImV4cCI6MjA5NTQzMTMyNX0.0Am6_oZaXFHywJt4JPUChl91WLtgQBmQkkdzI0yW9wM';
+let _sb=null;
+let _syncTimer=null;
+
+const _CLOUD_CHECK=`<svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M6.657 18c-2.572 0 -4.657 -2.007 -4.657 -4.483c0 -2.475 2.085 -4.482 4.657 -4.482c.393 -1.762 1.794 -3.2 3.675 -3.773c1.88 -.572 3.956 -.193 5.444 1c1.488 1.19 2.162 3.007 1.77 4.769h.99c1.913 0 3.464 1.56 3.464 3.486c0 1.927 -1.551 3.487 -3.465 3.487h-11.878"/><path d="M9 12l2 2l4 -4"/></svg>`;
+const _CLOUD_UPLOAD=`<svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M7 18a4.6 4.4 0 0 1 0 -9a5 4.5 0 0 1 11 2h1a3.5 3.5 0 0 1 0 7h-1"/><polyline points="9 15 12 12 15 15"/><line x1="12" y1="12" x2="12" y2="21"/></svg>`;
+
+function setSyncStatus(s){
+  const btn=document.getElementById('syncBtn');if(!btn)return;
+  if(s==='saving'){
+    if(_syncTimer){clearTimeout(_syncTimer);_syncTimer=null;}
+    btn.innerHTML=_CLOUD_UPLOAD;btn.style.color='#9B9A97';
+  }else{
+    if(_syncTimer)clearTimeout(_syncTimer);
+    _syncTimer=setTimeout(()=>{btn.innerHTML=_CLOUD_CHECK;btn.style.color='#81C995';_syncTimer=null;},400);
+  }
+}
+
+function _getSyncMeta(){try{return JSON.parse(localStorage.getItem('_planner_sync_meta')||'{}');}catch{return{};}}
+function _setSyncMeta(key,ts){try{const m=_getSyncMeta();m[key]=ts;localStorage.setItem('_planner_sync_meta',JSON.stringify(m));}catch{}}
+
+async function syncToSupabase(key,valueStr){
+  if(!_sb)return;
+  const ts=new Date().toISOString();
+  _setSyncMeta(key,ts);
+  setSyncStatus('saving');
+  try{
+    await _sb.from('planner_data').upsert({key,value:valueStr,updated_at:ts},{onConflict:'key'});
+    setSyncStatus('synced');
+  }catch(e){setSyncStatus('synced');}
+}
+
+async function _loadFromSupabase(){
+  if(!_sb)return false;
+  try{
+    const{data,error}=await _sb.from('planner_data').select('*');
+    if(error||!data)return false;
+    const meta=_getSyncMeta();
+    let updated=false;
+    data.forEach(row=>{
+      const localTs=meta[row.key];
+      if(!localTs||new Date(row.updated_at)>new Date(localTs)){
+        localStorage.setItem(row.key,row.value);
+        _setSyncMeta(row.key,row.updated_at);
+        updated=true;
+      }
+    });
+    return updated;
+  }catch(e){return false;}
+}
+
+async function initAndSync(){
+  try{
+    if(!window.supabase)return;
+    _sb=window.supabase.createClient(SUPABASE_URL,SUPABASE_ANON_KEY);
+  }catch(e){_sb=null;return;}
+  const updated=await _loadFromSupabase();
+  if(updated){
+    weeklyGoals=loadWeeklyGoals();
+    weeklyTextGoals=loadWeeklyTextGoals();
+    monthlyGoals=loadMonthlyGoals(new Date());
+    templates=loadTemplates();
+    blocks=loadWeek(currentMonday);
+    render();
+  }
+  setSyncStatus('synced');
+}
+
 const SUBJECTS = {
   labor_law:  { name:'노동법',         short:'노동법',   color:'#F28B82' },
   hr_mgmt:    { name:'인사노무관리',   short:'인사노무', color:'#81C995' },
@@ -664,18 +736,18 @@ function uid(){return Date.now().toString(36)+Math.random().toString(36).slice(2
 
 // ── storage ───────────────────────────────────────────────────────────────────
 function loadWeek(m){try{const r=localStorage.getItem(weekKey(m));return r?JSON.parse(r):[];}catch{return[];}}
-function saveWeek(){localStorage.setItem(weekKey(currentMonday),JSON.stringify(blocks));}
+function saveWeek(){const k=weekKey(currentMonday);const v=JSON.stringify(blocks);localStorage.setItem(k,v);syncToSupabase(k,v);}
 function loadWeeklyGoals(){try{const r=localStorage.getItem('weeklyGoals');return r?JSON.parse(r):{};}catch{return{};}}
-function saveWeeklyGoals(){localStorage.setItem('weeklyGoals',JSON.stringify(weeklyGoals));}
+function saveWeeklyGoals(){const v=JSON.stringify(weeklyGoals);localStorage.setItem('weeklyGoals',v);syncToSupabase('weeklyGoals',v);}
 function weeklyTextGoalsKey(){return 'weeklyTextGoals_'+weekKey(currentMonday);}
 function loadWeeklyTextGoals(){try{const r=localStorage.getItem(weeklyTextGoalsKey());return r?JSON.parse(r):{};}catch{return{};}}
-function saveWeeklyTextGoals(){localStorage.setItem(weeklyTextGoalsKey(),JSON.stringify(weeklyTextGoals));}
+function saveWeeklyTextGoals(){const k=weeklyTextGoalsKey();const v=JSON.stringify(weeklyTextGoals);localStorage.setItem(k,v);syncToSupabase(k,v);}
 function loadMonthlyGoals(d){try{const r=localStorage.getItem('monthlyGoals_'+monthStorageKey(d));return r?JSON.parse(r):[];}catch{return[];}}
-function saveMonthlyGoals(){localStorage.setItem('monthlyGoals_'+monthStorageKey(new Date()),JSON.stringify(monthlyGoals));}
+function saveMonthlyGoals(){const k='monthlyGoals_'+monthStorageKey(new Date());const v=JSON.stringify(monthlyGoals);localStorage.setItem(k,v);syncToSupabase(k,v);}
 function loadTemplates(){try{const r=localStorage.getItem('templates');return r?JSON.parse(r):[];}catch{return[];}}
-function saveTemplates(){localStorage.setItem('templates',JSON.stringify(templates));}
+function saveTemplates(){const v=JSON.stringify(templates);localStorage.setItem('templates',v);syncToSupabase('templates',v);}
 function loadDailyGoals(dk){try{const r=localStorage.getItem('dailyGoals_'+dk);return r?JSON.parse(r):[];}catch{return[];}}
-function saveDailyGoals(dk,goals){localStorage.setItem('dailyGoals_'+dk,JSON.stringify(goals));}
+function saveDailyGoals(dk,goals){const k='dailyGoals_'+dk;const v=JSON.stringify(goals);localStorage.setItem(k,v);syncToSupabase(k,v);}
 // ── undo / redo ───────────────────────────────────────────────────────────────
 function pushUndo(){undoStack.push(JSON.stringify(blocks));if(undoStack.length>50)undoStack.shift();redoStack=[];}
 function undo(){if(!undoStack.length)return;redoStack.push(JSON.stringify(blocks));blocks=JSON.parse(undoStack.pop());saveWeek();renderBlocks();}
@@ -906,7 +978,7 @@ function scheduleReview(blk){
     let wb;try{wb=JSON.parse(localStorage.getItem(tKey)||'[]');}catch{wb=[];}
     if(!wb.some(b=>b.ghost&&b.startMin===blk.startMin&&b.subject===blk.subject&&b.day===tDay)){
       wb.push({id:uid(),day:tDay,startMin:blk.startMin,endMin:blk.endMin,subject:blk.subject,memo:blk.memo||'',completed:false,ghost:true,ghostLabel:`+${offset}일 복습`});
-      localStorage.setItem(tKey,JSON.stringify(wb));
+      const wbStr=JSON.stringify(wb);localStorage.setItem(tKey,wbStr);syncToSupabase(tKey,wbStr);
     }
   });
   alert('복습이 +3, +7, +14일에 예약되었습니다.');
@@ -1575,7 +1647,7 @@ function retroStorageKey(type,d){
   if(type==='month')return `retro_month_${monthStorageKey(d)}`;
 }
 function loadRetro(type,d){try{return JSON.parse(localStorage.getItem(retroStorageKey(type,d))||'null')||{};}catch{return {};}}
-function saveRetro(type,d,data){localStorage.setItem(retroStorageKey(type,d),JSON.stringify(data));}
+function saveRetro(type,d,data){const k=retroStorageKey(type,d);const v=JSON.stringify(data);localStorage.setItem(k,v);syncToSupabase(k,v);}
 
 function makeStars(val,cb,cls='retro-star'){
   let html='<div class="retro-stars">';
@@ -1824,6 +1896,8 @@ blocks=loadWeek(currentMonday);
 render();
 
 requestAnimationFrame(()=>{document.getElementById('plannerWrapper').scrollTop=minToY(7*60);});
+
+initAndSync();
 
 if('serviceWorker' in navigator){
   navigator.serviceWorker.register('./sw.js').catch(()=>{});
