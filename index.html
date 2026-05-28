@@ -33,7 +33,11 @@ body{font-family:'Inter',system-ui,sans-serif;background:#fff;color:#37352F;font
 .seg-btn:last-child{border-right:none}
 .seg-btn.active{background:#F1F1EF;font-weight:600}
 .seg-btn:hover:not(.active){background:#F7F7F5}
-.dday{margin-left:auto;font-size:14px;font-weight:600;color:#C0392B;padding:3px 9px;border:1px solid #FADBD8;border-radius:4px;background:#FEF9F9;white-space:nowrap;flex-shrink:0;letter-spacing:.01em}
+.dday{font-size:14px;font-weight:600;color:#C0392B;padding:3px 9px;border:1px solid #FADBD8;border-radius:4px;background:#FEF9F9;white-space:nowrap;flex-shrink:0;letter-spacing:.01em;margin-left:auto}
+.tb-progress{display:flex;align-items:center;gap:6px;flex-shrink:0}
+.tb-prog-bar{width:52px;height:4px;background:#E9E9E7;border-radius:2px;overflow:hidden;flex-shrink:0}
+.tb-prog-fill{height:100%;background:#81C995;border-radius:2px;transition:width .4s;width:0}
+.tb-prog-label{font-size:12px;color:#9B9A97;white-space:nowrap}
 
 /* planner wrapper */
 .planner-wrapper{flex:1;overflow:auto;position:relative;min-height:0}
@@ -99,7 +103,8 @@ body{font-family:'Inter',system-ui,sans-serif;background:#fff;color:#37352F;font
 /* selection & ghost drag */
 .block.selected{outline:2px solid #2383E2;outline-offset:-2px;z-index:4}
 .sel-rect{position:fixed;border:1.5px dashed #2383E2;background:rgba(35,131,226,.06);pointer-events:none;z-index:50;border-radius:2px}
-.ghost-block{position:absolute;left:3px;right:3px;border-radius:4px;pointer-events:none;z-index:5;border:2px dashed rgba(0,0,0,.2);opacity:.5}
+.ghost-block{position:absolute;left:3px;right:3px;border-radius:4px;pointer-events:none;z-index:5;border:2px dashed #2383E2;background:rgba(35,131,226,.07);opacity:.9}
+.grid-hover-cell{position:absolute;left:0;right:0;pointer-events:none;z-index:1;background:rgba(35,131,226,.05);display:none;border-top:1px dashed rgba(35,131,226,.25)}
 
 /* time indicator */
 .time-now-line{position:absolute;left:0;right:0;height:2px;background:#F28B82;pointer-events:none;z-index:6}
@@ -183,12 +188,12 @@ body.dark .stats-h2-val{color:#E8E8E6}
 
 /* daily goal row */
 .daily-goal-row{position:sticky;top:36px;background:#F7F6F3;border-bottom:1px solid #E9E9E7;z-index:5;flex-shrink:0;padding:5px 6px 4px;display:flex;flex-direction:column;gap:3px;cursor:default}
-.dgrow-hours{font-size:14px;color:#37352F;white-space:nowrap;flex-shrink:0;line-height:1.3}
-.dgrow-hours strong{font-size:17px;font-weight:700}
+.dgrow-hours{font-size:11px;color:#37352F;white-space:nowrap;flex-shrink:0;line-height:1.3}
 .dgrow-goals{}
 .dgrow-item{display:flex;align-items:center;gap:3px;margin-bottom:2px}
 .dgrow-check{width:13px;height:13px;border:1.5px solid #C0BFBC;border-radius:3px;cursor:pointer;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:8px;font-weight:700;color:transparent;transition:background .1s,border-color .1s}
 .dgrow-check.done{background:#37352F;border-color:#37352F;color:#fff}
+.dgrow-check.fail{background:#E03E3E;border-color:#E03E3E;color:#fff}
 .dgrow-text{flex:1;font-size:14px;font-family:inherit;border:none;background:transparent;color:#37352F;outline:none;min-width:0;cursor:pointer;padding:0}
 .dgrow-text:focus{cursor:text}
 .dgrow-text.done-text{text-decoration:line-through;color:#9B9A97}
@@ -310,6 +315,8 @@ body.dark .stats-tab{color:#E8E8E6;border-color:#2D2D2D}
 body.dark .stats-tab.active{background:#2D2D2D;color:#E8E8E6}
 body.dark .sep{background:#2D2D2D}
 body.dark .dday{background:#2A1818;border-color:#4A2020;color:#F28B82}
+body.dark .tb-prog-bar{background:#2D2D2D}
+body.dark .tb-prog-label{color:#555}
 body.dark .time-col{background:#191919;border-color:#2D2D2D}
 body.dark .time-label{color:#E8E8E6}
 body.dark .day-header{background:#191919;border-color:#2D2D2D}
@@ -332,10 +339,11 @@ body.dark .warn-btn{background:rgba(255,255,255,.07);color:#D0D0CE}
 body.dark .daily-goal-row{background:#1C1C1C;border-color:#2D2D2D}
 body.dark .time-goal-spacer{background:#1C1C1C;border-color:#2D2D2D}
 body.dark .dgrow-hours{color:#E8E8E6}
-body.dark .dgrow-hours strong{color:#E8E8E6}
+
 body.dark .dgrow-text{color:#E8E8E6}
 body.dark .dgrow-check{border-color:#444}
 body.dark .dgrow-check.done{background:#E8E8E6;border-color:#E8E8E6;color:#191919}
+body.dark .dgrow-check.fail{background:#E03E3E;border-color:#E03E3E;color:#fff}
 body.dark .dgrow-add{color:#555}
 body.dark .dgrow-add:hover{color:#E8E8E6}
 body.dark .stats-strip{background:#1A1A1A;border-color:#2D2D2D}
@@ -409,6 +417,37 @@ body.dark .subj-picker-item:hover{background:#2D2D2D}
 body.dark .subj-picker-item.cur{background:#333}
 body.dark .block-subj-name:hover{background:rgba(255,255,255,.09)}
 
+/* routine strip */
+.routine-panel{flex-shrink:0;border-bottom:1px solid #E9E9E7;background:#FAFAFA}
+.routine-inner{padding:5px 14px 7px}
+.routine-day-hdr{display:flex;margin-bottom:2px;gap:6px}
+.routine-day-hdr-spacer{flex:0 0 92px}
+.routine-day-hdr-item{width:22px;text-align:center;font-size:10px;font-weight:600;color:#9B9A97;flex-shrink:0}
+.routine-day-hdr-item.today-col{color:#2383E2}
+.routine-week-row{display:flex;align-items:center;gap:6px;margin-bottom:3px}
+.routine-week-row:last-child{margin-bottom:0}
+.routine-week-label{width:92px;flex-shrink:0;display:flex;align-items:center;gap:5px;font-size:12px;color:#9B9A97;overflow:hidden}
+.routine-week-icon{font-size:15px;line-height:1;flex-shrink:0}
+.routine-week-lbl-text{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.routine-week-days{display:flex;gap:6px;align-items:center}
+.routine-day-btn{width:22px;height:22px;border-radius:50%;border:1.5px solid #E9E9E7;background:transparent;cursor:pointer;font-size:11px;display:flex;align-items:center;justify-content:center;transition:background .1s,border-color .1s;flex-shrink:0;padding:0;line-height:1}
+.routine-day-btn.done{border-color:#81C995;background:#81C995;color:#fff}
+.routine-day-btn:hover:not(.done){background:#F1F1EF}
+.routine-day-items{display:flex;gap:20px;padding:8px 14px}
+.routine-day-item{display:flex;flex-direction:column;align-items:center;gap:4px}
+.routine-day-big-btn{width:44px;height:44px;border-radius:50%;border:2px solid #E9E9E7;background:transparent;cursor:pointer;font-size:24px;display:flex;align-items:center;justify-content:center;transition:background .15s,border-color .15s;padding:0;line-height:1}
+.routine-day-big-btn.done{border-color:#81C995;background:rgba(129,201,149,.18)}
+.routine-day-big-btn:hover:not(.done){background:#F1F1EF}
+.routine-day-lbl{font-size:11px;color:#9B9A97;white-space:nowrap}
+body.dark .routine-panel{background:#1A1A1A;border-color:#2D2D2D}
+body.dark .routine-week-label{color:#555}
+body.dark .routine-day-btn{border-color:#333}
+body.dark .routine-day-btn:hover:not(.done){background:#272727}
+body.dark .routine-day-hdr-item{color:#555}
+body.dark .routine-day-big-btn{border-color:#333}
+body.dark .routine-day-big-btn:hover:not(.done){background:#272727}
+body.dark .routine-day-lbl{color:#555}
+
 /* ── mobile ──────────────────────────────────────────────────────────────── */
 @media(max-width:768px){
   /* toolbar */
@@ -419,15 +458,7 @@ body.dark .block-subj-name:hover{background:rgba(255,255,255,.09)}
   #viewGroup .seg-btn{padding:3px 7px;font-size:12px}
   .dday{margin-left:0;font-size:11px;padding:2px 5px}
   .week-label{font-size:12px;min-width:80px}
-  .mobile-study-badge{font-size:11px}
-  #syncBtn{margin-left:auto!important}
-  #darkToggleBtn{margin-left:0!important}
-
-  /* mobile study hours badge */
-  .mobile-study-badge{display:inline-flex;align-items:center;font-size:12px;
-    font-weight:600;color:#37352F;background:#F1F1EF;border-radius:4px;
-    padding:2px 8px;white-space:nowrap;flex-shrink:0}
-  body.dark .mobile-study-badge{background:#2D2D2D;color:#E8E8E6}
+  #syncBtn{margin-left:0!important}
 
   /* hide only template panel on mobile */
   #tmplPanel{display:none!important}
@@ -487,6 +518,18 @@ body.dark .block-subj-name:hover{background:rgba(255,255,255,.09)}
 
   /* month view: no horizontal scroll */
   body[data-view="month"] .planner-wrapper{overflow-x:hidden}
+
+  /* routine: compact on mobile */
+  .routine-inner{padding:4px 8px 5px}
+  .routine-day-hdr-spacer{flex:0 0 68px}
+  .routine-week-label{width:68px}
+  .routine-week-lbl-text{display:none}
+  .routine-day-hdr{gap:4px}
+  .routine-week-days{gap:4px}
+  .routine-day-btn{width:20px;height:20px;font-size:10px}
+  .routine-day-hdr-item{width:20px}
+  .routine-day-items{gap:12px;padding:6px 8px}
+  .routine-day-big-btn{width:40px;height:40px;font-size:22px}
 }
 </style>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
@@ -519,10 +562,12 @@ body.dark .block-subj-name:hover{background:rgba(255,255,255,.09)}
     <button class="seg-btn active" data-gran="30">30분</button>
     <button class="seg-btn" data-gran="60">60분</button>
   </div>
+  <div class="tb-progress" id="tbProgress">
+    <div class="tb-prog-bar"><div class="tb-prog-fill" id="tbProgFill"></div></div>
+    <span class="tb-prog-label" id="tbProgLabel"></span>
+  </div>
   <div class="dday" id="ddayBadge">2차 시험 D-—</div>
-  <span class="mobile-study-badge" id="mobileStudyBadge"></span>
-  <button class="btn btn-icon" id="syncBtn" data-tooltip="동기화 상태" style="margin-left:auto;color:#81C995;pointer-events:none"><svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M6.657 18c-2.572 0 -4.657 -2.007 -4.657 -4.483c0 -2.475 2.085 -4.482 4.657 -4.482c.393 -1.762 1.794 -3.2 3.675 -3.773c1.88 -.572 3.956 -.193 5.444 1c1.488 1.19 2.162 3.007 1.77 4.769h.99c1.913 0 3.464 1.56 3.464 3.486c0 1.927 -1.551 3.487 -3.465 3.487h-11.878"/><path d="M9 12l2 2l4 -4"/></svg></button>
-  <button class="btn btn-icon" id="darkToggleBtn" data-tooltip="다크 모드"><svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg></button>
+  <button class="btn btn-icon" id="syncBtn" data-tooltip="동기화 상태" style="color:#81C995;pointer-events:none"><svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M6.657 18c-2.572 0 -4.657 -2.007 -4.657 -4.483c0 -2.475 2.085 -4.482 4.657 -4.482c.393 -1.762 1.794 -3.2 3.675 -3.773c1.88 -.572 3.956 -.193 5.444 1c1.488 1.19 2.162 3.007 1.77 4.769h.99c1.913 0 3.464 1.56 3.464 3.486c0 1.927 -1.551 3.487 -3.465 3.487h-11.878"/><path d="M9 12l2 2l4 -4"/></svg></button>
 </div>
 
 <div id="statsPanel" class="stats-strip">
@@ -534,6 +579,10 @@ body.dark .block-subj-name:hover{background:rgba(255,255,255,.09)}
     </div>
   </div>
   <div class="stats-body" id="statsBody"></div>
+</div>
+
+<div id="routinePanel" class="routine-panel u-hidden">
+  <div class="routine-inner" id="routineInner"></div>
 </div>
 
 <div class="planner-wrapper" id="plannerWrapper">
@@ -650,7 +699,7 @@ function _isPlannerKey(k){
   return k&&k!=='_planner_sync_meta'&&k!=='darkMode'&&(
     k.startsWith('week_')||k==='weeklyGoals'||k==='templates'||
     k.startsWith('weeklyTextGoals_')||k.startsWith('monthlyGoals_')||
-    k.startsWith('dailyGoals_')||k.startsWith('retro_')
+    k.startsWith('dailyGoals_')||k.startsWith('retro_')||k.startsWith('routine_')
   );
 }
 
@@ -718,6 +767,11 @@ const SUBJECTS = {
   rest:       { name:'휴식/식사/산책', short:'휴식',     color:'#E0E0E0' }
 };
 const DAYS = ['월','화','수','목','금','토','일'];
+const ROUTINES=[
+  {id:'water',icon:'💧',label:'물마시기'},
+  {id:'anki', icon:'🃏',label:'안키돌리기'},
+  {id:'yoga', icon:'🧘',label:'요가하기'},
+];
 const START_H=7, END_H=24, START_M=420, END_M=1440, TOTAL_M=1020;
 const PPM = {10:2.5, 30:1.5, 60:1.0};
 const EXAM_DATE = new Date(2026,7,30);
@@ -745,6 +799,7 @@ let weeklyGoals = {};
 let weeklyTextGoals = {};
 let monthlyGoals = [];
 let templates = [];
+let weeklyGoalsCollapsed = false;
 
 // ── date helpers ──────────────────────────────────────────────────────────────
 function getMondayOf(d) {
@@ -804,6 +859,9 @@ function loadTemplates(){try{const r=localStorage.getItem('templates');return r?
 function saveTemplates(){const v=JSON.stringify(templates);localStorage.setItem('templates',v);syncToSupabase('templates',v);}
 function loadDailyGoals(dk){try{const r=localStorage.getItem('dailyGoals_'+dk);return r?JSON.parse(r):[];}catch{return[];}}
 function saveDailyGoals(dk,goals){const k='dailyGoals_'+dk;const v=JSON.stringify(goals);localStorage.setItem(k,v);syncToSupabase(k,v);}
+function routineKey(dk){return 'routine_'+dk;}
+function loadRoutine(dk){try{return JSON.parse(localStorage.getItem(routineKey(dk))||'null')||{};}catch{return{};}}
+function saveRoutine(dk,data){const k=routineKey(dk);const v=JSON.stringify(data);localStorage.setItem(k,v);syncToSupabase(k,v);}
 // ── undo / redo ───────────────────────────────────────────────────────────────
 function pushUndo(){undoStack.push(JSON.stringify(blocks));if(undoStack.length>50)undoStack.shift();redoStack=[];}
 function undo(){if(!undoStack.length)return;redoStack.push(JSON.stringify(blocks));blocks=JSON.parse(undoStack.pop());saveWeek();renderBlocks();}
@@ -879,17 +937,20 @@ function renderStats(){
   // Column 3: Goals
   let col3=`<div class="stats-col-goals">`;
   if(statsTab==='weekly'){
-    col3+=`<div class="stats-col-label">주간 목표</div><div class="wgoal-grid">`;
-    studyKeys.forEach(key=>{
-      const subj=SUBJECTS[key];
-      const tg=weeklyTextGoals[key]||{text:'',done:false};
-      col3+=`<div class="wgoal-row">`+
-        `<div class="wgoal-check${tg.done?' done':''}" data-wcheck="${key}">${tg.done?'✓':''}</div>`+
-        `<span class="stats-dot" style="background:${subj.color}"></span>`+
-        `<input class="wgoal-text-input${tg.done?' done-text':''}" data-wkey="${key}" value="${escHtml(tg.text)}" placeholder="${subj.short} 이번 주 목표...">`+
-      `</div>`;
-    });
-    col3+=`</div>`;
+    col3+=`<div class="stats-col-label" style="display:flex;align-items:center;justify-content:space-between">주간 목표<button id="wgoalToggle" class="btn" style="padding:1px 6px;font-size:11px;line-height:1.4;border-color:#E9E9E7">${weeklyGoalsCollapsed?'▶':'▼'}</button></div>`;
+    if(!weeklyGoalsCollapsed){
+      col3+=`<div class="wgoal-grid">`;
+      studyKeys.forEach(key=>{
+        const subj=SUBJECTS[key];
+        const tg=weeklyTextGoals[key]||{text:'',done:false};
+        col3+=`<div class="wgoal-row">`+
+          `<div class="wgoal-check${tg.done?' done':''}" data-wcheck="${key}">${tg.done?'✓':''}</div>`+
+          `<span class="stats-dot" style="background:${subj.color}"></span>`+
+          `<input class="wgoal-text-input${tg.done?' done-text':''}" data-wkey="${key}" value="${escHtml(tg.text)}" placeholder="${subj.short} 이번 주 목표...">`+
+        `</div>`;
+      });
+      col3+=`</div>`;
+    }
   } else {
     const now=new Date();
     const prev=new Date(now.getFullYear(),now.getMonth()-1,1);
@@ -931,6 +992,8 @@ function renderStats(){
   }
 
   if(statsTab==='weekly'){
+    const wgt=body.querySelector('#wgoalToggle');
+    if(wgt)wgt.addEventListener('click',e=>{e.stopPropagation();weeklyGoalsCollapsed=!weeklyGoalsCollapsed;renderStats();});
     body.querySelectorAll('[data-wcheck]').forEach(el=>{
       el.addEventListener('click',()=>{
         const k=el.dataset.wcheck;
@@ -958,6 +1021,26 @@ function renderStats(){
     const addBtn=document.getElementById('newGoalBtn');if(addBtn)addBtn.addEventListener('click',addGoal);
     const newInp=document.getElementById('newGoalInp');if(newInp)newInp.addEventListener('keydown',e=>{if(e.key==='Enter'){e.preventDefault();addGoal();}});
   }
+}
+
+// ── toolbar progress bar ──────────────────────────────────────────────────────
+function renderToolbarProgress(){
+  const fill=document.getElementById('tbProgFill');
+  const label=document.getElementById('tbProgLabel');
+  if(!fill||!label)return;
+  const studyKeys=Object.keys(SUBJECTS).filter(k=>k!=='rest');
+  let src;
+  if(viewMode==='day'){
+    const vDay=dayIdx(currentDay);
+    src=blocks.filter(b=>b.day===vDay&&!b.ghost&&studyKeys.includes(b.subject));
+  }else{
+    src=blocks.filter(b=>!b.ghost&&studyKeys.includes(b.subject));
+  }
+  const total=src.reduce((s,b)=>s+(b.endMin-b.startMin)/60,0);
+  const done=src.filter(b=>b.completed).reduce((s,b)=>s+(b.endMin-b.startMin)/60,0);
+  const pct=total>0?Math.round(done/total*100):0;
+  fill.style.width=pct+'%';
+  label.textContent=`완료 ${done.toFixed(1)}h / 총 ${total.toFixed(1)}h · ${pct}%`;
 }
 
 // ── rest helper ───────────────────────────────────────────────────────────────
@@ -1184,6 +1267,54 @@ function buildDdayGrid(){
   }
 }
 
+// ── routine tracker ───────────────────────────────────────────────────────────
+function renderRoutine(){
+  const panel=document.getElementById('routinePanel');
+  const inner=document.getElementById('routineInner');
+  if(viewMode==='month'){panel.classList.add('u-hidden');return;}
+  panel.classList.remove('u-hidden');
+  const today=new Date();today.setHours(0,0,0,0);
+  let html='';
+  if(viewMode==='week'){
+    html='<div class="routine-day-hdr"><div class="routine-day-hdr-spacer"></div>';
+    for(let i=0;i<7;i++){
+      const d=addDays(currentMonday,i);
+      html+=`<span class="routine-day-hdr-item${isSameDay(d,today)?' today-col':''}">${DAYS[i]}</span>`;
+    }
+    html+='</div>';
+    ROUTINES.forEach(r=>{
+      html+=`<div class="routine-week-row"><div class="routine-week-label"><span class="routine-week-icon">${r.icon}</span><span class="routine-week-lbl-text">${r.label}</span></div><div class="routine-week-days">`;
+      for(let i=0;i<7;i++){
+        const d=addDays(currentMonday,i);
+        const dk=dateKey(d);
+        const done=!!(loadRoutine(dk)[r.id]);
+        html+=`<button class="routine-day-btn${done?' done':''}" data-ritem="${r.id}" data-rdate="${dk}">${done?'✓':''}</button>`;
+      }
+      html+='</div></div>';
+    });
+  } else {
+    const dk=dateKey(currentDay);
+    const data=loadRoutine(dk);
+    html='<div class="routine-day-items">';
+    ROUTINES.forEach(r=>{
+      const done=!!data[r.id];
+      html+=`<div class="routine-day-item"><button class="routine-day-big-btn${done?' done':''}" data-ritem="${r.id}" data-rdate="${dk}">${r.icon}</button><span class="routine-day-lbl">${r.label}</span></div>`;
+    });
+    html+='</div>';
+  }
+  inner.innerHTML=html;
+  inner.querySelectorAll('[data-ritem]').forEach(btn=>{
+    btn.addEventListener('click',()=>{
+      const rid=btn.dataset.ritem;
+      const dk=btn.dataset.rdate;
+      const data=loadRoutine(dk);
+      data[rid]=!data[rid];
+      saveRoutine(dk,data);
+      renderRoutine();
+    });
+  });
+}
+
 // ── render ────────────────────────────────────────────────────────────────────
 function render(){
   document.body.dataset.view=viewMode;
@@ -1201,6 +1332,7 @@ function render(){
     document.getElementById('navLabel').textContent=weekLabelStr(currentMonday);
     buildTimeAxis();buildDayCols();renderBlocks();
     renderWeeklyRetro();buildDdayGrid();
+    renderRoutine();
   } else if(viewMode==='day'){
     pw.classList.remove('u-hidden');mw.classList.add('u-hidden');
     cpBtn.classList.add('u-hidden');rsBtn.classList.add('u-hidden');
@@ -1216,6 +1348,7 @@ function render(){
     document.getElementById('ddayGrid').classList.add('u-hidden');
     document.getElementById('navLabel').textContent=monthLabelStr(currentMonday);
     renderMonthView();
+    renderRoutine();
   }
 }
 
@@ -1242,12 +1375,16 @@ function syncGoalRowHeight(){
 function buildGoalRowContent(rowEl, dk){
   const goals=loadDailyGoals(dk);
   const d=parseInt(rowEl.dataset.day);
-  const studyH=computeDayStudyH(d);
-  let html=`<div class="dgrow-hours">⏰ <strong>${studyH}h</strong></div><div class="dgrow-goals">`;
+  const{planned,actual}=computeDayHours(d);
+  let html=`<div class="dgrow-hours">${actual}h / ${planned}h</div><div class="dgrow-goals">`;
   goals.forEach(g=>{
+    const status=getGoalStatus(g);
+    const isDone=status==='done';const isFail=status==='fail';
+    const checkClass=isDone?' done':isFail?' fail':'';
+    const checkContent=isDone?'✓':isFail?'✗':'';
     html+=`<div class="dgrow-item">`+
-      `<div class="dgrow-check${g.done?' done':''}" data-dgcheck="${g.id}">${g.done?'✓':''}</div>`+
-      `<input class="dgrow-text${g.done?' done-text':''}" data-dgtext="${g.id}" value="${escHtml(g.text)}" placeholder="목표...">`+
+      `<div class="dgrow-check${checkClass}" data-dgcheck="${g.id}">${checkContent}</div>`+
+      `<input class="dgrow-text${isDone?' done-text':''}" data-dgtext="${g.id}" value="${escHtml(g.text)}" placeholder="목표...">`+
       `<button class="dgrow-del" data-dgdel="${g.id}">×</button>`+
     `</div>`;
   });
@@ -1260,8 +1397,10 @@ function buildGoalRowContent(rowEl, dk){
       const gs=loadDailyGoals(dk);
       const g=gs.find(x=>x.id===el.dataset.dgcheck);
       if(g){
-        g.done=!g.done;
-        gs.sort((a,b)=>(a.done?1:0)-(b.done?1:0));
+        const cur=getGoalStatus(g);
+        const next=cur===''?'done':cur==='done'?'fail':'';
+        g.status=next;g.done=next==='done';
+        gs.sort((a,b)=>(getGoalStatus(a)===''?0:1)-(getGoalStatus(b)===''?0:1));
         saveDailyGoals(dk,gs);
         buildGoalRowContent(rowEl,dk);
         syncGoalRowHeight();
@@ -1272,13 +1411,6 @@ function buildGoalRowContent(rowEl, dk){
     inp.addEventListener('mousedown',e=>e.stopPropagation());
     inp.addEventListener('click',e=>e.stopPropagation());
     inp.addEventListener('change',()=>{const gs=loadDailyGoals(dk);const g=gs.find(x=>x.id===inp.dataset.dgtext);if(g){g.text=inp.value.trim();saveDailyGoals(dk,gs);}});
-    inp.addEventListener('keydown',e=>{
-      if(e.key!=='Enter')return;e.preventDefault();e.stopPropagation();
-      const gs=loadDailyGoals(dk);const g=gs.find(x=>x.id===inp.dataset.dgtext);if(g)g.text=inp.value.trim();
-      gs.push({id:uid(),text:'',done:false});saveDailyGoals(dk,gs);buildGoalRowContent(rowEl,dk);
-      syncGoalRowHeight();
-      const inps=rowEl.querySelectorAll('[data-dgtext]');if(inps.length)inps[inps.length-1].focus();
-    });
   });
   rowEl.querySelectorAll('[data-dgdel]').forEach(btn=>{
     btn.addEventListener('mousedown',e=>e.stopPropagation());
@@ -1286,7 +1418,7 @@ function buildGoalRowContent(rowEl, dk){
   });
   const addBtn=rowEl.querySelector('.dgrow-add');
   addBtn.addEventListener('mousedown',e=>e.stopPropagation());
-  addBtn.addEventListener('click',e=>{e.stopPropagation();const gs=loadDailyGoals(dk);gs.push({id:uid(),text:'',done:false});saveDailyGoals(dk,gs);buildGoalRowContent(rowEl,dk);syncGoalRowHeight();const inps=rowEl.querySelectorAll('[data-dgtext]');if(inps.length)inps[inps.length-1].focus();});
+  addBtn.addEventListener('click',e=>{e.stopPropagation();const gs=loadDailyGoals(dk);gs.push({id:uid(),text:'',status:'',done:false});saveDailyGoals(dk,gs);buildGoalRowContent(rowEl,dk);syncGoalRowHeight();const inps=rowEl.querySelectorAll('[data-dgtext]');if(inps.length)inps[inps.length-1].focus();});
 }
 
 function buildDayCols(){
@@ -1301,7 +1433,8 @@ function buildDayCols(){
     col.className='day-col'+(isSameDay(date,today)?' today':'');
     col.dataset.day=d;
     const hdr=document.createElement('div');hdr.className='day-header';
-    hdr.innerHTML=`<div class="day-name">${DAYS[d]}</div><div class="day-date">${fmtDate(date)}</div>`;
+    const dateLabel=`${date.getMonth()+1}.${date.getDate()}(${DAYS[d]})`;
+    hdr.innerHTML=`<div class="day-date">${dateLabel}</div>`;
     col.appendChild(hdr);
     const dk=dateKey(date);
     const goalRow=document.createElement('div');goalRow.className='daily-goal-row';goalRow.dataset.day=d;
@@ -1312,6 +1445,18 @@ function buildDayCols(){
     for(let h=START_H;h<=END_H;h++){
       addGridLine(body,h*60,'grid-hour');
       if(h<END_H){if(gran<=30)addGridLine(body,h*60+30,'grid-sub');if(gran===10)[10,20,40,50].forEach(off=>addGridLine(body,h*60+off,'grid-sub'));}
+    }
+    if(!isMobile()){
+      const hoverCell=document.createElement('div');hoverCell.className='grid-hover-cell';body.appendChild(hoverCell);
+      body.addEventListener('mousemove',e=>{
+        if(drag){hoverCell.style.display='none';return;}
+        const y=bodyY(body,e.clientY);
+        const min=snapMin(clampMin(yToMin(y)));
+        hoverCell.style.display='block';
+        hoverCell.style.top=minToY(min)+'px';
+        hoverCell.style.height=(gran*ppm())+'px';
+      });
+      body.addEventListener('mouseleave',()=>{hoverCell.style.display='none';});
     }
     col.appendChild(body);area.appendChild(col);
   }
@@ -1360,11 +1505,21 @@ function computeDayStudyH(dayIndex){
   const mins=blocks.filter(b=>b.day===dayIndex&&!b.ghost&&b.subject!=='rest').reduce((s,b)=>s+(b.endMin-b.startMin),0);
   return (mins/60).toFixed(1);
 }
+function computeDayHours(dayIndex){
+  const db=blocks.filter(b=>b.day===dayIndex&&!b.ghost&&b.subject!=='rest');
+  const planned=(db.reduce((s,b)=>s+(b.endMin-b.startMin),0)/60).toFixed(1);
+  const actual=(db.filter(b=>b.completed).reduce((s,b)=>s+(b.endMin-b.startMin),0)/60).toFixed(1);
+  return{planned,actual};
+}
+function getGoalStatus(g){
+  if(g.status!==undefined)return g.status;
+  return g.done?'done':'';
+}
 function updateDailyGoalRows(){
   document.querySelectorAll('.daily-goal-row').forEach(row=>{
     const d=parseInt(row.dataset.day);
-    const el=row.querySelector('.dgrow-hours strong');
-    if(el)el.textContent=computeDayStudyH(d)+'h';
+    const el=row.querySelector('.dgrow-hours');
+    if(el){const{planned,actual}=computeDayHours(d);el.textContent=`${actual}h / ${planned}h`;}
   });
 }
 
@@ -1379,6 +1534,7 @@ function renderBlocks(){
   updateDailyGoalRows();
   renderStats();renderTimeIndicator();renderTemplates();
   renderDailySummary();renderDailyRetro();buildDdayGrid();
+  renderToolbarProgress();
 }
 
 // ── daily view ────────────────────────────────────────────────────────────────
@@ -1387,6 +1543,7 @@ function renderDailyView(){
   document.getElementById('navLabel').textContent=`${currentDay.getMonth()+1}월 ${currentDay.getDate()}일 (${DAYS[dayIdx(currentDay)]})`;
   buildTimeAxis();buildDayCols();renderBlocks();
   document.getElementById('dailySummary').classList.remove('u-hidden');
+  renderRoutine();
   requestAnimationFrame(()=>{document.getElementById('plannerWrapper').scrollTop=minToY(7*60);});
 }
 
@@ -1403,8 +1560,6 @@ function renderDailySummary(){
   let html=`<span class="daily-summary-total">오늘 ${total.toFixed(1)}h (완료 ${done.toFixed(1)}h)</span>`;
   Object.keys(bySubj).forEach(k=>{const s=SUBJECTS[k];html+=`<span class="daily-summary-item"><span class="daily-sum-dot" style="background:${s.color}"></span>${s.short} ${bySubj[k].toFixed(1)}h</span>`;});
   el.innerHTML=html;
-  const mb=document.getElementById('mobileStudyBadge');
-  if(mb)mb.textContent='오늘 '+total.toFixed(1)+'h';
 }
 
 // ── monthly view ──────────────────────────────────────────────────────────────
@@ -1451,6 +1606,7 @@ function renderMonthView(){
   const closeBtn=document.getElementById('closeExpand');
   if(closeBtn)closeBtn.addEventListener('click',e=>{e.stopPropagation();expandedMonthDay=null;renderMonthView();});
   renderMonthlyRetro(wrap);
+  renderToolbarProgress();
 }
 
 // ── drag helpers ──────────────────────────────────────────────────────────────
@@ -1537,7 +1693,7 @@ function onMouseMove(e){
     else if(dy>6){
       drag.type='create';
       const subj=SUBJECTS[lastSubject]||SUBJECTS.labor_law;
-      const ghost=document.createElement('div');ghost.className='ghost-block';ghost.style.background=subj.color;ghost.style.top=minToY(drag.startMin)+'px';ghost.style.height='4px';
+      const ghost=document.createElement('div');ghost.className='ghost-block';ghost.style.top=minToY(drag.startMin)+'px';ghost.style.height='4px';
       drag.body.appendChild(ghost);drag.ghost=ghost;drag.endMin=drag.startMin+gran;
     }
     return;
@@ -1827,9 +1983,8 @@ document.getElementById('weeklyRetroHdr').addEventListener('click',()=>{
   btn.textContent=collapsed?'접기 ▲':'펼치기 ▼';
 });
 
-// dark mode toggle
+// dark mode
 function applyDark(on){document.body.classList.toggle('dark',on);localStorage.setItem('darkMode',on?'1':'0');}
-document.getElementById('darkToggleBtn').addEventListener('click',()=>applyDark(!document.body.classList.contains('dark')));
 
 // ── subject picker ────────────────────────────────────────────────────────────
 function hideSubjectPicker(){const el=document.getElementById('subjPicker');if(el)el.remove();}
@@ -2006,6 +2161,32 @@ daysArea.addEventListener('touchstart',onTouchStart,{passive:true});
 daysArea.addEventListener('touchmove',onTouchMove,{passive:true});
 daysArea.addEventListener('touchend',onTouchEnd,{passive:true});
 
+// ── mobile scroll axis lock ────────────────────────────────────────────────────
+(function(){
+  const pw=document.getElementById('plannerWrapper');
+  let axis=null,x0=0,y0=0,l0=0,t0=0;
+  pw.addEventListener('touchstart',function(e){
+    if(!isMobile())return;
+    const t=e.touches[0];
+    axis=null;x0=t.clientX;y0=t.clientY;l0=pw.scrollLeft;t0=pw.scrollTop;
+  },{passive:true});
+  pw.addEventListener('touchmove',function(e){
+    if(!isMobile()||touchResizeState)return;
+    const t=e.touches[0];
+    const dx=t.clientX-x0,dy=t.clientY-y0;
+    if(!axis&&(Math.abs(dx)>5||Math.abs(dy)>5)){
+      axis=Math.abs(dx)>Math.abs(dy)?'x':'y';
+    }
+    if(axis){
+      e.preventDefault();
+      if(axis==='x')pw.scrollLeft=l0-dx;
+      else pw.scrollTop=t0-dy;
+    }
+  },{passive:false});
+  pw.addEventListener('touchend',function(){axis=null;},{passive:true});
+  pw.addEventListener('touchcancel',function(){axis=null;},{passive:true});
+})();
+
 weeklyGoals=loadWeeklyGoals();
 weeklyTextGoals=loadWeeklyTextGoals();
 monthlyGoals=loadMonthlyGoals(new Date());
@@ -2056,6 +2237,22 @@ if(isMobile()){
 }
 
 initAndSync();
+
+// ── periodic sync: pull remote changes every 30s ──────────────────────────────
+async function _pollSync(){
+  if(document.hidden)return;
+  const{updated}=await _loadFromSupabase();
+  if(updated){
+    weeklyGoals=loadWeeklyGoals();
+    weeklyTextGoals=loadWeeklyTextGoals();
+    monthlyGoals=loadMonthlyGoals(new Date());
+    templates=loadTemplates();
+    blocks=loadWeek(currentMonday);
+    render();
+  }
+}
+setInterval(_pollSync,30000);
+document.addEventListener('visibilitychange',function(){if(!document.hidden)_pollSync();});
 
 if('serviceWorker' in navigator){
   navigator.serviceWorker.register('./sw.js').catch(()=>{});
