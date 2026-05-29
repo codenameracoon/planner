@@ -542,6 +542,68 @@ body.dark .routine-day-lbl{color:#555}
   .routine-day-items{gap:12px;padding:6px 8px}
   .routine-day-big-btn{width:40px;height:40px;font-size:22px}
 }
+/* ── review ────────────────────────────────────────────────────────── */
+.review-wrap{flex:1;overflow-y:auto;padding:16px 20px;min-height:0;background:#fff}
+.review-sub-tabs{display:flex;gap:6px;margin-bottom:16px;flex-wrap:wrap}
+.review-sub-tab{background:none;border:1px solid #E9E9E7;border-radius:20px;padding:4px 14px;font-family:inherit;font-size:13px;cursor:pointer;color:#9B9A97;transition:background .12s,color .12s,border-color .12s;white-space:nowrap}
+.review-sub-tab.active{background:#37352F;border-color:#37352F;color:#fff}
+.review-sub-tab.subj-tab.active{color:#fff}
+.review-all-grid{display:flex;flex-direction:column;gap:8px}
+.review-all-row{display:flex;align-items:center;gap:10px;padding:10px 14px;border:1px solid #E9E9E7;border-radius:8px;cursor:pointer;transition:background .1s}
+.review-all-row:hover{background:#F7F7F5}
+.review-all-subj{font-size:13px;font-weight:600;min-width:90px;white-space:nowrap}
+.review-all-cycle{font-size:12px;color:#9B9A97;min-width:48px;white-space:nowrap}
+.review-squares{display:flex;gap:3px;align-items:center}
+.review-sq{width:14px;height:14px;border-radius:3px;flex-shrink:0}
+.review-sq.done{background:#81C995}
+.review-sq.today{background:transparent;border:2px solid #2383E2}
+.review-sq.remaining{background:#E9E9E7}
+.review-all-info{font-size:11px;color:#9B9A97;white-space:nowrap;margin-left:4px}
+.review-section{margin-bottom:20px}
+.review-section-title{font-size:11px;font-weight:600;color:#9B9A97;text-transform:uppercase;letter-spacing:.06em;margin-bottom:8px;display:block}
+.review-cycle-card{border:1px solid #E9E9E7;border-radius:8px;padding:14px 16px}
+.review-cycle-badge{display:inline-flex;align-items:center;padding:3px 10px;border-radius:12px;font-size:12px;font-weight:600;color:#fff;margin-bottom:10px}
+.review-cycle-props{display:flex;gap:16px;flex-wrap:wrap;margin-bottom:10px}
+.review-cycle-prop{font-size:12px;color:#9B9A97}
+.review-cycle-prop span{color:#37352F;font-weight:600}
+.review-progress-bar{height:5px;border-radius:3px;background:#E9E9E7;overflow:hidden;margin-bottom:6px}
+.review-progress-fill{height:100%;border-radius:3px;transition:width .3s}
+.review-cycle-info{font-size:11px;color:#9B9A97}
+.review-today-list{display:flex;flex-direction:column}
+.review-today-item{display:flex;align-items:center;gap:8px;padding:7px 0;border-bottom:1px solid #F4F4F2}
+.review-today-item:last-child{border-bottom:none}
+.review-today-check{width:16px;height:16px;border:1.5px solid #C0BFBC;border-radius:3px;cursor:pointer;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:700;color:transparent;transition:background .1s,border-color .1s}
+.review-today-check.done{background:#81C995;border-color:#81C995;color:#fff}
+.review-today-name{flex:1;font-size:13px;font-family:inherit;border:none;background:transparent;color:#37352F;outline:none;cursor:text;padding:0;line-height:1.4}
+.review-today-name.done-text{text-decoration:line-through;color:#9B9A97}
+.review-roadmap{display:flex;flex-direction:column;gap:2px}
+.review-roadmap-row{display:flex;align-items:center;gap:10px;padding:7px 10px;border-radius:6px;transition:background .1s}
+.review-roadmap-row:hover:not(.current-cycle){background:#F7F7F5}
+.review-roadmap-circle{width:22px;height:22px;border-radius:50%;border:2px solid #E9E9E7;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;color:#9B9A97;flex-shrink:0;line-height:1}
+.review-roadmap-circle.done{background:#81C995;border-color:#81C995;color:#fff}
+.review-roadmap-circle.current{background:#37352F;border-color:#37352F;color:#fff}
+.review-roadmap-name{font-size:13px;font-weight:500;flex:1;min-width:0}
+.review-roadmap-info{font-size:12px;color:#9B9A97;white-space:nowrap}
+.review-roadmap-edit{background:none;border:1px solid #E9E9E7;border-radius:3px;font-size:11px;cursor:pointer;padding:2px 7px;color:#9B9A97;font-family:inherit;flex-shrink:0;line-height:1.5;transition:background .1s,color .1s}
+.review-roadmap-edit:hover{background:#F7F7F5;color:#37352F}
+.review-add-btn{margin-top:10px;width:100%;padding:9px;border:1px dashed #E9E9E7;border-radius:6px;background:none;font-family:inherit;font-size:13px;color:#9B9A97;cursor:pointer;transition:background .1s;text-align:center;display:block}
+.review-add-btn:hover{background:#F7F7F5;color:#37352F}
+.review-empty{font-size:13px;color:#9B9A97;padding:12px 0}
+.review-modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.3);z-index:700;display:none;align-items:flex-end;justify-content:center}
+.review-modal-overlay.open{display:flex}
+.review-edit-sheet{background:#fff;border-radius:12px 12px 0 0;padding:20px;width:100%;max-width:480px;border:1px solid #E9E9E7;box-shadow:0 -4px 24px rgba(0,0,0,.12)}
+.review-edit-title{font-size:16px;font-weight:600;margin-bottom:16px;color:#37352F}
+.review-edit-field{margin-bottom:14px}
+.review-edit-label{font-size:11px;font-weight:600;color:#9B9A97;text-transform:uppercase;letter-spacing:.06em;margin-bottom:6px;display:block}
+.review-stepper{display:flex;align-items:center;gap:12px}
+.review-stepper-btn{width:28px;height:28px;border:1px solid #E9E9E7;border-radius:4px;background:none;cursor:pointer;font-size:18px;display:flex;align-items:center;justify-content:center;color:#37352F;line-height:1;font-family:inherit}
+.review-stepper-btn:hover{background:#F7F7F5}
+.review-stepper-val{font-size:15px;font-weight:600;min-width:40px;text-align:center}
+.review-date-input{border:1px solid #E9E9E7;border-radius:4px;padding:5px 8px;font-family:inherit;font-size:14px;color:#37352F;outline:none;cursor:pointer}
+.review-date-input:focus{border-color:#8AB4F8}
+.review-auto-label{display:flex;align-items:center;gap:6px;font-size:12px;color:#9B9A97;cursor:pointer;margin-top:6px}
+.review-suggestion{font-size:12px;color:#9B9A97;margin-top:8px;padding:6px 10px;background:#F7F7F5;border-radius:4px}
+.review-edit-actions{display:flex;gap:8px;justify-content:flex-end;margin-top:16px}
 </style>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
@@ -554,6 +616,7 @@ body.dark .routine-day-lbl{color:#555}
     <button class="seg-btn" data-view="day">일간</button>
     <button class="seg-btn active" data-view="week">주간</button>
     <button class="seg-btn" data-view="month">월간</button>
+    <button class="seg-btn" data-view="review">회독</button>
   </div>
   <div class="sep"></div>
   <div class="nav-row" id="mainNav">
@@ -624,6 +687,36 @@ body.dark .routine-day-lbl{color:#555}
 </div>
 
 <div class="month-wrap u-hidden" id="monthWrap"></div>
+
+<div class="review-wrap u-hidden" id="reviewWrap">
+  <div class="review-sub-tabs" id="reviewSubTabs"></div>
+  <div id="reviewContent"></div>
+</div>
+
+<div class="review-modal-overlay" id="reviewModalOverlay">
+  <div class="review-edit-sheet">
+    <div class="review-edit-title" id="reviewEditTitle">회독 설정</div>
+    <div class="review-edit-field">
+      <label class="review-edit-label">기간</label>
+      <div class="review-stepper">
+        <button class="review-stepper-btn" id="rsDaysMinus">−</button>
+        <span class="review-stepper-val" id="rsDaysVal">7</span>
+        <button class="review-stepper-btn" id="rsDaysPlus">+</button>
+        <span style="font-size:12px;color:#9B9A97">일</span>
+      </div>
+    </div>
+    <div class="review-edit-field">
+      <label class="review-edit-label">시작일</label>
+      <input type="date" class="review-date-input" id="rsStartDate">
+      <label class="review-auto-label"><input type="checkbox" id="rsAutoDate"> 이전 회독 종료 다음날로 자동 설정</label>
+    </div>
+    <div class="review-suggestion" id="rsSuggestion"></div>
+    <div class="review-edit-actions">
+      <button class="btn" id="rsCancel">취소</button>
+      <button class="btn-primary" id="rsSave">저장</button>
+    </div>
+  </div>
+</div>
 
 
 <div class="tmpl-panel collapsed" id="tmplPanel">
@@ -805,6 +898,8 @@ let monthlyGoals = [];
 let templates = [];
 let statsCollapsed = false;
 let goalsCollapsed = false;
+let reviewSubTab = 'all';
+let _rsSubjectKey = null, _rsCycleNum = null;
 
 // ── date helpers ──────────────────────────────────────────────────────────────
 function getMondayOf(d) {
@@ -1238,13 +1333,14 @@ function render(){
   document.body.dataset.view=viewMode;
   const pw=document.getElementById('plannerWrapper');
   const mw=document.getElementById('monthWrap');
+  const rw=document.getElementById('reviewWrap');
   const ds=document.getElementById('dailySummary');
   const cpBtn=document.getElementById('copyPrevWeek');
   const rsBtn=document.getElementById('resetWeek');
   const todayBtn=document.getElementById('todayBtn');
   const granGroup=document.getElementById('granGroup');
   if(viewMode==='week'){
-    pw.classList.remove('u-hidden');mw.classList.add('u-hidden');ds.classList.add('u-hidden');
+    pw.classList.remove('u-hidden');mw.classList.add('u-hidden');if(rw)rw.classList.add('u-hidden');ds.classList.add('u-hidden');
     cpBtn.classList.remove('u-hidden');rsBtn.classList.remove('u-hidden');
     todayBtn.classList.add('u-hidden');granGroup.classList.remove('u-hidden');
     document.getElementById('navLabel').textContent=weekLabelStr(currentMonday);
@@ -1252,14 +1348,22 @@ function render(){
     renderWeeklyRetro();buildDdayGrid();
     renderRoutine();
   } else if(viewMode==='day'){
-    pw.classList.remove('u-hidden');mw.classList.add('u-hidden');
+    pw.classList.remove('u-hidden');mw.classList.add('u-hidden');if(rw)rw.classList.add('u-hidden');
     cpBtn.classList.add('u-hidden');rsBtn.classList.add('u-hidden');
     todayBtn.classList.remove('u-hidden');granGroup.classList.remove('u-hidden');
     document.getElementById('weeklyRetro').classList.add('u-hidden');
     document.getElementById('ddayGrid').classList.add('u-hidden');
     renderDailyView();
+  } else if(viewMode==='review'){
+    pw.classList.add('u-hidden');mw.classList.add('u-hidden');if(rw)rw.classList.remove('u-hidden');ds.classList.add('u-hidden');
+    cpBtn.classList.add('u-hidden');rsBtn.classList.add('u-hidden');
+    todayBtn.classList.add('u-hidden');granGroup.classList.add('u-hidden');
+    document.getElementById('weeklyRetro').classList.add('u-hidden');
+    document.getElementById('ddayGrid').classList.add('u-hidden');
+    document.getElementById('navLabel').textContent='회독 관리';
+    renderReview();
   } else {
-    pw.classList.add('u-hidden');mw.classList.remove('u-hidden');ds.classList.add('u-hidden');
+    pw.classList.add('u-hidden');mw.classList.remove('u-hidden');if(rw)rw.classList.add('u-hidden');ds.classList.add('u-hidden');
     cpBtn.classList.add('u-hidden');rsBtn.classList.add('u-hidden');
     todayBtn.classList.add('u-hidden');granGroup.classList.add('u-hidden');
     document.getElementById('weeklyRetro').classList.add('u-hidden');
@@ -1744,11 +1848,13 @@ function closeModal(){document.getElementById('modalOverlay').classList.remove('
 
 // ── navigation ────────────────────────────────────────────────────────────────
 document.getElementById('prevBtn').onclick=()=>{
+  if(viewMode==='review')return;
   if(viewMode==='week'){navigate(-7);}
   else if(viewMode==='day'){currentDay=addDays(currentDay,-1);currentMonday=getMondayOf(currentDay);blocks=loadWeek(currentMonday);renderDailyView();}
   else{currentMonday=new Date(currentMonday.getFullYear(),currentMonday.getMonth()-1,1);render();}
 };
 document.getElementById('nextBtn').onclick=()=>{
+  if(viewMode==='review')return;
   if(viewMode==='week'){navigate(7);}
   else if(viewMode==='day'){currentDay=addDays(currentDay,1);currentMonday=getMondayOf(currentDay);blocks=loadWeek(currentMonday);renderDailyView();}
   else{currentMonday=new Date(currentMonday.getFullYear(),currentMonday.getMonth()+1,1);render();}
@@ -2186,6 +2292,281 @@ if(isMobile()){
   const _dr=document.getElementById('dailyRetroHdr');
   if(_dr)_dr.style.cursor='pointer';
 }
+
+// ── review feature ────────────────────────────────────────────────────────────
+
+const REVIEW_SUBJECTS=[
+  {key:'labor_law',  name:'노동법',       color:'#F28B82'},
+  {key:'hr_mgmt',   name:'인사노무관리', color:'#81C995'},
+  {key:'admin_law', name:'행정쟁송법',   color:'#8AB4F8'},
+  {key:'labor_econ',name:'노동경제학',   color:'#FDD663'},
+];
+
+function reviewStorageKey(k){return 'review_subject_'+k;}
+function reviewCheckKey(k){return 'review_check_'+dateKey(new Date())+'_'+k;}
+function loadReviewData(k){try{return JSON.parse(localStorage.getItem(reviewStorageKey(k))||'null');}catch{return null;}}
+function saveReviewData(k,d){const key=reviewStorageKey(k);const v=JSON.stringify(d);localStorage.setItem(key,v);syncToSupabase(key,v);}
+function loadReviewChecks(k){try{return JSON.parse(localStorage.getItem(reviewCheckKey(k))||'null')||{};}catch{return{};}}
+function saveReviewChecks(k,c){localStorage.setItem(reviewCheckKey(k),JSON.stringify(c));}
+
+function initAdminLawData(){
+  if(loadReviewData('admin_law'))return;
+  const blocks=[
+    "누가 소송을 거는가 — 소송의 한계 + 원고적격 + 협의의 소익",
+    "무엇을 대상으로 소송을 거는가 — 대상적격 (처분성 판단)",
+    "언제, 어떻게 거는가 — 제소기간 + 행정심판 전치주의 + 소의 변경/참가",
+    "재판 중 방어막과 룰 — 가구제 (집행정지) + 심리",
+    "재판의 결과와 효력 — 취소소송의 판결 (기속력, 기판력, 사정판결)",
+    "취소소송 외의 항고소송 — 무효등확인소송 + 부작위위법확인소송",
+    "그 밖의 소송 — 당사자소송 + 객관소송",
+    "행정심판법 — 심판 요건 + 가구제 + 재결의 효력"
+  ].map((name,i)=>({id:'b'+(i+1),name}));
+  const cycles=[
+    {num:1,days:15,blocksPerDay:0.5,startDate:'2026-06-01'},
+    {num:2,days:10,blocksPerDay:1,startDate:null},
+    {num:3,days:8,blocksPerDay:1.5,startDate:null},
+    {num:4,days:6,blocksPerDay:2,startDate:null},
+    {num:5,days:6,blocksPerDay:2,startDate:null},
+    {num:6,days:5,blocksPerDay:null,startDate:null},
+    {num:7,days:5,blocksPerDay:null,startDate:null},
+    {num:8,days:4,blocksPerDay:null,startDate:null},
+    {num:9,days:4,blocksPerDay:null,startDate:null},
+    {num:10,days:3,blocksPerDay:null,startDate:null},
+    {num:11,days:3,blocksPerDay:null,startDate:null},
+    ...Array.from({length:5},(_,i)=>({num:12+i,days:2,blocksPerDay:null,startDate:null})),
+    ...Array.from({length:10},(_,i)=>({num:17+i,days:1,blocksPerDay:null,startDate:null})),
+  ];
+  saveReviewData('admin_law',{blocks,cycles});
+}
+
+function getCycleStatus(c,today){
+  if(!c.startDate)return 'future';
+  const start=new Date(c.startDate);start.setHours(0,0,0,0);
+  const end=addDays(start,c.days);
+  if(today>=end)return 'done';
+  if(today>=start)return 'current';
+  return 'future';
+}
+
+function getTodayBlockIndices(dayInCycle,blocksPerDay,numBlocks){
+  if(!blocksPerDay||blocksPerDay<=0)return[];
+  const s=Math.floor(dayInCycle*blocksPerDay);
+  const e=Math.floor((dayInCycle+1)*blocksPerDay);
+  const r=[];
+  for(let i=s;i<Math.min(e,numBlocks);i++)r.push(i);
+  return r;
+}
+
+function renderReview(){
+  const wrap=document.getElementById('reviewWrap');
+  if(!wrap)return;
+  const today=new Date();today.setHours(0,0,0,0);
+
+  // sub-tabs
+  const subTabsEl=document.getElementById('reviewSubTabs');
+  const tabs=[{key:'all',label:'전체'},...REVIEW_SUBJECTS];
+  subTabsEl.innerHTML=tabs.map(t=>{
+    const subj=REVIEW_SUBJECTS.find(s=>s.key===t.key);
+    const cls='review-sub-tab'+(subj?' subj-tab':'')+( reviewSubTab===t.key?' active':'');
+    const style=subj&&reviewSubTab===t.key?`style="background:${subj.color};border-color:${subj.color}"`:subj?`style="color:${subj.color};border-color:${subj.color}"`:'' ;
+    return `<button class="${cls}" data-rtab="${t.key}" ${style}>${t.label}</button>`;
+  }).join('');
+  subTabsEl.querySelectorAll('[data-rtab]').forEach(btn=>{
+    btn.addEventListener('click',()=>{reviewSubTab=btn.dataset.rtab;renderReview();});
+  });
+
+  const content=document.getElementById('reviewContent');
+  if(reviewSubTab==='all')renderReviewAll(content,today);
+  else{
+    const subj=REVIEW_SUBJECTS.find(s=>s.key===reviewSubTab);
+    if(subj)renderReviewSubject(content,subj,today);
+  }
+}
+
+function renderReviewAll(el,today){
+  let html='<div class="review-all-grid">';
+  REVIEW_SUBJECTS.forEach(subj=>{
+    const data=loadReviewData(subj.key);
+    if(!data){
+      html+=`<div class="review-all-row" data-rrow="${subj.key}"><span class="review-all-subj" style="color:${subj.color}">${subj.name}</span><span class="review-all-cycle">—</span><span class="review-all-info">회독 일정을 추가하세요</span></div>`;
+      return;
+    }
+    const nb=data.blocks.length;
+    const cycles=data.cycles||[];
+    let cur=null,dayIn=0,doneCount=0;
+    cycles.forEach(c=>{
+      const st=getCycleStatus(c,today);
+      if(st==='done')doneCount++;
+      if(st==='current'&&!cur){cur=c;const s=new Date(c.startDate);s.setHours(0,0,0,0);dayIn=Math.floor((today-s)/86400000);}
+    });
+    let squares='';
+    for(let i=0;i<nb;i++){
+      if(cur&&cur.blocksPerDay){
+        const bd=Math.floor(i/cur.blocksPerDay);
+        if(bd<dayIn)squares+=`<div class="review-sq done"></div>`;
+        else if(bd===dayIn)squares+=`<div class="review-sq today"></div>`;
+        else squares+=`<div class="review-sq remaining"></div>`;
+      }else{squares+=`<div class="review-sq remaining"></div>`;}
+    }
+    const info=cur?`${dayIn+1}/${cur.days}일째 · D-${cur.days-dayIn-1}`:doneCount>0?`${doneCount}회독 완료`:'미시작';
+    html+=`<div class="review-all-row" data-rrow="${subj.key}"><span class="review-all-subj" style="color:${subj.color}">${subj.name}</span><span class="review-all-cycle">${cur?cur.num+'회독':'—'}</span><div class="review-squares">${squares}</div><span class="review-all-info">${info}</span></div>`;
+  });
+  html+='</div>';
+  el.innerHTML=html;
+  el.querySelectorAll('[data-rrow]').forEach(row=>{
+    row.addEventListener('click',()=>{reviewSubTab=row.dataset.rrow;renderReview();});
+  });
+}
+
+function renderReviewSubject(el,subj,today){
+  const data=loadReviewData(subj.key);
+  const cycles=data?(data.cycles||[]):[];
+  const nb=data?data.blocks.length:0;
+
+  let cur=null,dayIn=0;
+  cycles.forEach(c=>{
+    const st=getCycleStatus(c,today);
+    if(st==='current'&&!cur){cur=c;const s=new Date(c.startDate);s.setHours(0,0,0,0);dayIn=Math.floor((today-s)/86400000);}
+  });
+
+  let html='';
+
+  if(!data){
+    html=`<p class="review-empty">아직 회독 데이터가 없습니다.</p>`;
+    el.innerHTML=html;
+    const ab=document.createElement('button');ab.className='review-add-btn';ab.textContent='+ 회독 추가';
+    ab.onclick=()=>addReviewCycle(subj.key);
+    el.appendChild(ab);
+    return;
+  }
+
+  // current cycle card
+  if(cur){
+    const daysLeft=cur.days-dayIn-1;
+    const pct=Math.round((dayIn+1)/cur.days*100);
+    const bpd=cur.blocksPerDay?cur.blocksPerDay+'블록/일':'—';
+    html+=`<div class="review-section"><div class="review-cycle-card" style="border-color:${subj.color}40"><div class="review-cycle-badge" style="background:${subj.color}">${cur.num}회독 진행 중</div><div class="review-cycle-props"><span class="review-cycle-prop">기간: <span>${cur.days}일</span></span><span class="review-cycle-prop">하루분량: <span>${bpd}</span></span></div><div class="review-progress-bar"><div class="review-progress-fill" style="width:${pct}%;background:${subj.color}"></div></div><div class="review-cycle-info">${dayIn+1}/${cur.days}일째 · D-${daysLeft}</div></div></div>`;
+
+    // 오늘 체크
+    if(cur.blocksPerDay){
+      const idxs=getTodayBlockIndices(dayIn,cur.blocksPerDay,nb);
+      const checks=loadReviewChecks(subj.key);
+      html+=`<div class="review-section"><span class="review-section-title">오늘 체크</span><div class="review-today-list" id="rtl_${subj.key}">`;
+      if(!idxs.length){html+=`<div class="review-empty">오늘은 복습 없는 날입니다</div>`;}
+      else{
+        idxs.forEach(bi=>{
+          const blk=data.blocks[bi];
+          const done=!!checks[blk.id];
+          html+=`<div class="review-today-item"><div class="review-today-check${done?' done':''}" data-rck="${blk.id}" data-rsk="${subj.key}">${done?'✓':''}</div><input class="review-today-name${done?' done-text':''}" data-rnm="${blk.id}" data-rsk="${subj.key}" value="${escHtml(blk.name)}"></div>`;
+        });
+      }
+      html+=`</div></div>`;
+    }
+  }
+
+  // roadmap
+  html+=`<div class="review-section"><span class="review-section-title">전체 회독 로드맵</span><div class="review-roadmap">`;
+  let prevEnd=null;
+  cycles.forEach(c=>{
+    const st=getCycleStatus(c,today);
+    let sDate=null,eDate=null;
+    if(c.startDate){sDate=new Date(c.startDate);sDate.setHours(0,0,0,0);eDate=addDays(sDate,c.days-1);}
+    let circCls='',info='',editBtn='';
+    if(st==='done'){circCls='done';info=`완료 · ${fmtDate(sDate)}~${fmtDate(eDate)}`;}
+    else if(st==='current'){circCls='current';info=`진행 중 · D-${cur?cur.days-dayIn-1:'?'}`;}
+    else{info=c.startDate?`예정 · ${fmtDate(sDate)} 시작`:'예정 · 미설정';editBtn=`<button class="review-roadmap-edit" data-red="${c.num}" data-rsk="${subj.key}">편집</button>`;}
+    const rowStyle=st==='current'?`style="background:${subj.color}15"`:'';
+    html+=`<div class="review-roadmap-row${st==='current'?' current-cycle':''}" ${rowStyle}><div class="review-roadmap-circle ${circCls}">${c.num}</div><span class="review-roadmap-name">${c.num}회독</span><span class="review-roadmap-info">${info}</span>${editBtn}</div>`;
+    if(c.startDate)prevEnd=dateKey(addDays(new Date(c.startDate),c.days));
+  });
+  html+=`</div></div>`;
+  el.innerHTML=html;
+
+  // bind checks
+  el.querySelectorAll('[data-rck]').forEach(btn=>{
+    btn.addEventListener('click',()=>{
+      const id=btn.dataset.rck,sk=btn.dataset.rsk;
+      const ch=loadReviewChecks(sk);ch[id]=!ch[id];saveReviewChecks(sk,ch);
+      btn.classList.toggle('done',!!ch[id]);btn.textContent=ch[id]?'✓':'';
+      const nm=el.querySelector(`[data-rnm="${id}"]`);if(nm)nm.classList.toggle('done-text',!!ch[id]);
+    });
+  });
+
+  // bind name edits
+  el.querySelectorAll('[data-rnm]').forEach(inp=>{
+    inp.addEventListener('change',()=>{
+      const id=inp.dataset.rnm,sk=inp.dataset.rsk;
+      const d=loadReviewData(sk);if(!d)return;
+      const b=d.blocks.find(x=>x.id===id);if(b){b.name=inp.value;saveReviewData(sk,d);}
+    });
+  });
+
+  // bind edit buttons
+  el.querySelectorAll('[data-red]').forEach(btn=>{
+    btn.addEventListener('click',e=>{
+      e.stopPropagation();
+      openReviewEditModal(btn.dataset.rsk,parseInt(btn.dataset.red),cycles);
+    });
+  });
+
+  // add button
+  const ab=document.createElement('button');ab.className='review-add-btn';ab.textContent='+ 회독 추가';
+  ab.onclick=()=>addReviewCycle(subj.key);
+  el.appendChild(ab);
+}
+
+function addReviewCycle(sk){
+  const d=loadReviewData(sk)||{blocks:Array.from({length:8},(_,i)=>({id:'b'+(i+1),name:'블록 '+(i+1)})),cycles:[]};
+  const next=(d.cycles.length?d.cycles[d.cycles.length-1].num:0)+1;
+  d.cycles.push({num:next,days:7,blocksPerDay:1,startDate:null});
+  saveReviewData(sk,d);renderReview();
+}
+
+function openReviewEditModal(sk,cycleNum,cycles){
+  _rsSubjectKey=sk;_rsCycleNum=cycleNum;
+  const d=loadReviewData(sk);
+  const c=d&&cycleNum?d.cycles.find(x=>x.num===cycleNum):null;
+  document.getElementById('reviewEditTitle').textContent=cycleNum?`${cycleNum}회독 설정`:'회독 설정';
+  document.getElementById('rsDaysVal').textContent=c?c.days:7;
+  document.getElementById('rsStartDate').value=c&&c.startDate?c.startDate:'';
+  const prev=cycles&&cycleNum>1?cycles.find(x=>x.num===cycleNum-1):null;
+  const prevEndDate=prev&&prev.startDate?dateKey(addDays(new Date(prev.startDate),prev.days)):'';
+  document.getElementById('rsAutoDate').checked=false;
+  document.getElementById('rsAutoDate').dataset.prevend=prevEndDate;
+  const rec=cycleNum>1?`추천: ${cycleNum}회독은 이전 회독 대비 ~20% 단축 권장`:'';
+  document.getElementById('rsSuggestion').textContent=rec;
+  document.getElementById('reviewModalOverlay').classList.add('open');
+}
+
+function closeReviewModal(){
+  document.getElementById('reviewModalOverlay').classList.remove('open');
+  _rsSubjectKey=null;_rsCycleNum=null;
+}
+
+document.getElementById('rsDaysMinus').addEventListener('click',()=>{
+  const v=parseInt(document.getElementById('rsDaysVal').textContent);
+  if(v>1)document.getElementById('rsDaysVal').textContent=v-1;
+});
+document.getElementById('rsDaysPlus').addEventListener('click',()=>{
+  document.getElementById('rsDaysVal').textContent=parseInt(document.getElementById('rsDaysVal').textContent)+1;
+});
+document.getElementById('rsAutoDate').addEventListener('change',function(){
+  if(this.checked&&this.dataset.prevend)document.getElementById('rsStartDate').value=this.dataset.prevend;
+});
+document.getElementById('rsCancel').addEventListener('click',closeReviewModal);
+document.getElementById('reviewModalOverlay').addEventListener('click',e=>{if(e.target===document.getElementById('reviewModalOverlay'))closeReviewModal();});
+document.getElementById('rsSave').addEventListener('click',()=>{
+  if(!_rsSubjectKey||!_rsCycleNum){closeReviewModal();return;}
+  const d=loadReviewData(_rsSubjectKey);if(!d){closeReviewModal();return;}
+  const c=d.cycles.find(x=>x.num===_rsCycleNum);
+  if(c){
+    c.days=parseInt(document.getElementById('rsDaysVal').textContent);
+    c.startDate=document.getElementById('rsStartDate').value||null;
+  }
+  saveReviewData(_rsSubjectKey,d);closeReviewModal();renderReview();
+});
+
+initAdminLawData();
 
 initAndSync();
 
