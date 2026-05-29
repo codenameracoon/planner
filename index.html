@@ -1421,7 +1421,6 @@ function buildDayCols(){
     });
     hdr.appendChild(routineRow);
     col.appendChild(hdr);
-    const dk=dateKey(date);
     const goalRow=document.createElement('div');goalRow.className='daily-goal-row';goalRow.dataset.day=d;
     buildGoalRowContent(goalRow,dk);
     col.appendChild(goalRow);
