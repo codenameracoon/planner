@@ -621,6 +621,8 @@ body.dark .routine-day-lbl{color:#555}
 .review-roadmap-edit:hover{background:#F7F7F5;color:#37352F}
 .review-add-btn{margin-top:10px;width:100%;padding:9px;border:1px dashed #E9E9E7;border-radius:6px;background:none;font-family:inherit;font-size:13px;color:#9B9A97;cursor:pointer;transition:background .1s;text-align:center;display:block}
 .review-add-btn:hover{background:#F7F7F5;color:#37352F}
+.review-all-sched-btn{width:100%;padding:10px;border:1px solid #E9E9E7;border-radius:6px;background:none;font-family:inherit;font-size:13px;font-weight:600;color:#37352F;cursor:pointer;transition:background .1s,color .1s;text-align:center;display:block}
+.review-all-sched-btn:hover:not(:disabled){background:#F7F7F5}
 .review-empty{font-size:13px;color:#9B9A97;padding:12px 0}
 .review-modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.3);z-index:700;display:none;align-items:flex-end;justify-content:center}
 .review-modal-overlay.open{display:flex}
@@ -960,8 +962,9 @@ let statsCollapsed = false;
 let goalsCollapsed = false;
 let reviewSubTab = 'all';
 let reviewViewDate = null;
+let reviewAllViewDate = null;
 let _rsSubjectKey = null, _rsCycleNum = null;
-let _todaySchedAdded = false;
+let _schedAddedDates = {};
 
 // ── date helpers ──────────────────────────────────────────────────────────────
 function getMondayOf(d) {
@@ -2489,19 +2492,38 @@ function renderReview(){
       const tb=document.getElementById('rdnToday');
       if(tb)tb.onclick=()=>{reviewViewDate=null;renderReview();};
     }else{
-      navEl.style.display='none';
+      // all tab date nav
+      const vd=reviewAllViewDate||today;
+      const isToday=isSameDay(vd,today);
+      const ym=`${vd.getFullYear()}.${String(vd.getMonth()+1).padStart(2,'0')}.${String(vd.getDate()).padStart(2,'0')}`;
+      const dow=DAYS[dayIdx(vd)];
+      const lbl=isToday?`${ym} (${dow}) · 오늘`:`${ym} (${dow})`;
+      const todayBtn=!isToday?`<button class="btn" id="rdnToday" style="font-size:12px;padding:3px 8px">오늘</button>`:'';
+      navEl.style.display='flex';
+      navEl.innerHTML=`<button class="btn btn-nav" id="rdnPrev">←</button><span class="review-date-nav-label">${lbl}</span><button class="btn btn-nav" id="rdnNext">→</button>${todayBtn}`;
+      document.getElementById('rdnPrev').onclick=()=>{
+        const base=new Date(reviewAllViewDate||today);base.setHours(0,0,0,0);
+        reviewAllViewDate=addDays(base,-1);renderReview();
+      };
+      document.getElementById('rdnNext').onclick=()=>{
+        const base=new Date(reviewAllViewDate||today);base.setHours(0,0,0,0);
+        reviewAllViewDate=addDays(base,1);renderReview();
+      };
+      const tb=document.getElementById('rdnToday');
+      if(tb)tb.onclick=()=>{reviewAllViewDate=null;renderReview();};
     }
   }
 
   const content=document.getElementById('reviewContent');
-  if(reviewSubTab==='all')renderReviewAll(content,today);
+  if(reviewSubTab==='all'){const vd=reviewAllViewDate||today;renderReviewAll(content,today,vd);}
   else{
     const subj=REVIEW_SUBJECTS.find(s=>s.key===reviewSubTab);
     if(subj)renderReviewSubject(content,subj,today);
   }
 }
 
-function renderReviewAll(el,today){
+function renderReviewAll(el,today,vd){
+  if(!vd)vd=today;
   let html='<div class="review-all-grid">';
   REVIEW_SUBJECTS.forEach(subj=>{
     const data=loadReviewData(subj.key);
@@ -2545,10 +2567,22 @@ function renderReviewAll(el,today){
   });
   if(hasWeak)html+=`<div class="review-weak-section"><span class="review-section-title">⚠ 약점 블록</span>${weakHtml}</div>`;
 
+  // all-subjects schedule button
+  const _allDk=dateKey(vd);
+  const _allAdded=!!_schedAddedDates['all:'+_allDk];
+  const _allIsWeekend=vd.getDay()===0||vd.getDay()===6;
+  const _allLabel=isSameDay(vd,today)?'오늘':`${vd.getMonth()+1}월${vd.getDate()}일`;
+  if(!_allIsWeekend){
+    const _abStyle=_allAdded?'background:#9B9A97;color:#fff;border-color:#9B9A97;cursor:default':'';
+    html+=`<div style="margin-top:16px;padding:0 4px"><button class="review-all-sched-btn" id="allSubjSchedBtn" ${_allAdded?'disabled':''} style="${_abStyle}">${_allAdded?'✓ 추가됨':`📅 ${_allLabel} 전과목 시간표 추가`}</button></div>`;
+  }
+
   el.innerHTML=html;
   el.querySelectorAll('[data-rrow]').forEach(row=>{
     row.addEventListener('click',()=>{reviewSubTab=row.dataset.rrow;renderReview();});
   });
+  const _aBtn=el.querySelector('#allSubjSchedBtn');
+  if(_aBtn&&!_allAdded){_aBtn.addEventListener('click',()=>addTodaySchedule(_aBtn,vd,'all:'+_allDk));}
 }
 
 function renderReviewSubject(el,subj,today){
@@ -2586,6 +2620,11 @@ function renderReviewSubject(el,subj,today){
     el.appendChild(ab);
     return;
   }
+
+  // schedule-button state (declared here so it's in scope at event binding below)
+  const _sbDk=dateKey(vd);
+  const _sbIsWeekend=vd.getDay()===0||vd.getDay()===6;
+  const _sbAdded=!!_schedAddedDates[subj.key+':'+_sbDk];
 
   // current cycle card (based on today)
   if(cur){
@@ -2662,9 +2701,10 @@ function renderReviewSubject(el,subj,today){
     let checkTitle='오늘 체크';
     if(!isTodayView){const vm=vd.getMonth()+1,vda=vd.getDate();checkTitle=isFutureView?`${vm}/${vda} 예정`:`${vm}/${vda} 체크`;}
 
-    const _sbStyle=_todaySchedAdded?'background:#9B9A97;color:#fff;border-color:#9B9A97;cursor:default':'';
-    const _sbLabel=_todaySchedAdded?'✓ 추가됨':'+ 시간표';
-    const _sbHtml=isTodayView?`<button class="review-tb-btn" id="addTodaySched_${subj.key}" ${_todaySchedAdded?'disabled':''} style="${_sbStyle}">${_sbLabel}</button>`:'';
+    const _sbStyle=_sbAdded?'background:#9B9A97;color:#fff;border-color:#9B9A97;cursor:default':'';
+    const _sbDateLabel=isTodayView?'오늘':`${vd.getMonth()+1}월${vd.getDate()}일`;
+    const _sbLabel=_sbAdded?'✓ 추가됨':`+ ${_sbDateLabel} 시간표 추가`;
+    const _sbHtml=!_sbIsWeekend?`<button class="review-tb-btn" id="addTodaySched_${subj.key}" ${_sbAdded?'disabled':''} style="${_sbStyle}">${_sbLabel}</button>`:'';
 
     html+=`<div class="review-section"><div style="display:flex;align-items:center;gap:8px;margin-bottom:8px"><span class="review-section-title" style="margin-bottom:0;display:inline">${checkTitle}</span>${_sbHtml}</div><div class="review-today-list" id="rtl_${subj.key}">`;
     if(!todayItems.length){
@@ -2689,7 +2729,7 @@ function renderReviewSubject(el,subj,today){
           html+=`<button class="btn" style="font-size:12px;padding:2px 8px;margin-top:4px" data-msave="${item.checkId}" data-rsk="${subj.key}" data-bid="${item.blockId}">저장</button>`;
           html+=`</div>`;
         }
-        if(isTodayView){
+        if(!isFutureView){
           html+=`<div class="review-tb-picker" id="tp_${item.checkId}">`;
           html+=`<select class="review-tb-hour" id="tsh_${item.checkId}">${hourOpts}</select>`;
           html+=`<select class="review-tb-dur" id="tsd_${item.checkId}"><option value="30">30분</option><option value="60" selected>1시간</option><option value="90">1.5시간</option><option value="120">2시간</option></select>`;
@@ -2700,7 +2740,7 @@ function renderReviewSubject(el,subj,today){
         html+=`<div class="review-item-actions">`;
         html+=`<button class="review-star-btn${isWeak?' active':''}" data-star="${item.checkId}" data-bid="${item.blockId}" data-rsk="${subj.key}" title="약점 태그">⭐</button>`;
         if(!isFutureView)html+=`<button class="review-memo-btn" data-memo="${item.checkId}" title="메모">📝</button>`;
-        if(isTodayView)html+=`<button class="review-tb-btn" data-tb="${item.checkId}">+ 시간표</button>`;
+        if(!isFutureView)html+=`<button class="review-tb-btn" data-tb="${item.checkId}">+ 시간표</button>`;
         html+=`</div>`;
         html+=`</div>`;
       });
@@ -2762,9 +2802,9 @@ function renderReviewSubject(el,subj,today){
     });
   }
 
-  // bind: add-today-schedule button
+  // bind: add-schedule button (any date)
   const _schedBtn=el.querySelector(`#addTodaySched_${subj.key}`);
-  if(_schedBtn&&!_todaySchedAdded)_schedBtn.addEventListener('click',()=>addTodaySchedule(_schedBtn));
+  if(_schedBtn&&!_sbAdded)_schedBtn.addEventListener('click',()=>addTodaySchedule(_schedBtn,vd,subj.key+':'+_sbDk));
 
   // bind: check toggle (uses viewDate; disabled for future)
   el.querySelectorAll('[data-rck]').forEach(btn=>{
@@ -2852,7 +2892,7 @@ function renderReviewSubject(el,subj,today){
       const id=btn.dataset.tbadd,sk=btn.dataset.rsk,bname=btn.dataset.bname;
       const h=parseInt(document.getElementById('tsh_'+id).value);
       const dur=parseInt(document.getElementById('tsd_'+id).value);
-      addBlockFromReview(sk,bname,h,dur);
+      addBlockFromReview(sk,bname,h,dur,vd);
       const picker=document.getElementById('tp_'+id);if(picker)picker.classList.remove('open');
       const tbBtn=el.querySelector(`[data-tb="${id}"]`);
       if(tbBtn){tbBtn.classList.add('used');tbBtn.disabled=true;tbBtn.textContent='✓ 추가됨';}
@@ -2968,15 +3008,21 @@ function tryAutoNextCycle(sk,data){
   }
 }
 
-function addBlockFromReview(sk,bname,hour,dur){
-  const dk=dateKey(new Date());
-  const curMonKey=weekKey(currentMonday);
-  const td=new Date();
-  const todayMon=new Date(td);todayMon.setDate(td.getDate()-((td.getDay()+6)%7));todayMon.setHours(0,0,0,0);
-  if(curMonKey!==weekKey(todayMon)){showReviewToast('현재 주가 아닙니다. 주간 보기에서 추가하세요.');return;}
+function addBlockFromReview(sk,bname,hour,dur,targetDate){
+  const td=targetDate?new Date(targetDate):new Date();td.setHours(0,0,0,0);
+  const dk=dateKey(td);
+  const tMon=getMondayOf(td);
+  const tWKey=weekKey(tMon);
+  const isCurrentWeek=weekKey(currentMonday)===tWKey;
   pushUndo();
-  blocks.push({id:uid(),day:dk,startMin:hour*60,endMin:hour*60+dur,subject:sk,memo:bname,note:'',completed:false});
-  saveWeek();
+  if(isCurrentWeek){
+    blocks.push({id:uid(),day:dk,startMin:hour*60,endMin:hour*60+dur,subject:sk,memo:bname,note:'',completed:false});
+    saveWeek();
+  }else{
+    const wb=loadWeek(tMon);
+    wb.push({id:uid(),day:dk,startMin:hour*60,endMin:hour*60+dur,subject:sk,memo:bname,note:'',completed:false});
+    const v=JSON.stringify(wb);localStorage.setItem(tWKey,v);syncToSupabase(tWKey,v);
+  }
   showReviewToast('시간표에 추가됨!');
 }
 
@@ -3007,13 +3053,14 @@ function getTodayMemoForSubject(sk){
   return items.join(' / ');
 }
 
-function addTodaySchedule(btn){
-  const today=new Date();today.setHours(0,0,0,0);
-  const dow=today.getDay();
+function addTodaySchedule(btn,targetDate,stateKey){
+  const realToday=new Date();realToday.setHours(0,0,0,0);
+  const tgt=targetDate?new Date(targetDate):realToday;tgt.setHours(0,0,0,0);
+  const dow=tgt.getDay();
   if(dow===0||dow===6){alert('주말에는 시간표를 추가할 수 없습니다.');return;}
 
-  const todayDi=dayIdx(today);
-  const todayMon=getMondayOf(today);
+  const todayDi=dayIdx(tgt);
+  const todayMon=getMondayOf(tgt);
   const todayWKey=weekKey(todayMon);
   const isCurrentWeek=weekKey(currentMonday)===todayWKey;
   let todayBlocks=isCurrentWeek?[...blocks]:loadWeek(todayMon);
@@ -3065,11 +3112,12 @@ function addTodaySchedule(btn){
   if(isCurrentWeek){blocks=todayBlocks;saveWeek();}
   else{const v=JSON.stringify(todayBlocks);localStorage.setItem(todayWKey,v);syncToSupabase(todayWKey,v);}
 
-  _todaySchedAdded=true;
+  if(stateKey)_schedAddedDates[stateKey]=true;
   btn.textContent='✓ 추가됨';
   btn.style.cssText+='background:#9B9A97;color:#fff;border-color:#9B9A97;cursor:default;';
   btn.disabled=true;
-  showReviewToast('오늘 시간표에 추가됨!');
+  const isToday=isSameDay(tgt,realToday);
+  showReviewToast(isToday?'오늘 시간표에 추가됨!':`${tgt.getMonth()+1}월${tgt.getDate()}일 시간표에 추가됨!`);
 }
 
 document.getElementById('rsDaysMinus').addEventListener('click',()=>{
