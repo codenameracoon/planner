@@ -1394,6 +1394,7 @@ function buildDayCols(){
     const col=document.createElement('div');
     col.className='day-col'+(isSameDay(date,today)?' today':'');
     col.dataset.day=d;
+    const dk=dateKey(date);
     const hdr=document.createElement('div');hdr.className='day-header';
     const dateLabel=`${date.getMonth()+1}.${date.getDate()}(${DAYS[d]})`;
     hdr.innerHTML=`<div class="day-date">${dateLabel}</div>`;
