@@ -1501,7 +1501,9 @@ function buildGoalRowContent(rowEl, dk){
   rowEl.querySelectorAll('[data-dgtext]').forEach(inp=>{
     inp.addEventListener('mousedown',e=>e.stopPropagation());
     inp.addEventListener('click',e=>e.stopPropagation());
-    inp.addEventListener('change',()=>{const gs=loadDailyGoals(dk);const g=gs.find(x=>x.id===inp.dataset.dgtext);if(g){g.text=inp.value.trim();saveDailyGoals(dk,gs);}});
+    const _saveGoalText=()=>{const gs=loadDailyGoals(dk);const g=gs.find(x=>x.id===inp.dataset.dgtext);if(g){g.text=inp.value.trim();saveDailyGoals(dk,gs);}};
+    inp.addEventListener('input',_saveGoalText);
+    inp.addEventListener('change',_saveGoalText);
   });
   rowEl.querySelectorAll('[data-dgdel]').forEach(btn=>{
     btn.addEventListener('mousedown',e=>e.stopPropagation());
