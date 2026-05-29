@@ -57,10 +57,9 @@ body{font-family:'Inter',system-ui,sans-serif;background:#fff;color:#37352F;font
 .day-date{font-size:13px;font-weight:600;color:#37352F}
 .day-col.today .day-name,.day-col.today .day-date{color:#2383E2}
 .day-col.today .day-header{background:#F5F9FF}
-.day-routine-row{display:flex;gap:2px;align-items:center;flex-shrink:0}
-.routine-hdr-btn{width:18px;height:18px;border:1.5px solid #C0BFBC;border-radius:3px;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:8px;font-weight:700;background:transparent;padding:0;transition:background .1s,border-color .1s;line-height:1;flex-shrink:0;color:transparent}
-.routine-hdr-btn.done{background:#37352F;border-color:#37352F;color:#fff}
-.routine-hdr-btn.fail{background:#E03E3E;border-color:#E03E3E;color:#fff}
+.day-routine-row{display:flex;gap:3px;align-items:center;flex-shrink:0}
+.routine-hdr-btn{height:20px;border:1.5px solid #E0E0E0;border-radius:4px;cursor:pointer;display:inline-flex;align-items:center;justify-content:center;font-size:12px;background:transparent;padding:1px 3px;transition:background .1s,border-color .1s;line-height:1;flex-shrink:0;opacity:0.45;min-width:20px}
+.routine-hdr-btn.done{border-color:#81C995;background:rgba(129,201,149,.18);opacity:1}
 .day-body{position:relative;flex-shrink:0;user-select:none;cursor:crosshair}
 
 /* grid */
@@ -348,8 +347,7 @@ body.dark .dgrow-check{border-color:#444}
 body.dark .dgrow-check.done{background:#E8E8E6;border-color:#E8E8E6;color:#191919}
 body.dark .dgrow-check.fail{background:#E03E3E;border-color:#E03E3E;color:#fff}
 body.dark .routine-hdr-btn{border-color:#444}
-body.dark .routine-hdr-btn.done{background:#E8E8E6;border-color:#E8E8E6;color:#191919}
-body.dark .routine-hdr-btn.fail{background:#E03E3E;border-color:#E03E3E;color:#fff}
+body.dark .routine-hdr-btn.done{border-color:#81C995;background:rgba(129,201,149,.2)}
 body.dark .day-header{background:#191919;border-color:#2D2D2D}
 body.dark .dgrow-add{color:#555}
 body.dark .dgrow-add:hover{color:#E8E8E6}
@@ -583,10 +581,6 @@ body.dark .routine-day-lbl{color:#555}
     <button class="btn btn-icon" id="statsCollapseBtn" style="margin-left:auto;font-size:11px;padding:2px 6px;line-height:1.4">▼</button>
   </div>
   <div class="stats-body" id="statsBody"></div>
-</div>
-
-<div id="routinePanel" class="routine-panel u-hidden">
-  <div class="routine-inner" id="routineInner"></div>
 </div>
 
 <div class="planner-wrapper" id="plannerWrapper">
@@ -1230,52 +1224,7 @@ function buildDdayGrid(){
 }
 
 // ── routine tracker ───────────────────────────────────────────────────────────
-function renderRoutine(){
-  const panel=document.getElementById('routinePanel');
-  const inner=document.getElementById('routineInner');
-  if(viewMode==='month'){panel.classList.add('u-hidden');return;}
-  panel.classList.remove('u-hidden');
-  const today=new Date();today.setHours(0,0,0,0);
-  let html='';
-  if(viewMode==='week'){
-    html='<div class="routine-day-hdr"><div class="routine-day-hdr-spacer"></div>';
-    for(let i=0;i<7;i++){
-      const d=addDays(currentMonday,i);
-      html+=`<span class="routine-day-hdr-item${isSameDay(d,today)?' today-col':''}">${DAYS[i]}</span>`;
-    }
-    html+='</div>';
-    ROUTINES.forEach(r=>{
-      html+=`<div class="routine-week-row"><div class="routine-week-label"><span class="routine-week-icon">${r.icon}</span><span class="routine-week-lbl-text">${r.label}</span></div><div class="routine-week-days">`;
-      for(let i=0;i<7;i++){
-        const d=addDays(currentMonday,i);
-        const dk=dateKey(d);
-        const done=!!(loadRoutine(dk)[r.id]);
-        html+=`<button class="routine-day-btn${done?' done':''}" data-ritem="${r.id}" data-rdate="${dk}">${done?'✓':''}</button>`;
-      }
-      html+='</div></div>';
-    });
-  } else {
-    const dk=dateKey(currentDay);
-    const data=loadRoutine(dk);
-    html='<div class="routine-day-items">';
-    ROUTINES.forEach(r=>{
-      const done=!!data[r.id];
-      html+=`<div class="routine-day-item"><button class="routine-day-big-btn${done?' done':''}" data-ritem="${r.id}" data-rdate="${dk}">${r.icon}</button><span class="routine-day-lbl">${r.label}</span></div>`;
-    });
-    html+='</div>';
-  }
-  inner.innerHTML=html;
-  inner.querySelectorAll('[data-ritem]').forEach(btn=>{
-    btn.addEventListener('click',()=>{
-      const rid=btn.dataset.ritem;
-      const dk=btn.dataset.rdate;
-      const data=loadRoutine(dk);
-      data[rid]=!data[rid];
-      saveRoutine(dk,data);
-      renderRoutine();
-    });
-  });
-}
+function renderRoutine(){}
 
 // ── render ────────────────────────────────────────────────────────────────────
 function render(){
@@ -1402,20 +1351,20 @@ function buildDayCols(){
     const rdata=loadRoutine(dk);
     ROUTINES.forEach(r=>{
       const rs=getRoutineStatus(rdata,r.id);
+      const done=rs==='done';
       const btn=document.createElement('button');
-      btn.className='routine-hdr-btn'+(rs?' '+rs:'');
+      btn.className='routine-hdr-btn'+(done?' done':'');
       btn.title=r.label;
-      btn.textContent=rs==='done'?'✓':rs==='fail'?'✗':'';
+      btn.textContent=done?'✅'+r.icon:r.icon;
       btn.addEventListener('mousedown',e=>e.stopPropagation());
       btn.addEventListener('click',e=>{
         e.stopPropagation();
         const rd=loadRoutine(dk);
         const cur=getRoutineStatus(rd,r.id);
-        const next=cur===''?'done':cur==='done'?'fail':'';
+        const next=cur==='done'?'':'done';
         rd[r.id]=next;saveRoutine(dk,rd);
-        btn.className='routine-hdr-btn'+(next?' '+next:'');
-        btn.textContent=next==='done'?'✓':next==='fail'?'✗':'';
-        renderRoutine();
+        btn.className='routine-hdr-btn'+(next?' done':'');
+        btn.textContent=next==='done'?'✅'+r.icon:r.icon;
       });
       routineRow.appendChild(btn);
     });
