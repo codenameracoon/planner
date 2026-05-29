@@ -44,7 +44,9 @@ body{font-family:'Inter',system-ui,sans-serif;background:#fff;color:#37352F;font
 
 /* time axis */
 .time-col{width:52px;flex-shrink:0;position:sticky;left:0;background:#fff;z-index:10;border-right:1px solid #E9E9E7}
-.time-header-spacer{height:36px;border-bottom:1px solid #E9E9E7}
+.time-header-spacer{height:36px;border-bottom:1px solid #E9E9E7;display:flex;align-items:center;justify-content:center}
+.goal-collapse-btn{background:none;border:1px solid #E9E9E7;border-radius:3px;cursor:pointer;font-size:10px;padding:2px 5px;color:#9B9A97;line-height:1;transition:background .1s,color .1s;flex-shrink:0}
+.goal-collapse-btn:hover{background:#F7F7F5;color:#37352F}
 .time-labels-wrap{position:relative}
 .time-label{position:absolute;right:7px;font-size:15px;font-weight:600;color:#37352F;white-space:nowrap;transform:translateY(-50%);pointer-events:none;user-select:none}
 
@@ -340,6 +342,8 @@ body.dark .block-done-btn{border-color:#444;color:#555}
 body.dark .warn-btn{background:rgba(255,255,255,.07);color:#D0D0CE}
 body.dark .daily-goal-row{background:#1C1C1C;border-color:#2D2D2D}
 body.dark .time-goal-spacer{background:#1C1C1C;border-color:#2D2D2D}
+body.dark .goal-collapse-btn{border-color:#333;color:#555}
+body.dark .goal-collapse-btn:hover{background:#272727;color:#E8E8E6}
 body.dark .dgrow-hours{color:#E8E8E6}
 
 body.dark .dgrow-text{color:#E8E8E6}
@@ -586,7 +590,7 @@ body.dark .routine-day-lbl{color:#555}
 <div class="planner-wrapper" id="plannerWrapper">
   <div class="planner-grid">
     <div class="time-col">
-      <div class="time-header-spacer"></div>
+      <div class="time-header-spacer"><button class="goal-collapse-btn" id="goalCollapseBtn" title="목표 접기/펼치기">▼</button></div>
       <div class="time-goal-spacer"></div>
       <div class="time-labels-wrap" id="timeLabels"></div>
     </div>
@@ -798,6 +802,7 @@ let weeklyTextGoals = {};
 let monthlyGoals = [];
 let templates = [];
 let statsCollapsed = false;
+let goalsCollapsed = false;
 
 // ── date helpers ──────────────────────────────────────────────────────────────
 function getMondayOf(d) {
@@ -1274,7 +1279,13 @@ function buildTimeAxis(){
 function syncGoalRowHeight(){
   const rows=document.querySelectorAll('.daily-goal-row');
   if(!rows.length)return;
-  rows.forEach(r=>r.style.height='auto');
+  if(goalsCollapsed){
+    rows.forEach(r=>{r.style.display='none';r.style.height='';});
+    const spacer=document.querySelector('.time-goal-spacer');
+    if(spacer)spacer.style.height='0';
+    return;
+  }
+  rows.forEach(r=>{r.style.display='';r.style.height='auto';});
   let maxH=0;
   rows.forEach(r=>{const h=r.getBoundingClientRect().height;if(h>maxH)maxH=h;});
   if(!maxH)return;
@@ -1776,6 +1787,12 @@ document.getElementById('statsCollapseBtn').addEventListener('click',e=>{
   statsCollapsed=!statsCollapsed;
   document.getElementById('statsBody').style.display=statsCollapsed?'none':'';
   e.currentTarget.textContent=statsCollapsed?'▶':'▼';
+});
+
+document.getElementById('goalCollapseBtn').addEventListener('click',()=>{
+  goalsCollapsed=!goalsCollapsed;
+  document.getElementById('goalCollapseBtn').textContent=goalsCollapsed?'▶':'▼';
+  syncGoalRowHeight();
 });
 
 // ── template panel ────────────────────────────────────────────────────────────
