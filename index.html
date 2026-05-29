@@ -2435,7 +2435,7 @@ function renderReview(){
     const subj=REVIEW_SUBJECTS.find(s=>s.key===t.key);
     const cls='review-sub-tab'+(subj?' subj-tab':'')+( reviewSubTab===t.key?' active':'');
     const style=subj&&reviewSubTab===t.key?`style="background:${subj.color};border-color:${subj.color}"`:subj?`style="color:${subj.color};border-color:${subj.color}"`:'' ;
-    return `<button class="${cls}" data-rtab="${t.key}" ${style}>${t.label}</button>`;
+    return `<button class="${cls}" data-rtab="${t.key}" ${style}>${t.label||t.name}</button>`;
   }).join('');
   subTabsEl.querySelectorAll('[data-rtab]').forEach(btn=>{
     btn.addEventListener('click',()=>{reviewSubTab=btn.dataset.rtab;renderReview();});
@@ -2526,7 +2526,8 @@ function renderReviewSubject(el,subj,today){
   if(cur){
     const daysLeft=cur.days-dayIn-1;
     const pct=Math.round((dayIn+1)/cur.days*100);
-    const bpd=cur.blocksPerDay?cur.blocksPerDay+'블록/일':(cur.dailyPlan?'일정표':'—');
+    const _fmtBpd=v=>{const r=Math.round(v*10)/10;return r===Math.floor(r)?String(Math.floor(r)):r.toFixed(1);};
+    const bpd=cur.blocksPerDay?_fmtBpd(cur.blocksPerDay)+'블록/일':(cur.dailyPlan?'일정표':'—');
     html+=`<div class="review-section"><div class="review-cycle-card" style="border-color:${subj.color}40"><div class="review-cycle-badge" style="background:${subj.color}">${cur.label||cur.num+'회독'} 진행 중</div><div class="review-cycle-props"><span class="review-cycle-prop">기간: <span>${cur.days}일</span></span><span class="review-cycle-prop">하루분량: <span>${bpd}</span></span></div><div class="review-progress-bar"><div class="review-progress-fill" style="width:${pct}%;background:${subj.color}"></div></div><div class="review-cycle-info">${dayIn+1}/${cur.days}일째 · D-${daysLeft}</div></div></div>`;
 
     // build today items
