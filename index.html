@@ -746,6 +746,7 @@ body.dark .rcex-name{color:#C0C0BE}
   <div class="review-date-nav" id="reviewDateNav" style="display:none"></div>
   <div class="review-banner" id="reviewBanner">
     <span class="review-banner-msg"></span>
+    <button class="review-banner-edit" id="reviewBannerEdit">수정</button>
     <button class="review-banner-close" id="reviewBannerClose">✕</button>
   </div>
   <div id="reviewContent"></div>
@@ -2600,17 +2601,17 @@ function renderReviewSubject(el,subj,today){
       cur.dailyPlan.forEach(p=>{
         if(!dg[p.day])dg[p.day]=[];
         const blk=data.blocks[p.blockIdx];
-        dg[p.day].push(p.text||blk?.name||'');
+        dg[p.day].push({name:p.text||blk?.name||'',blockId:blk?.id});
       });
       Object.keys(dg).sort((a,b)=>+a-+b).forEach(d=>{
         const di=parseInt(d);
-        detailEntries.push({day:di,status:di<dayIn?'done':di===dayIn?'today':'future',names:dg[d]});
+        detailEntries.push({day:di,status:di<dayIn?'done':di===dayIn?'today':'future',items:dg[d]});
       });
     }else if(cur.blocksPerDay){
       for(let d=0;d<cur.days;d++){
         const idxs=getTodayBlockIndices(d,cur.blocksPerDay,nb);
-        const names=idxs.map(i=>data.blocks[i]?.name).filter(Boolean);
-        if(names.length)detailEntries.push({day:d,status:d<dayIn?'done':d===dayIn?'today':'future',names});
+        const items=idxs.map(i=>({name:data.blocks[i]?.name,blockId:data.blocks[i]?.id})).filter(x=>x.name);
+        if(items.length)detailEntries.push({day:d,status:d<dayIn?'done':d===dayIn?'today':'future',items});
       }
     }
     const doneDays=detailEntries.filter(e=>e.status==='done').length;
@@ -2620,8 +2621,9 @@ function renderReviewSubject(el,subj,today){
     detailEntries.forEach(e=>{
       const icon=e.status==='done'?'✅':e.status==='today'?'🔵':'⬜';
       const dayLbl=e.status==='today'?'오늘':`${e.day+1}일`;
-      e.names.forEach((nm,ni)=>{
-        detailHtml+=`<div class="rcex-row rcex-${e.status}"><span class="rcex-icon">${ni===0?icon:''}</span><span class="rcex-day">${ni===0?dayLbl:''}</span><span class="rcex-name">${escHtml(nm)}</span></div>`;
+      e.items.forEach((item,ni)=>{
+        const weakMark=weaks[item.blockId]?' ⭐':'';
+        detailHtml+=`<div class="rcex-row rcex-${e.status}"><span class="rcex-icon">${ni===0?icon:''}</span><span class="rcex-day">${ni===0?dayLbl:''}</span><span class="rcex-name">${escHtml(item.name)}${weakMark}</span></div>`;
       });
     });
 
@@ -2653,6 +2655,8 @@ function renderReviewSubject(el,subj,today){
         });
       }
     }
+    // starred blocks float to top
+    todayItems.sort((a,b)=>(weaks[b.blockId]?1:0)-(weaks[a.blockId]?1:0));
 
     // section title reflects viewDate
     let checkTitle='오늘 체크';
@@ -2678,7 +2682,7 @@ function renderReviewSubject(el,subj,today){
         html+=`<div class="review-item-body">`;
         html+=`<input class="review-today-name${done?' done-text':''}" data-rnm="${item.blockId}" data-rsk="${subj.key}" value="${escHtml(item.name)}"${isFutureView?' disabled':''}>`;
         if(isWeak)html+=`<span class="review-weak-badge">⚠ 약점</span>`;
-        if(prevMemo)html+=`<span class="review-prev-memo">${escHtml(prevMemo)}</span>`;
+        if(prevMemo)html+=`<span class="review-prev-memo">이전 메모: ${escHtml(prevMemo)}</span>`;
         if(!isFutureView){
           html+=`<div class="review-memo-area" id="ma_${item.checkId}">`;
           html+=`<textarea class="review-memo-inp" placeholder="메모..." rows="2" id="mt_${item.checkId}">${escHtml(prevMemo)}</textarea>`;
@@ -2696,7 +2700,7 @@ function renderReviewSubject(el,subj,today){
         html+=`<div class="review-item-actions">`;
         html+=`<button class="review-star-btn${isWeak?' active':''}" data-star="${item.checkId}" data-bid="${item.blockId}" data-rsk="${subj.key}" title="약점 태그">⭐</button>`;
         if(!isFutureView)html+=`<button class="review-memo-btn" data-memo="${item.checkId}" title="메모">📝</button>`;
-        if(isTodayView)html+=`<button class="review-tb-btn" data-tb="${item.checkId}" title="시간표 추가">📅</button>`;
+        if(isTodayView)html+=`<button class="review-tb-btn" data-tb="${item.checkId}">+ 시간표</button>`;
         html+=`</div>`;
         html+=`</div>`;
       });
@@ -2705,15 +2709,28 @@ function renderReviewSubject(el,subj,today){
 
     // speed analysis
     const doneCnt=cycles.filter(c=>getCycleStatus(c,today)==='done').length;
-    const remDays=cycles.filter(c=>getCycleStatus(c,today)==='current'||getCycleStatus(c,today)==='future').reduce((s,c)=>s+(c.days||0),0);
     const examDate=new Date('2026-08-31');examDate.setHours(0,0,0,0);
     const daysToExam=Math.round((examDate-today)/86400000);
-    const onTrack=remDays<=daysToExam?'✅ 일정 준수':'⚠ 일정 초과 위험';
+    const completedDays=getCompletedDaysInCycle(subj.key,cur,data);
+    const delayDays=dayIn-completedDays;
+    const paceStr=delayDays>0?`+${delayDays}일 지연`:delayDays<0?`${-delayDays}일 앞당김`:'예정 준수';
+    const doneCycles=cycles.filter(c=>getCycleStatus(c,today)==='done');
+    const avgCycleDays=doneCycles.length?Math.round(doneCycles.reduce((s,c)=>s+(c.days||0),0)/doneCycles.length):(cur?cur.days:15);
+    const totalCompletable=doneCnt+(cur?1:0)+Math.max(0,Math.floor(daysToExam/avgCycleDays));
+    let addBpdStr='—';
+    if(cur&&cur.blocksPerDay&&dayIn<cur.days-1){
+      const blkDone=Math.round(completedDays*cur.blocksPerDay);
+      const blkRem=nb-blkDone;
+      const dRem=cur.days-dayIn-1;
+      const reqBpd=dRem>0?blkRem/dRem:0;
+      const addBpd=reqBpd-cur.blocksPerDay;
+      addBpdStr=addBpd<=0.05?'추가 불필요':`+${Math.ceil(addBpd)}블록/일 추가 권장`;
+    }
     html+=`<div class="review-section"><span class="review-section-title">속도 분석</span><div class="review-speed-box">`;
-    html+=`<div class="review-speed-row"><span>완료 회독</span><span>${doneCnt}회독 완료</span></div>`;
-    html+=`<div class="review-speed-row"><span>남은 예상 일수</span><span>${remDays}일</span></div>`;
+    html+=`<div class="review-speed-row"><span>현재 페이스</span><span>${paceStr}</span></div>`;
+    html+=`<div class="review-speed-row"><span>시험일 기준 완료 가능</span><span>총 ${totalCompletable}회독</span></div>`;
+    html+=`<div class="review-speed-row"><span>목표 달성</span><span>${addBpdStr}</span></div>`;
     html+=`<div class="review-speed-row"><span>시험까지</span><span>D-${daysToExam}</span></div>`;
-    html+=`<div class="review-speed-row"><span>상태</span><span>${onTrack}</span></div>`;
     html+=`</div></div>`;
   }
 
@@ -2837,6 +2854,8 @@ function renderReviewSubject(el,subj,today){
       const dur=parseInt(document.getElementById('tsd_'+id).value);
       addBlockFromReview(sk,bname,h,dur);
       const picker=document.getElementById('tp_'+id);if(picker)picker.classList.remove('open');
+      const tbBtn=el.querySelector(`[data-tb="${id}"]`);
+      if(tbBtn){tbBtn.classList.add('used');tbBtn.disabled=true;tbBtn.textContent='✓ 추가됨';}
     });
   });
 
@@ -2893,6 +2912,27 @@ function showReviewToast(msg){
   clearTimeout(t._hide);t._hide=setTimeout(()=>t.style.opacity='0',2000);
 }
 
+function getCompletedDaysInCycle(sk,cur,data){
+  if(!cur||!cur.startDate||!data)return 0;
+  const s=new Date(cur.startDate);s.setHours(0,0,0,0);
+  const today=new Date();today.setHours(0,0,0,0);
+  const nb=data.blocks.length;
+  let count=0;
+  for(let d=0;d<cur.days;d++){
+    const date=addDays(s,d);
+    if(date>=today)break;
+    const ch=loadReviewChecks(sk,date);
+    let ids=[];
+    if(cur.dailyPlan){
+      ids=cur.dailyPlan.filter(p=>p.day===d).map(()=>'dp_'+d);
+    }else if(cur.blocksPerDay){
+      ids=getTodayBlockIndices(d,cur.blocksPerDay,nb).map(i=>data.blocks[i]?.id).filter(Boolean);
+    }
+    if(ids.length&&ids.every(id=>ch[id]))count++;
+  }
+  return count;
+}
+
 function tryAutoNextCycle(sk,data){
   const today=new Date();today.setHours(0,0,0,0);
   const cur=data.cycles.find(c=>getCycleStatus(c,today)==='current');
@@ -2903,20 +2943,27 @@ function tryAutoNextCycle(sk,data){
   const checks=loadReviewChecks(sk);
   let todayIds=[];
   if(cur.dailyPlan){
-    todayIds=cur.dailyPlan.filter(p=>p.day===dayIn).map(p=>'dp_'+dayIn);
+    todayIds=cur.dailyPlan.filter(p=>p.day===dayIn).map(()=>'dp_'+dayIn);
   }else if(cur.blocksPerDay){
     todayIds=getTodayBlockIndices(dayIn,cur.blocksPerDay,data.blocks.length).map(i=>data.blocks[i].id);
   }
   if(!todayIds.length||!todayIds.every(id=>checks[id]))return;
-  const next=data.cycles.find(c=>c.num===cur.num+1);
-  if(!next||next.startDate)return;
+  let next=data.cycles.find(c=>c.num===cur.num+1);
+  if(!next){
+    const newDays=Math.max(1,Math.round(cur.days*0.8));
+    next={num:cur.num+1,days:newDays,blocksPerDay:cur.blocksPerDay||1,startDate:null};
+    data.cycles.push(next);
+  }
+  if(next.startDate)return;
   next.startDate=dateKey(addDays(new Date(cur.startDate),cur.days));
   saveReviewData(sk,data);
-  showReviewToast(`${next.label||next.num+'회독'} 시작일 자동 설정!`);
+  showReviewToast(`${cur.label||cur.num+'회독'} 완료!`);
   const banner=document.getElementById('reviewBanner');
   if(banner){
     const msg=banner.querySelector('.review-banner-msg');
-    if(msg)msg.textContent=`🎉 ${cur.label||cur.num+'회독'} 완료! ${next.label||next.num+'회독'} ${next.startDate} 시작으로 설정됨`;
+    if(msg)msg.textContent=`${cur.label||cur.num+'회독'} 완료! ${next.label||next.num+'회독'}이 자동 설정되었습니다.`;
+    const editBtn=document.getElementById('reviewBannerEdit');
+    if(editBtn){editBtn.dataset.rsk=sk;editBtn.dataset.rnum=next.num;}
     banner.classList.add('open');
   }
 }
@@ -3037,6 +3084,13 @@ document.getElementById('rsAutoDate').addEventListener('change',function(){
 });
 document.getElementById('rsCancel').addEventListener('click',closeReviewModal);
 document.getElementById('reviewBannerClose').addEventListener('click',()=>document.getElementById('reviewBanner').classList.remove('open'));
+document.getElementById('reviewBannerEdit').addEventListener('click',function(){
+  const sk=this.dataset.rsk,num=parseInt(this.dataset.rnum);
+  if(!sk||!num)return;
+  const d=loadReviewData(sk);
+  if(d)openReviewEditModal(sk,num,d.cycles);
+  document.getElementById('reviewBanner').classList.remove('open');
+});
 document.getElementById('reviewModalOverlay').addEventListener('click',e=>{if(e.target===document.getElementById('reviewModalOverlay'))closeReviewModal();});
 document.getElementById('rsSave').addEventListener('click',()=>{
   if(!_rsSubjectKey||!_rsCycleNum){closeReviewModal();return;}
