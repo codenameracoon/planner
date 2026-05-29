@@ -570,8 +570,40 @@ body.dark .routine-day-lbl{color:#555}
 .review-progress-fill{height:100%;border-radius:3px;transition:width .3s}
 .review-cycle-info{font-size:11px;color:#9B9A97}
 .review-today-list{display:flex;flex-direction:column}
-.review-today-item{display:flex;align-items:center;gap:8px;padding:7px 0;border-bottom:1px solid #F4F4F2}
+.review-today-item{display:flex;align-items:flex-start;gap:8px;padding:8px 0;border-bottom:1px solid #F4F4F2;flex-wrap:wrap}
 .review-today-item:last-child{border-bottom:none}
+.review-item-body{flex:1;min-width:0;display:flex;flex-direction:column;gap:2px}
+.review-item-actions{display:flex;align-items:center;gap:3px;flex-shrink:0;padding-top:1px}
+.review-star-btn{background:none;border:none;cursor:pointer;font-size:14px;padding:2px;line-height:1;opacity:.45;transition:opacity .1s}
+.review-star-btn.active,.review-star-btn:hover{opacity:1}
+.review-memo-btn{background:none;border:none;cursor:pointer;font-size:12px;padding:2px 3px;line-height:1;color:#C0BFBC;transition:color .1s}
+.review-memo-btn:hover{color:#37352F}
+.review-tb-btn{background:none;border:1px solid #E9E9E7;border-radius:3px;cursor:pointer;font-size:10px;padding:2px 5px;color:#9B9A97;font-family:inherit;white-space:nowrap;line-height:1.4;transition:background .1s}
+.review-tb-btn:hover{background:#F7F7F5;color:#37352F}
+.review-tb-btn.used{color:#81C995;border-color:#81C995;cursor:default}
+.review-tb-picker{flex:0 0 100%;align-items:center;gap:6px;padding:5px 0 2px 24px;flex-wrap:wrap;display:none}
+.review-tb-picker.open{display:flex}
+.review-tb-hour,.review-tb-dur{border:1px solid #E9E9E7;border-radius:3px;padding:3px 6px;font-family:inherit;font-size:12px;color:#37352F;background:#fff;outline:none}
+.review-tb-confirm{background:#37352F;color:#fff;border:none;border-radius:3px;padding:3px 10px;font-family:inherit;font-size:12px;cursor:pointer;line-height:1.4}
+.review-tb-close{background:none;border:none;cursor:pointer;font-size:12px;color:#9B9A97;padding:2px 4px;line-height:1}
+.review-memo-area{display:none;padding-top:3px}
+.review-memo-area.open{display:block}
+.review-memo-inp{width:100%;border:none;border-bottom:1px dashed #E9E9E7;font-family:inherit;font-size:12px;color:#37352F;outline:none;background:transparent;padding:2px 0}
+.review-memo-inp:focus{border-bottom-color:#8AB4F8}
+.review-prev-memo{font-size:11px;color:#B0AFA9;font-style:italic;line-height:1.4}
+.review-weak-badge{font-size:10px;color:#E03E3E;font-weight:700;background:#FEF0F0;border:1px solid #FADBD8;border-radius:3px;padding:1px 5px;display:inline-block;margin-bottom:2px}
+.review-speed-box{background:#F7F7F5;border-radius:8px;padding:10px 14px;border:1px solid #E9E9E7}
+.review-speed-row{display:flex;justify-content:space-between;font-size:12px;padding:3px 0;gap:8px}
+.review-speed-row span:first-child{color:#9B9A97;flex-shrink:0}
+.review-banner{background:#F0FBF4;border:1px solid #81C995;border-radius:6px;padding:10px 14px;margin-bottom:14px;display:none;align-items:center;gap:8px;font-size:13px;flex-wrap:wrap}
+.review-banner.open{display:flex}
+.review-banner span{flex:1;min-width:0}
+.review-banner-edit{background:none;border:1px solid #81C995;border-radius:3px;cursor:pointer;font-size:12px;padding:2px 8px;color:#37352F;font-family:inherit;white-space:nowrap}
+.review-banner-close{background:none;border:none;cursor:pointer;font-size:14px;color:#9B9A97;padding:0 2px;line-height:1;flex-shrink:0}
+.review-weak-section{margin-top:16px;border-top:1px solid #E9E9E7;padding-top:16px}
+.review-weak-subj{font-size:12px;font-weight:600;margin-bottom:4px;margin-top:10px}
+.review-weak-item{font-size:12px;padding:2px 0;display:flex;align-items:center;gap:6px;color:#37352F}
+#reviewToast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:#37352F;color:#fff;padding:8px 16px;border-radius:6px;font-size:13px;z-index:800;pointer-events:none;opacity:0;transition:opacity .3s}
 .review-today-check{width:16px;height:16px;border:1.5px solid #C0BFBC;border-radius:3px;cursor:pointer;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:700;color:transparent;transition:background .1s,border-color .1s}
 .review-today-check.done{background:#81C995;border-color:#81C995;color:#fff}
 .review-today-name{flex:1;font-size:13px;font-family:inherit;border:none;background:transparent;color:#37352F;outline:none;cursor:text;padding:0;line-height:1.4}
@@ -690,8 +722,13 @@ body.dark .routine-day-lbl{color:#555}
 
 <div class="review-wrap u-hidden" id="reviewWrap">
   <div class="review-sub-tabs" id="reviewSubTabs"></div>
+  <div class="review-banner" id="reviewBanner">
+    <span class="review-banner-msg"></span>
+    <button class="review-banner-close" id="reviewBannerClose">✕</button>
+  </div>
   <div id="reviewContent"></div>
 </div>
+<div id="reviewToast"></div>
 
 <div class="review-modal-overlay" id="reviewModalOverlay">
   <div class="review-edit-sheet">
@@ -2310,7 +2347,8 @@ function loadReviewChecks(k){try{return JSON.parse(localStorage.getItem(reviewCh
 function saveReviewChecks(k,c){localStorage.setItem(reviewCheckKey(k),JSON.stringify(c));}
 
 function initAdminLawData(){
-  if(loadReviewData('admin_law'))return;
+  const existing=loadReviewData('admin_law');
+  if(existing&&existing.version===2)return;
   const blocks=[
     "누가 소송을 거는가 — 소송의 한계 + 원고적격 + 협의의 소익",
     "무엇을 대상으로 소송을 거는가 — 대상적격 (처분성 판단)",
@@ -2321,22 +2359,42 @@ function initAdminLawData(){
     "그 밖의 소송 — 당사자소송 + 객관소송",
     "행정심판법 — 심판 요건 + 가구제 + 재결의 효력"
   ].map((name,i)=>({id:'b'+(i+1),name}));
-  const cycles=[
-    {num:1,days:15,blocksPerDay:0.5,startDate:'2026-06-01'},
-    {num:2,days:10,blocksPerDay:1,startDate:null},
-    {num:3,days:8,blocksPerDay:1.5,startDate:null},
-    {num:4,days:6,blocksPerDay:2,startDate:null},
-    {num:5,days:6,blocksPerDay:2,startDate:null},
-    {num:6,days:5,blocksPerDay:null,startDate:null},
-    {num:7,days:5,blocksPerDay:null,startDate:null},
-    {num:8,days:4,blocksPerDay:null,startDate:null},
-    {num:9,days:4,blocksPerDay:null,startDate:null},
-    {num:10,days:3,blocksPerDay:null,startDate:null},
-    {num:11,days:3,blocksPerDay:null,startDate:null},
-    ...Array.from({length:5},(_,i)=>({num:12+i,days:2,blocksPerDay:null,startDate:null})),
-    ...Array.from({length:10},(_,i)=>({num:17+i,days:1,blocksPerDay:null,startDate:null})),
+  const dailyPlan=[
+    {day:0,blockIdx:0},{day:1,blockIdx:0},
+    {day:2,blockIdx:1},{day:3,blockIdx:1},
+    {day:4,blockIdx:2},{day:5,blockIdx:2},
+    {day:6,blockIdx:3},{day:7,blockIdx:3},
+    {day:8,blockIdx:4},{day:9,blockIdx:4},
+    {day:10,blockIdx:5},{day:11,blockIdx:5},
+    {day:12,blockIdx:6},{day:13,blockIdx:6},
+    {day:14,blockIdx:7}
   ];
-  saveReviewData('admin_law',{blocks,cycles});
+  const c12=[
+    {num:12,days:2,blocksPerDay:4,startDate:'2026-08-09'},
+    {num:13,days:2,blocksPerDay:4,startDate:'2026-08-11'},
+    {num:14,days:2,blocksPerDay:4,startDate:'2026-08-13'},
+    {num:15,days:2,blocksPerDay:4,startDate:'2026-08-15'},
+    {num:16,days:2,blocksPerDay:4,startDate:'2026-08-17'},
+  ];
+  const c17=['2026-08-19','2026-08-20','2026-08-21','2026-08-22','2026-08-23',
+    '2026-08-24','2026-08-25'].map((sd,i)=>({num:17+i,days:1,blocksPerDay:8,startDate:sd}));
+  const cycles=[
+    {num:1,days:15,blocksPerDay:null,startDate:'2026-06-01',dailyPlan},
+    {num:2,days:10,blocksPerDay:1,startDate:'2026-06-16'},
+    {num:3,days:8,blocksPerDay:1,startDate:'2026-06-26'},
+    {num:4,days:6,blocksPerDay:1.5,startDate:'2026-07-04'},
+    {num:5,days:6,blocksPerDay:1.5,startDate:'2026-07-10'},
+    {num:6,days:5,blocksPerDay:2,startDate:'2026-07-16'},
+    {num:7,days:5,blocksPerDay:2,startDate:'2026-07-21'},
+    {num:8,days:4,blocksPerDay:2,startDate:'2026-07-26'},
+    {num:9,days:4,blocksPerDay:2,startDate:'2026-07-30'},
+    {num:10,days:3,blocksPerDay:3,startDate:'2026-08-03'},
+    {num:11,days:3,blocksPerDay:3,startDate:'2026-08-06'},
+    ...c12,...c17,
+    {num:24,days:4,blocksPerDay:null,startDate:'2026-08-26',label:'최종정돈'},
+    {num:25,days:1,blocksPerDay:null,startDate:'2026-08-30',label:'D-1'},
+  ];
+  saveReviewData('admin_law',{blocks,cycles,version:2});
 }
 
 function getCycleStatus(c,today){
@@ -2412,6 +2470,21 @@ function renderReviewAll(el,today){
     html+=`<div class="review-all-row" data-rrow="${subj.key}"><span class="review-all-subj" style="color:${subj.color}">${subj.name}</span><span class="review-all-cycle">${cur?(cur.label||cur.num+'회독'):'—'}</span><div class="review-squares">${squares}</div><span class="review-all-info">${info}</span></div>`;
   });
   html+='</div>';
+
+  // Weak blocks section
+  let weakHtml='';let hasWeak=false;
+  REVIEW_SUBJECTS.forEach(subj=>{
+    const w=loadReviewWeaks(subj.key);
+    const d=loadReviewData(subj.key);
+    if(!d)return;
+    const wb=d.blocks.filter(b=>w[b.id]);
+    if(!wb.length)return;
+    hasWeak=true;
+    weakHtml+=`<div class="review-weak-subj" style="color:${subj.color}">${subj.name}</div>`;
+    wb.forEach(b=>{weakHtml+=`<div class="review-weak-item"><span class="review-weak-badge">★</span><span>${escHtml(b.name)}</span></div>`;});
+  });
+  if(hasWeak)html+=`<div class="review-weak-section"><span class="review-section-title">⚠ 약점 블록</span>${weakHtml}</div>`;
+
   el.innerHTML=html;
   el.querySelectorAll('[data-rrow]').forEach(row=>{
     row.addEventListener('click',()=>{reviewSubTab=row.dataset.rrow;renderReview();});
@@ -2422,6 +2495,7 @@ function renderReviewSubject(el,subj,today){
   const data=loadReviewData(subj.key);
   const cycles=data?(data.cycles||[]):[];
   const nb=data?data.blocks.length:0;
+  const weaks=loadReviewWeaks(subj.key);
 
   let cur=null,dayIn=0;
   cycles.forEach(c=>{
@@ -2444,29 +2518,74 @@ function renderReviewSubject(el,subj,today){
   if(cur){
     const daysLeft=cur.days-dayIn-1;
     const pct=Math.round((dayIn+1)/cur.days*100);
-    const bpd=cur.blocksPerDay?cur.blocksPerDay+'블록/일':'—';
+    const bpd=cur.blocksPerDay?cur.blocksPerDay+'블록/일':(cur.dailyPlan?'일정표':'—');
     html+=`<div class="review-section"><div class="review-cycle-card" style="border-color:${subj.color}40"><div class="review-cycle-badge" style="background:${subj.color}">${cur.label||cur.num+'회독'} 진행 중</div><div class="review-cycle-props"><span class="review-cycle-prop">기간: <span>${cur.days}일</span></span><span class="review-cycle-prop">하루분량: <span>${bpd}</span></span></div><div class="review-progress-bar"><div class="review-progress-fill" style="width:${pct}%;background:${subj.color}"></div></div><div class="review-cycle-info">${dayIn+1}/${cur.days}일째 · D-${daysLeft}</div></div></div>`;
 
-    // 오늘 체크
-    if(cur.blocksPerDay){
-      const idxs=getTodayBlockIndices(dayIn,cur.blocksPerDay,nb);
-      const checks=loadReviewChecks(subj.key);
-      html+=`<div class="review-section"><span class="review-section-title">오늘 체크</span><div class="review-today-list" id="rtl_${subj.key}">`;
-      if(!idxs.length){html+=`<div class="review-empty">오늘은 복습 없는 날입니다</div>`;}
-      else{
-        idxs.forEach(bi=>{
-          const blk=data.blocks[bi];
-          const done=!!checks[blk.id];
-          html+=`<div class="review-today-item"><div class="review-today-check${done?' done':''}" data-rck="${blk.id}" data-rsk="${subj.key}">${done?'✓':''}</div><input class="review-today-name${done?' done-text':''}" data-rnm="${blk.id}" data-rsk="${subj.key}" value="${escHtml(blk.name)}"></div>`;
-        });
-      }
-      html+=`</div></div>`;
+    // build today items
+    const checks=loadReviewChecks(subj.key);
+    let todayItems=[];
+    if(cur.dailyPlan){
+      cur.dailyPlan.filter(p=>p.day===dayIn).forEach(p=>{
+        const blk=data.blocks[p.blockIdx];if(!blk)return;
+        todayItems.push({checkId:'dp_'+dayIn,blockId:blk.id,blockIdx:p.blockIdx,name:blk.name});
+      });
+    }else if(cur.blocksPerDay){
+      getTodayBlockIndices(dayIn,cur.blocksPerDay,nb).forEach(bi=>{
+        const blk=data.blocks[bi];if(!blk)return;
+        todayItems.push({checkId:blk.id,blockId:blk.id,blockIdx:bi,name:blk.name});
+      });
     }
+
+    html+=`<div class="review-section"><span class="review-section-title">오늘 체크</span><div class="review-today-list" id="rtl_${subj.key}">`;
+    if(!todayItems.length){html+=`<div class="review-empty">오늘은 복습 없는 날입니다</div>`;}
+    else{
+      todayItems.forEach(item=>{
+        const done=!!checks[item.checkId];
+        const isWeak=!!weaks[item.blockId];
+        const prevMemo=loadReviewMemo(subj.key,item.blockId);
+        const hourOpts=Array.from({length:14},(_,i)=>i+7).map(h=>`<option value="${h}"${h===9?' selected':''}>${h}:00</option>`).join('');
+        html+=`<div class="review-today-item">`;
+        html+=`<div class="review-today-check${done?' done':''}" data-rck="${item.checkId}" data-bid="${item.blockId}" data-rsk="${subj.key}">${done?'✓':''}</div>`;
+        html+=`<div class="review-item-body">`;
+        html+=`<input class="review-today-name${done?' done-text':''}" data-rnm="${item.blockId}" data-rsk="${subj.key}" value="${escHtml(item.name)}">`;
+        if(isWeak)html+=`<span class="review-weak-badge">⚠ 약점</span>`;
+        if(prevMemo)html+=`<span class="review-prev-memo">${escHtml(prevMemo)}</span>`;
+        html+=`<div class="review-memo-area" id="ma_${item.checkId}">`;
+        html+=`<textarea class="review-memo-inp" placeholder="메모..." rows="2" id="mt_${item.checkId}">${escHtml(prevMemo)}</textarea>`;
+        html+=`<button class="btn" style="font-size:12px;padding:2px 8px;margin-top:4px" data-msave="${item.checkId}" data-rsk="${subj.key}" data-bid="${item.blockId}">저장</button>`;
+        html+=`</div>`;
+        html+=`<div class="review-tb-picker" id="tp_${item.checkId}">`;
+        html+=`<select class="review-tb-hour" id="tsh_${item.checkId}">${hourOpts}</select>`;
+        html+=`<select class="review-tb-dur" id="tsd_${item.checkId}"><option value="30">30분</option><option value="60" selected>1시간</option><option value="90">1.5시간</option><option value="120">2시간</option></select>`;
+        html+=`<button class="review-tb-confirm" data-tbadd="${item.checkId}" data-rsk="${subj.key}" data-bname="${escHtml(item.name)}">추가</button>`;
+        html+=`</div>`;
+        html+=`</div>`;
+        html+=`<div class="review-item-actions">`;
+        html+=`<button class="review-star-btn${isWeak?' active':''}" data-star="${item.checkId}" data-bid="${item.blockId}" data-rsk="${subj.key}" title="약점 태그">⭐</button>`;
+        html+=`<button class="review-memo-btn" data-memo="${item.checkId}" title="메모">📝</button>`;
+        html+=`<button class="review-tb-btn" data-tb="${item.checkId}" title="시간표 추가">📅</button>`;
+        html+=`</div>`;
+        html+=`</div>`;
+      });
+    }
+    html+=`</div></div>`;
+
+    // speed analysis
+    const doneCnt=cycles.filter(c=>getCycleStatus(c,today)==='done').length;
+    const remDays=cycles.filter(c=>getCycleStatus(c,today)==='current'||getCycleStatus(c,today)==='future').reduce((s,c)=>s+(c.days||0),0);
+    const examDate=new Date('2026-08-31');examDate.setHours(0,0,0,0);
+    const daysToExam=Math.round((examDate-today)/86400000);
+    const onTrack=remDays<=daysToExam?'✅ 일정 준수':'⚠ 일정 초과 위험';
+    html+=`<div class="review-section"><span class="review-section-title">속도 분석</span><div class="review-speed-box">`;
+    html+=`<div class="review-speed-row"><span>완료 회독</span><span>${doneCnt}회독 완료</span></div>`;
+    html+=`<div class="review-speed-row"><span>남은 예상 일수</span><span>${remDays}일</span></div>`;
+    html+=`<div class="review-speed-row"><span>시험까지</span><span>D-${daysToExam}</span></div>`;
+    html+=`<div class="review-speed-row"><span>상태</span><span>${onTrack}</span></div>`;
+    html+=`</div></div>`;
   }
 
   // roadmap
   html+=`<div class="review-section"><span class="review-section-title">전체 회독 로드맵</span><div class="review-roadmap">`;
-  let prevEnd=null;
   cycles.forEach(c=>{
     const st=getCycleStatus(c,today);
     let sDate=null,eDate=null;
@@ -2476,23 +2595,24 @@ function renderReviewSubject(el,subj,today){
     else if(st==='current'){circCls='current';info=`진행 중 · D-${cur?cur.days-dayIn-1:'?'}`;}
     else{info=c.startDate?`예정 · ${fmtDate(sDate)} 시작`:'예정 · 미설정';editBtn=`<button class="review-roadmap-edit" data-red="${c.num}" data-rsk="${subj.key}">편집</button>`;}
     const rowStyle=st==='current'?`style="background:${subj.color}15"`:'';
-    html+=`<div class="review-roadmap-row${st==='current'?' current-cycle':''}" ${rowStyle}><div class="review-roadmap-circle ${circCls}">${c.num}</div><span class="review-roadmap-name">${c.label||c.num+'회독'}</span><span class="review-roadmap-info">${info}</span>${editBtn}</div>`;
-    if(c.startDate)prevEnd=dateKey(addDays(new Date(c.startDate),c.days));
+    const circLabel=c.label?c.label.slice(0,2):c.num;
+    html+=`<div class="review-roadmap-row${st==='current'?' current-cycle':''}" ${rowStyle}><div class="review-roadmap-circle ${circCls}">${circLabel}</div><span class="review-roadmap-name">${c.label||c.num+'회독'}</span><span class="review-roadmap-info">${info}</span>${editBtn}</div>`;
   });
   html+=`</div></div>`;
   el.innerHTML=html;
 
-  // bind checks
+  // bind: check toggle
   el.querySelectorAll('[data-rck]').forEach(btn=>{
     btn.addEventListener('click',()=>{
-      const id=btn.dataset.rck,sk=btn.dataset.rsk;
+      const id=btn.dataset.rck,sk=btn.dataset.rsk,bid=btn.dataset.bid;
       const ch=loadReviewChecks(sk);ch[id]=!ch[id];saveReviewChecks(sk,ch);
       btn.classList.toggle('done',!!ch[id]);btn.textContent=ch[id]?'✓':'';
-      const nm=el.querySelector(`[data-rnm="${id}"]`);if(nm)nm.classList.toggle('done-text',!!ch[id]);
+      const nm=el.querySelector(`[data-rnm="${bid}"]`);if(nm)nm.classList.toggle('done-text',!!ch[id]);
+      if(ch[id]){const d2=loadReviewData(sk);if(d2)tryAutoNextCycle(sk,d2);}
     });
   });
 
-  // bind name edits
+  // bind: name edit
   el.querySelectorAll('[data-rnm]').forEach(inp=>{
     inp.addEventListener('change',()=>{
       const id=inp.dataset.rnm,sk=inp.dataset.rsk;
@@ -2501,7 +2621,77 @@ function renderReviewSubject(el,subj,today){
     });
   });
 
-  // bind edit buttons
+  // bind: star toggle
+  el.querySelectorAll('[data-star]').forEach(btn=>{
+    btn.addEventListener('click',()=>{
+      const bid=btn.dataset.bid,sk=btn.dataset.rsk;
+      const w=loadReviewWeaks(sk);
+      w[bid]=!w[bid];if(!w[bid])delete w[bid];
+      saveReviewWeaks(sk,w);
+      btn.classList.toggle('active',!!w[bid]);
+      const item=btn.closest('.review-today-item');
+      if(item){
+        let badge=item.querySelector('.review-weak-badge');
+        if(w[bid]&&!badge){
+          badge=document.createElement('span');badge.className='review-weak-badge';badge.textContent='⚠ 약점';
+          const body=item.querySelector('.review-item-body');
+          const refEl=body.querySelector('.review-prev-memo')||body.querySelector('.review-memo-area');
+          body.insertBefore(badge,refEl||null);
+        }else if(!w[bid]&&badge){badge.remove();}
+      }
+      showReviewToast(w[bid]?'약점 블록 태그됨':'약점 태그 해제');
+    });
+  });
+
+  // bind: memo toggle
+  el.querySelectorAll('[data-memo]').forEach(btn=>{
+    btn.addEventListener('click',()=>{
+      const id=btn.dataset.memo;
+      const area=document.getElementById('ma_'+id);
+      if(area)area.classList.toggle('open');
+    });
+  });
+
+  // bind: memo save
+  el.querySelectorAll('[data-msave]').forEach(btn=>{
+    btn.addEventListener('click',()=>{
+      const id=btn.dataset.msave,sk=btn.dataset.rsk,bid=btn.dataset.bid;
+      const ta=document.getElementById('mt_'+id);if(!ta)return;
+      saveReviewMemo(sk,bid,ta.value.trim());
+      document.getElementById('ma_'+id).classList.remove('open');
+      const item=btn.closest('.review-today-item');
+      if(item){
+        let prev=item.querySelector('.review-prev-memo');
+        const body=item.querySelector('.review-item-body');
+        if(ta.value.trim()){
+          if(!prev){prev=document.createElement('span');prev.className='review-prev-memo';body.insertBefore(prev,document.getElementById('ma_'+id));}
+          prev.textContent=ta.value.trim();
+        }else if(prev){prev.remove();}
+      }
+      showReviewToast('메모 저장됨');
+    });
+  });
+
+  // bind: time picker toggle
+  el.querySelectorAll('[data-tb]').forEach(btn=>{
+    btn.addEventListener('click',()=>{
+      const id=btn.dataset.tb;
+      const picker=document.getElementById('tp_'+id);if(picker)picker.classList.toggle('open');
+    });
+  });
+
+  // bind: time picker add
+  el.querySelectorAll('[data-tbadd]').forEach(btn=>{
+    btn.addEventListener('click',()=>{
+      const id=btn.dataset.tbadd,sk=btn.dataset.rsk,bname=btn.dataset.bname;
+      const h=parseInt(document.getElementById('tsh_'+id).value);
+      const dur=parseInt(document.getElementById('tsd_'+id).value);
+      addBlockFromReview(sk,bname,h,dur);
+      const picker=document.getElementById('tp_'+id);if(picker)picker.classList.remove('open');
+    });
+  });
+
+  // bind: roadmap edit buttons
   el.querySelectorAll('[data-red]').forEach(btn=>{
     btn.addEventListener('click',e=>{
       e.stopPropagation();
@@ -2509,7 +2699,7 @@ function renderReviewSubject(el,subj,today){
     });
   });
 
-  // add button
+  // add cycle button
   const ab=document.createElement('button');ab.className='review-add-btn';ab.textContent='+ 회독 추가';
   ab.onclick=()=>addReviewCycle(subj.key);
   el.appendChild(ab);
@@ -2543,6 +2733,57 @@ function closeReviewModal(){
   _rsSubjectKey=null;_rsCycleNum=null;
 }
 
+function loadReviewWeaks(sk){try{return JSON.parse(localStorage.getItem('review_weak_'+sk)||'{}')}catch{return{}}}
+function saveReviewWeaks(sk,d){const key='review_weak_'+sk;const v=JSON.stringify(d);localStorage.setItem(key,v);syncToSupabase(key,v);}
+function loadReviewMemo(sk,blockId){try{return localStorage.getItem('review_memo_'+sk+'_'+blockId)||''}catch{return''}}
+function saveReviewMemo(sk,blockId,text){const key='review_memo_'+sk+'_'+blockId;localStorage.setItem(key,text);syncToSupabase(key,text);}
+
+function showReviewToast(msg){
+  const t=document.getElementById('reviewToast');if(!t)return;
+  t.textContent=msg;t.style.opacity='1';
+  clearTimeout(t._hide);t._hide=setTimeout(()=>t.style.opacity='0',2000);
+}
+
+function tryAutoNextCycle(sk,data){
+  const today=new Date();today.setHours(0,0,0,0);
+  const cur=data.cycles.find(c=>getCycleStatus(c,today)==='current');
+  if(!cur)return;
+  const s=new Date(cur.startDate);s.setHours(0,0,0,0);
+  const dayIn=Math.floor((today-s)/86400000);
+  if(dayIn!==cur.days-1)return;
+  const checks=loadReviewChecks(sk);
+  let todayIds=[];
+  if(cur.dailyPlan){
+    todayIds=cur.dailyPlan.filter(p=>p.day===dayIn).map(p=>'dp_'+dayIn);
+  }else if(cur.blocksPerDay){
+    todayIds=getTodayBlockIndices(dayIn,cur.blocksPerDay,data.blocks.length).map(i=>data.blocks[i].id);
+  }
+  if(!todayIds.length||!todayIds.every(id=>checks[id]))return;
+  const next=data.cycles.find(c=>c.num===cur.num+1);
+  if(!next||next.startDate)return;
+  next.startDate=dateKey(addDays(new Date(cur.startDate),cur.days));
+  saveReviewData(sk,data);
+  showReviewToast(`${next.label||next.num+'회독'} 시작일 자동 설정!`);
+  const banner=document.getElementById('reviewBanner');
+  if(banner){
+    const msg=banner.querySelector('.review-banner-msg');
+    if(msg)msg.textContent=`🎉 ${cur.label||cur.num+'회독'} 완료! ${next.label||next.num+'회독'} ${next.startDate} 시작으로 설정됨`;
+    banner.classList.add('open');
+  }
+}
+
+function addBlockFromReview(sk,bname,hour,dur){
+  const dk=dateKey(new Date());
+  const curMonKey=weekKey(currentMonday);
+  const td=new Date();
+  const todayMon=new Date(td);todayMon.setDate(td.getDate()-((td.getDay()+6)%7));todayMon.setHours(0,0,0,0);
+  if(curMonKey!==weekKey(todayMon)){showReviewToast('현재 주가 아닙니다. 주간 보기에서 추가하세요.');return;}
+  pushUndo();
+  blocks.push({id:uid(),day:dk,startMin:hour*60,endMin:hour*60+dur,subject:sk,memo:bname,note:'',completed:false});
+  saveWeek();
+  showReviewToast('시간표에 추가됨!');
+}
+
 document.getElementById('rsDaysMinus').addEventListener('click',()=>{
   const v=parseInt(document.getElementById('rsDaysVal').textContent);
   if(v>1)document.getElementById('rsDaysVal').textContent=v-1;
@@ -2554,6 +2795,7 @@ document.getElementById('rsAutoDate').addEventListener('change',function(){
   if(this.checked&&this.dataset.prevend)document.getElementById('rsStartDate').value=this.dataset.prevend;
 });
 document.getElementById('rsCancel').addEventListener('click',closeReviewModal);
+document.getElementById('reviewBannerClose').addEventListener('click',()=>document.getElementById('reviewBanner').classList.remove('open'));
 document.getElementById('reviewModalOverlay').addEventListener('click',e=>{if(e.target===document.getElementById('reviewModalOverlay'))closeReviewModal();});
 document.getElementById('rsSave').addEventListener('click',()=>{
   if(!_rsSubjectKey||!_rsCycleNum){closeReviewModal();return;}
