@@ -636,6 +636,26 @@ body.dark .routine-day-lbl{color:#555}
 .review-auto-label{display:flex;align-items:center;gap:6px;font-size:12px;color:#9B9A97;cursor:pointer;margin-top:6px}
 .review-suggestion{font-size:12px;color:#9B9A97;margin-top:8px;padding:6px 10px;background:#F7F7F5;border-radius:4px}
 .review-edit-actions{display:flex;gap:8px;justify-content:flex-end;margin-top:16px}
+/* review date nav */
+.review-date-nav{display:flex;align-items:center;gap:6px;margin-bottom:12px;flex-wrap:wrap}
+.review-date-nav-label{font-size:13px;font-weight:500;min-width:150px;text-align:center;color:#37352F}
+body.dark .review-date-nav-label{color:#E8E8E6}
+/* cycle expand block list */
+.rcex-toggle-btn{background:none;border:1px solid #E9E9E7;border-radius:3px;font-size:11px;cursor:pointer;padding:2px 8px;color:#9B9A97;font-family:inherit;margin-top:6px;transition:background .1s;display:inline-block}
+.rcex-toggle-btn:hover{background:#F7F7F5;color:#37352F}
+body.dark .rcex-toggle-btn{border-color:#333;color:#555}
+body.dark .rcex-toggle-btn:hover{background:#272727;color:#E8E8E6}
+.rcex-body{margin-top:8px;max-height:280px;overflow-y:auto}
+.rcex-row{display:flex;align-items:flex-start;gap:5px;padding:4px 2px;font-size:12px;border-bottom:1px solid #F4F4F2;line-height:1.4}
+.rcex-row:last-child{border-bottom:none}
+body.dark .rcex-row{border-color:#2D2D2D}
+.rcex-icon{flex-shrink:0;width:16px;font-size:11px;line-height:1.4}
+.rcex-day{font-size:11px;color:#9B9A97;flex-shrink:0;min-width:26px;line-height:1.4}
+.rcex-name{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:#37352F}
+body.dark .rcex-name{color:#C0C0BE}
+.rcex-done .rcex-name{text-decoration:line-through;color:#C0BFBC}
+.rcex-today .rcex-day,.rcex-today .rcex-name{color:#2383E2;font-weight:600}
+.rcex-future .rcex-name{color:#C0BFBC}
 </style>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
@@ -722,6 +742,7 @@ body.dark .routine-day-lbl{color:#555}
 
 <div class="review-wrap u-hidden" id="reviewWrap">
   <div class="review-sub-tabs" id="reviewSubTabs"></div>
+  <div class="review-date-nav" id="reviewDateNav" style="display:none"></div>
   <div class="review-banner" id="reviewBanner">
     <span class="review-banner-msg"></span>
     <button class="review-banner-close" id="reviewBannerClose">✕</button>
@@ -936,6 +957,7 @@ let templates = [];
 let statsCollapsed = false;
 let goalsCollapsed = false;
 let reviewSubTab = 'all';
+let reviewViewDate = null;
 let _rsSubjectKey = null, _rsCycleNum = null;
 let _todaySchedAdded = false;
 
@@ -2341,11 +2363,11 @@ const REVIEW_SUBJECTS=[
 ];
 
 function reviewStorageKey(k){return 'review_subject_'+k;}
-function reviewCheckKey(k){return 'review_check_'+dateKey(new Date())+'_'+k;}
+function reviewCheckKey(k,d){return 'review_check_'+dateKey(d||new Date())+'_'+k;}
 function loadReviewData(k){try{return JSON.parse(localStorage.getItem(reviewStorageKey(k))||'null');}catch{return null;}}
 function saveReviewData(k,d){const key=reviewStorageKey(k);const v=JSON.stringify(d);localStorage.setItem(key,v);syncToSupabase(key,v);}
-function loadReviewChecks(k){try{return JSON.parse(localStorage.getItem(reviewCheckKey(k))||'null')||{};}catch{return{};}}
-function saveReviewChecks(k,c){localStorage.setItem(reviewCheckKey(k),JSON.stringify(c));}
+function loadReviewChecks(k,d){try{return JSON.parse(localStorage.getItem(reviewCheckKey(k,d))||'null')||{};}catch{return{};}}
+function saveReviewChecks(k,c,d){localStorage.setItem(reviewCheckKey(k,d),JSON.stringify(c));}
 
 function initAdminLawData(){
   const existing=loadReviewData('admin_law');
@@ -2428,18 +2450,46 @@ function renderReview(){
   if(!wrap)return;
   const today=new Date();today.setHours(0,0,0,0);
 
-  // sub-tabs
+  // sub-tabs with short mobile-friendly names
+  const SHORT={labor_law:'노동법',hr_mgmt:'인사',admin_law:'행쟁',labor_econ:'노경'};
   const subTabsEl=document.getElementById('reviewSubTabs');
   const tabs=[{key:'all',label:'전체'},...REVIEW_SUBJECTS];
   subTabsEl.innerHTML=tabs.map(t=>{
     const subj=REVIEW_SUBJECTS.find(s=>s.key===t.key);
     const cls='review-sub-tab'+(subj?' subj-tab':'')+( reviewSubTab===t.key?' active':'');
     const style=subj&&reviewSubTab===t.key?`style="background:${subj.color};border-color:${subj.color}"`:subj?`style="color:${subj.color};border-color:${subj.color}"`:'' ;
-    return `<button class="${cls}" data-rtab="${t.key}" ${style}>${t.label||t.name}</button>`;
+    return `<button class="${cls}" data-rtab="${t.key}" ${style}>${t.label||(SHORT[t.key]||t.name)}</button>`;
   }).join('');
   subTabsEl.querySelectorAll('[data-rtab]').forEach(btn=>{
     btn.addEventListener('click',()=>{reviewSubTab=btn.dataset.rtab;renderReview();});
   });
+
+  // date navigator
+  const navEl=document.getElementById('reviewDateNav');
+  if(navEl){
+    if(reviewSubTab!=='all'){
+      const vd=reviewViewDate||today;
+      const isToday=isSameDay(vd,today);
+      const ym=`${vd.getFullYear()}.${String(vd.getMonth()+1).padStart(2,'0')}.${String(vd.getDate()).padStart(2,'0')}`;
+      const dow=DAYS[dayIdx(vd)];
+      const lbl=isToday?`${ym} (${dow}) · 오늘`:`${ym} (${dow})`;
+      const todayBtn=!isToday?`<button class="btn" id="rdnToday" style="font-size:12px;padding:3px 8px">오늘</button>`:'';
+      navEl.style.display='flex';
+      navEl.innerHTML=`<button class="btn btn-nav" id="rdnPrev">←</button><span class="review-date-nav-label">${lbl}</span><button class="btn btn-nav" id="rdnNext">→</button>${todayBtn}`;
+      document.getElementById('rdnPrev').onclick=()=>{
+        const base=new Date(reviewViewDate||today);base.setHours(0,0,0,0);
+        reviewViewDate=addDays(base,-1);renderReview();
+      };
+      document.getElementById('rdnNext').onclick=()=>{
+        const base=new Date(reviewViewDate||today);base.setHours(0,0,0,0);
+        reviewViewDate=addDays(base,1);renderReview();
+      };
+      const tb=document.getElementById('rdnToday');
+      if(tb)tb.onclick=()=>{reviewViewDate=null;renderReview();};
+    }else{
+      navEl.style.display='none';
+    }
+  }
 
   const content=document.getElementById('reviewContent');
   if(reviewSubTab==='all')renderReviewAll(content,today);
@@ -2505,10 +2555,23 @@ function renderReviewSubject(el,subj,today){
   const nb=data?data.blocks.length:0;
   const weaks=loadReviewWeaks(subj.key);
 
+  // view date vs real today
+  const vd=reviewViewDate||today;
+  const isTodayView=isSameDay(vd,today);
+  const isFutureView=vd>today;
+
+  // today's cycle (cycle card, roadmap, speed)
   let cur=null,dayIn=0;
   cycles.forEach(c=>{
     const st=getCycleStatus(c,today);
     if(st==='current'&&!cur){cur=c;const s=new Date(c.startDate);s.setHours(0,0,0,0);dayIn=Math.floor((today-s)/86400000);}
+  });
+
+  // viewDate's cycle (오늘 체크 section)
+  let viewCur=null,viewDayIn=0;
+  cycles.forEach(c=>{
+    const st=getCycleStatus(c,vd);
+    if(st==='current'&&!viewCur){viewCur=c;const s=new Date(c.startDate);s.setHours(0,0,0,0);viewDayIn=Math.floor((vd-s)/86400000);}
   });
 
   let html='';
@@ -2522,59 +2585,117 @@ function renderReviewSubject(el,subj,today){
     return;
   }
 
-  // current cycle card
+  // current cycle card (based on today)
   if(cur){
     const daysLeft=cur.days-dayIn-1;
     const pct=Math.round((dayIn+1)/cur.days*100);
     const _fmtBpd=v=>{const r=Math.round(v*10)/10;return r===Math.floor(r)?String(Math.floor(r)):r.toFixed(1);};
     const bpd=cur.blocksPerDay?_fmtBpd(cur.blocksPerDay)+'블록/일':(cur.dailyPlan?'일정표':'—');
-    html+=`<div class="review-section"><div class="review-cycle-card" style="border-color:${subj.color}40"><div class="review-cycle-badge" style="background:${subj.color}">${cur.label||cur.num+'회독'} 진행 중</div><div class="review-cycle-props"><span class="review-cycle-prop">기간: <span>${cur.days}일</span></span><span class="review-cycle-prop">하루분량: <span>${bpd}</span></span></div><div class="review-progress-bar"><div class="review-progress-fill" style="width:${pct}%;background:${subj.color}"></div></div><div class="review-cycle-info">${dayIn+1}/${cur.days}일째 · D-${daysLeft}</div></div></div>`;
 
-    // build today items
-    const checks=loadReviewChecks(subj.key);
-    let todayItems=[];
+    // build block detail list entries (based on today's dayIn)
+    let detailEntries=[];
     if(cur.dailyPlan){
-      cur.dailyPlan.filter(p=>p.day===dayIn).forEach(p=>{
-        const blk=data.blocks[p.blockIdx];if(!blk)return;
-        todayItems.push({checkId:'dp_'+dayIn,blockId:blk.id,blockIdx:p.blockIdx,name:blk.name});
+      const dg={};
+      cur.dailyPlan.forEach(p=>{
+        if(!dg[p.day])dg[p.day]=[];
+        const blk=data.blocks[p.blockIdx];
+        dg[p.day].push(p.text||blk?.name||'');
+      });
+      Object.keys(dg).sort((a,b)=>+a-+b).forEach(d=>{
+        const di=parseInt(d);
+        detailEntries.push({day:di,status:di<dayIn?'done':di===dayIn?'today':'future',names:dg[d]});
       });
     }else if(cur.blocksPerDay){
-      getTodayBlockIndices(dayIn,cur.blocksPerDay,nb).forEach(bi=>{
-        const blk=data.blocks[bi];if(!blk)return;
-        todayItems.push({checkId:blk.id,blockId:blk.id,blockIdx:bi,name:blk.name});
-      });
+      for(let d=0;d<cur.days;d++){
+        const idxs=getTodayBlockIndices(d,cur.blocksPerDay,nb);
+        const names=idxs.map(i=>data.blocks[i]?.name).filter(Boolean);
+        if(names.length)detailEntries.push({day:d,status:d<dayIn?'done':d===dayIn?'today':'future',names});
+      }
     }
+    const doneDays=detailEntries.filter(e=>e.status==='done').length;
+    const remDaysCount=detailEntries.filter(e=>e.status!=='done').length;
+
+    let detailHtml='';
+    detailEntries.forEach(e=>{
+      const icon=e.status==='done'?'✅':e.status==='today'?'🔵':'⬜';
+      const dayLbl=e.status==='today'?'오늘':`${e.day+1}일`;
+      e.names.forEach((nm,ni)=>{
+        detailHtml+=`<div class="rcex-row rcex-${e.status}"><span class="rcex-icon">${ni===0?icon:''}</span><span class="rcex-day">${ni===0?dayLbl:''}</span><span class="rcex-name">${escHtml(nm)}</span></div>`;
+      });
+    });
+
+    html+=`<div class="review-section"><div class="review-cycle-card" style="border-color:${subj.color}40">`;
+    html+=`<div class="review-cycle-badge" style="background:${subj.color}">${cur.label||cur.num+'회독'} 진행 중</div>`;
+    html+=`<div class="review-cycle-props"><span class="review-cycle-prop">기간: <span>${cur.days}일</span></span><span class="review-cycle-prop">하루분량: <span>${bpd}</span></span></div>`;
+    html+=`<div class="review-progress-bar"><div class="review-progress-fill" style="width:${pct}%;background:${subj.color}"></div></div>`;
+    html+=`<div class="review-cycle-info" style="margin-bottom:1px">${doneDays}일 완료 · ${remDaysCount}일 남음</div>`;
+    html+=`<div class="review-cycle-info">${dayIn+1}/${cur.days}일째 · D-${daysLeft}</div>`;
+    if(detailHtml){
+      html+=`<button class="rcex-toggle-btn" id="rcex_${subj.key}">전체 보기 ▼</button>`;
+      html+=`<div class="rcex-body" id="rcexb_${subj.key}" style="display:none">${detailHtml}</div>`;
+    }
+    html+=`</div></div>`;
+
+    // 오늘 체크 section (based on viewDate)
+    const checks=loadReviewChecks(subj.key,vd);
+    let todayItems=[];
+    if(viewCur){
+      if(viewCur.dailyPlan){
+        viewCur.dailyPlan.filter(p=>p.day===viewDayIn).forEach(p=>{
+          const blk=data.blocks[p.blockIdx];if(!blk)return;
+          todayItems.push({checkId:'dp_'+viewDayIn,blockId:blk.id,blockIdx:p.blockIdx,name:blk.name});
+        });
+      }else if(viewCur.blocksPerDay){
+        getTodayBlockIndices(viewDayIn,viewCur.blocksPerDay,nb).forEach(bi=>{
+          const blk=data.blocks[bi];if(!blk)return;
+          todayItems.push({checkId:blk.id,blockId:blk.id,blockIdx:bi,name:blk.name});
+        });
+      }
+    }
+
+    // section title reflects viewDate
+    let checkTitle='오늘 체크';
+    if(!isTodayView){const vm=vd.getMonth()+1,vda=vd.getDate();checkTitle=isFutureView?`${vm}/${vda} 예정`:`${vm}/${vda} 체크`;}
 
     const _sbStyle=_todaySchedAdded?'background:#9B9A97;color:#fff;border-color:#9B9A97;cursor:default':'';
     const _sbLabel=_todaySchedAdded?'✓ 추가됨':'+ 시간표';
-    html+=`<div class="review-section"><div style="display:flex;align-items:center;gap:8px;margin-bottom:8px"><span class="review-section-title" style="margin-bottom:0;display:inline">오늘 체크</span><button class="review-tb-btn" id="addTodaySched_${subj.key}" ${_todaySchedAdded?'disabled':''} style="${_sbStyle}">${_sbLabel}</button></div><div class="review-today-list" id="rtl_${subj.key}">`;
-    if(!todayItems.length){html+=`<div class="review-empty">오늘은 복습 없는 날입니다</div>`;}
-    else{
+    const _sbHtml=isTodayView?`<button class="review-tb-btn" id="addTodaySched_${subj.key}" ${_todaySchedAdded?'disabled':''} style="${_sbStyle}">${_sbLabel}</button>`:'';
+
+    html+=`<div class="review-section"><div style="display:flex;align-items:center;gap:8px;margin-bottom:8px"><span class="review-section-title" style="margin-bottom:0;display:inline">${checkTitle}</span>${_sbHtml}</div><div class="review-today-list" id="rtl_${subj.key}">`;
+    if(!todayItems.length){
+      const emptyMsg=isFutureView?'아직 체크할 수 없습니다':!viewCur?'이 날은 복습 없는 날입니다':'오늘은 복습 없는 날입니다';
+      html+=`<div class="review-empty"${isFutureView?' style="color:#C0BFBC"':''}>${emptyMsg}</div>`;
+    }else{
       todayItems.forEach(item=>{
         const done=!!checks[item.checkId];
         const isWeak=!!weaks[item.blockId];
         const prevMemo=loadReviewMemo(subj.key,item.blockId);
         const hourOpts=Array.from({length:14},(_,i)=>i+7).map(h=>`<option value="${h}"${h===9?' selected':''}>${h}:00</option>`).join('');
-        html+=`<div class="review-today-item">`;
-        html+=`<div class="review-today-check${done?' done':''}" data-rck="${item.checkId}" data-bid="${item.blockId}" data-rsk="${subj.key}">${done?'✓':''}</div>`;
+        const faded=isFutureView?' style="opacity:.45"':'';
+        html+=`<div class="review-today-item"${faded}>`;
+        html+=`<div class="review-today-check${done?' done':''}" data-rck="${item.checkId}" data-bid="${item.blockId}" data-rsk="${subj.key}"${isFutureView?' style="pointer-events:none;opacity:.4"':''}>${done?'✓':''}</div>`;
         html+=`<div class="review-item-body">`;
-        html+=`<input class="review-today-name${done?' done-text':''}" data-rnm="${item.blockId}" data-rsk="${subj.key}" value="${escHtml(item.name)}">`;
+        html+=`<input class="review-today-name${done?' done-text':''}" data-rnm="${item.blockId}" data-rsk="${subj.key}" value="${escHtml(item.name)}"${isFutureView?' disabled':''}>`;
         if(isWeak)html+=`<span class="review-weak-badge">⚠ 약점</span>`;
         if(prevMemo)html+=`<span class="review-prev-memo">${escHtml(prevMemo)}</span>`;
-        html+=`<div class="review-memo-area" id="ma_${item.checkId}">`;
-        html+=`<textarea class="review-memo-inp" placeholder="메모..." rows="2" id="mt_${item.checkId}">${escHtml(prevMemo)}</textarea>`;
-        html+=`<button class="btn" style="font-size:12px;padding:2px 8px;margin-top:4px" data-msave="${item.checkId}" data-rsk="${subj.key}" data-bid="${item.blockId}">저장</button>`;
-        html+=`</div>`;
-        html+=`<div class="review-tb-picker" id="tp_${item.checkId}">`;
-        html+=`<select class="review-tb-hour" id="tsh_${item.checkId}">${hourOpts}</select>`;
-        html+=`<select class="review-tb-dur" id="tsd_${item.checkId}"><option value="30">30분</option><option value="60" selected>1시간</option><option value="90">1.5시간</option><option value="120">2시간</option></select>`;
-        html+=`<button class="review-tb-confirm" data-tbadd="${item.checkId}" data-rsk="${subj.key}" data-bname="${escHtml(item.name)}">추가</button>`;
-        html+=`</div>`;
+        if(!isFutureView){
+          html+=`<div class="review-memo-area" id="ma_${item.checkId}">`;
+          html+=`<textarea class="review-memo-inp" placeholder="메모..." rows="2" id="mt_${item.checkId}">${escHtml(prevMemo)}</textarea>`;
+          html+=`<button class="btn" style="font-size:12px;padding:2px 8px;margin-top:4px" data-msave="${item.checkId}" data-rsk="${subj.key}" data-bid="${item.blockId}">저장</button>`;
+          html+=`</div>`;
+        }
+        if(isTodayView){
+          html+=`<div class="review-tb-picker" id="tp_${item.checkId}">`;
+          html+=`<select class="review-tb-hour" id="tsh_${item.checkId}">${hourOpts}</select>`;
+          html+=`<select class="review-tb-dur" id="tsd_${item.checkId}"><option value="30">30분</option><option value="60" selected>1시간</option><option value="90">1.5시간</option><option value="120">2시간</option></select>`;
+          html+=`<button class="review-tb-confirm" data-tbadd="${item.checkId}" data-rsk="${subj.key}" data-bname="${escHtml(item.name)}">추가</button>`;
+          html+=`</div>`;
+        }
         html+=`</div>`;
         html+=`<div class="review-item-actions">`;
         html+=`<button class="review-star-btn${isWeak?' active':''}" data-star="${item.checkId}" data-bid="${item.blockId}" data-rsk="${subj.key}" title="약점 태그">⭐</button>`;
-        html+=`<button class="review-memo-btn" data-memo="${item.checkId}" title="메모">📝</button>`;
-        html+=`<button class="review-tb-btn" data-tb="${item.checkId}" title="시간표 추가">📅</button>`;
+        if(!isFutureView)html+=`<button class="review-memo-btn" data-memo="${item.checkId}" title="메모">📝</button>`;
+        if(isTodayView)html+=`<button class="review-tb-btn" data-tb="${item.checkId}" title="시간표 추가">📅</button>`;
         html+=`</div>`;
         html+=`</div>`;
       });
@@ -2612,18 +2733,30 @@ function renderReviewSubject(el,subj,today){
   html+=`</div></div>`;
   el.innerHTML=html;
 
+  // bind: rcex expand toggle
+  const rcexBtn=el.querySelector(`#rcex_${subj.key}`);
+  const rcexBody=el.querySelector(`#rcexb_${subj.key}`);
+  if(rcexBtn&&rcexBody){
+    rcexBtn.addEventListener('click',()=>{
+      const open=rcexBody.style.display!=='none';
+      rcexBody.style.display=open?'none':'block';
+      rcexBtn.textContent=open?'전체 보기 ▼':'접기 ▲';
+    });
+  }
+
   // bind: add-today-schedule button
   const _schedBtn=el.querySelector(`#addTodaySched_${subj.key}`);
   if(_schedBtn&&!_todaySchedAdded)_schedBtn.addEventListener('click',()=>addTodaySchedule(_schedBtn));
 
-  // bind: check toggle
+  // bind: check toggle (uses viewDate; disabled for future)
   el.querySelectorAll('[data-rck]').forEach(btn=>{
     btn.addEventListener('click',()=>{
+      if(isFutureView)return;
       const id=btn.dataset.rck,sk=btn.dataset.rsk,bid=btn.dataset.bid;
-      const ch=loadReviewChecks(sk);ch[id]=!ch[id];saveReviewChecks(sk,ch);
+      const ch=loadReviewChecks(sk,vd);ch[id]=!ch[id];saveReviewChecks(sk,ch,vd);
       btn.classList.toggle('done',!!ch[id]);btn.textContent=ch[id]?'✓':'';
       const nm=el.querySelector(`[data-rnm="${bid}"]`);if(nm)nm.classList.toggle('done-text',!!ch[id]);
-      if(ch[id]){const d2=loadReviewData(sk);if(d2)tryAutoNextCycle(sk,d2);}
+      if(ch[id]&&isTodayView){const d2=loadReviewData(sk);if(d2)tryAutoNextCycle(sk,d2);}
     });
   });
 
