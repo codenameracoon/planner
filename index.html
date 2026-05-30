@@ -1476,10 +1476,10 @@ function buildGoalRowContent(rowEl, dk){
     html+=`<div class="dgrow-item">`+
       `<div class="dgrow-check${checkClass}" data-dgcheck="${g.id}">${checkContent}</div>`+
       `<input class="dgrow-text${isDone?' done-text':''}" data-dgtext="${g.id}" value="${escHtml(g.text)}" placeholder="목표...">`+
-      `<button class="dgrow-del" data-dgdel="${g.id}">×</button>`+
+      `<button class="dgrow-del" data-dgdel="${g.id}" tabindex="-1">×</button>`+
     `</div>`;
   });
-  html+=`</div><button class="dgrow-add">+ 목표</button>`;
+  html+=`</div><button class="dgrow-add" tabindex="-1">+ 목표</button>`;
   rowEl.innerHTML=html;
   rowEl.querySelectorAll('[data-dgcheck]').forEach(el=>{
     el.addEventListener('mousedown',e=>e.stopPropagation());
@@ -1504,6 +1504,14 @@ function buildGoalRowContent(rowEl, dk){
     const _saveGoalText=()=>{const gs=loadDailyGoals(dk);const g=gs.find(x=>x.id===inp.dataset.dgtext);if(g){g.text=inp.value.trim();saveDailyGoals(dk,gs);}};
     inp.addEventListener('input',_saveGoalText);
     inp.addEventListener('change',_saveGoalText);
+    inp.addEventListener('keydown',e=>{
+      if(e.key==='Tab'){e.preventDefault();return;}
+      if(e.key==='Backspace'&&inp.value===''){
+        e.preventDefault();
+        let gs=loadDailyGoals(dk);gs=gs.filter(x=>x.id!==inp.dataset.dgtext);
+        saveDailyGoals(dk,gs);buildGoalRowContent(rowEl,dk);syncGoalRowHeight();
+      }
+    });
   });
   rowEl.querySelectorAll('[data-dgdel]').forEach(btn=>{
     btn.addEventListener('mousedown',e=>e.stopPropagation());
@@ -2731,18 +2739,16 @@ function renderReviewSubject(el,subj,today){
           html+=`<button class="btn" style="font-size:12px;padding:2px 8px;margin-top:4px" data-msave="${item.checkId}" data-rsk="${subj.key}" data-bid="${item.blockId}">저장</button>`;
           html+=`</div>`;
         }
-        if(!isFutureView){
-          html+=`<div class="review-tb-picker" id="tp_${item.checkId}">`;
-          html+=`<select class="review-tb-hour" id="tsh_${item.checkId}">${hourOpts}</select>`;
-          html+=`<select class="review-tb-dur" id="tsd_${item.checkId}"><option value="30">30분</option><option value="60" selected>1시간</option><option value="90">1.5시간</option><option value="120">2시간</option></select>`;
-          html+=`<button class="review-tb-confirm" data-tbadd="${item.checkId}" data-rsk="${subj.key}" data-bname="${escHtml(item.name)}">추가</button>`;
-          html+=`</div>`;
-        }
+        html+=`<div class="review-tb-picker" id="tp_${item.checkId}">`;
+        html+=`<select class="review-tb-hour" id="tsh_${item.checkId}">${hourOpts}</select>`;
+        html+=`<select class="review-tb-dur" id="tsd_${item.checkId}"><option value="30">30분</option><option value="60" selected>1시간</option><option value="90">1.5시간</option><option value="120">2시간</option></select>`;
+        html+=`<button class="review-tb-confirm" data-tbadd="${item.checkId}" data-rsk="${subj.key}" data-bname="${escHtml(item.name)}">추가</button>`;
+        html+=`</div>`;
         html+=`</div>`;
         html+=`<div class="review-item-actions">`;
         html+=`<button class="review-star-btn${isWeak?' active':''}" data-star="${item.checkId}" data-bid="${item.blockId}" data-rsk="${subj.key}" title="약점 태그">⭐</button>`;
         if(!isFutureView)html+=`<button class="review-memo-btn" data-memo="${item.checkId}" title="메모">📝</button>`;
-        if(!isFutureView)html+=`<button class="review-tb-btn" data-tb="${item.checkId}">+ 시간표</button>`;
+        html+=`<button class="review-tb-btn" data-tb="${item.checkId}">+ 시간표</button>`;
         html+=`</div>`;
         html+=`</div>`;
       });
