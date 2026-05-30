@@ -2534,11 +2534,22 @@ function renderReview(){
 
 function renderReviewAll(el,today,vd){
   if(!vd)vd=today;
+  const _allDk=dateKey(vd);
+  const _allIsWeekend=vd.getDay()===0||vd.getDay()===6;
+  const _allLabel=isSameDay(vd,today)?'오늘':`${vd.getMonth()+1}월${vd.getDate()}일`;
+
+  function _subjSchedBtnHtml(sk){
+    if(_allIsWeekend)return'';
+    const added=!!_schedAddedDates[sk+':alltab:'+_allDk];
+    const st=added?'color:#81C995;border-color:#81C995;cursor:default':'';
+    return`<button class="review-tb-btn${added?' used':''}" data-rrow-sched="${sk}" style="margin-left:auto;flex-shrink:0;${st}" ${added?'disabled':''}>${added?'✓ 추가됨':'+ 시간표'}</button>`;
+  }
+
   let html='<div class="review-all-grid">';
   REVIEW_SUBJECTS.forEach(subj=>{
     const data=loadReviewData(subj.key);
     if(!data){
-      html+=`<div class="review-all-row" data-rrow="${subj.key}"><div class="review-all-top"><span class="review-all-badge" style="background:${subj.color}">${subj.name}</span><span class="review-all-cycle">—</span></div><span class="review-all-info">회독 일정을 추가하세요</span></div>`;
+      html+=`<div class="review-all-row" data-rrow="${subj.key}"><div class="review-all-top"><span class="review-all-badge" style="background:${subj.color}">${subj.name}</span><span class="review-all-cycle">—</span>${_subjSchedBtnHtml(subj.key)}</div><span class="review-all-info">회독 일정을 추가하세요</span></div>`;
       return;
     }
     const nb=data.blocks.length;
@@ -2559,7 +2570,7 @@ function renderReviewAll(el,today,vd){
       }else{squares+=`<div class="review-sq remaining"></div>`;}
     }
     const info=cur?`${dayIn}/${cur.days}일 완료 · D-${cur.days-dayIn}`:doneCount>0?`${doneCount}회독 완료`:'미시작';
-    html+=`<div class="review-all-row" data-rrow="${subj.key}"><div class="review-all-top"><span class="review-all-badge" style="background:${subj.color}">${subj.name}</span><span class="review-all-cycle">${cur?(cur.label||cur.num+'회독'):'—'}</span></div><div class="review-squares">${squares}</div><span class="review-all-info">${info}</span></div>`;
+    html+=`<div class="review-all-row" data-rrow="${subj.key}"><div class="review-all-top"><span class="review-all-badge" style="background:${subj.color}">${subj.name}</span><span class="review-all-cycle">${cur?(cur.label||cur.num+'회독'):'—'}</span>${_subjSchedBtnHtml(subj.key)}</div><div class="review-squares">${squares}</div><span class="review-all-info">${info}</span></div>`;
   });
   html+='</div>';
 
@@ -2578,10 +2589,7 @@ function renderReviewAll(el,today,vd){
   if(hasWeak)html+=`<div class="review-weak-section"><span class="review-section-title">⚠ 약점 블록</span>${weakHtml}</div>`;
 
   // all-subjects schedule button
-  const _allDk=dateKey(vd);
   const _allAdded=!!_schedAddedDates['all:'+_allDk];
-  const _allIsWeekend=vd.getDay()===0||vd.getDay()===6;
-  const _allLabel=isSameDay(vd,today)?'오늘':`${vd.getMonth()+1}월${vd.getDate()}일`;
   if(!_allIsWeekend){
     const _abStyle=_allAdded?'background:#9B9A97;color:#fff;border-color:#9B9A97;cursor:default':'';
     html+=`<div style="margin-top:16px;padding:0 4px"><button class="review-all-sched-btn" id="allSubjSchedBtn" ${_allAdded?'disabled':''} style="${_abStyle}">${_allAdded?'✓ 추가됨':`📅 ${_allLabel} 전과목 시간표 추가`}</button></div>`;
@@ -2590,6 +2598,15 @@ function renderReviewAll(el,today,vd){
   el.innerHTML=html;
   el.querySelectorAll('[data-rrow]').forEach(row=>{
     row.addEventListener('click',()=>{reviewSubTab=row.dataset.rrow;renderReview();});
+  });
+  el.querySelectorAll('[data-rrow-sched]').forEach(btn=>{
+    btn.addEventListener('click',e=>{
+      e.stopPropagation();
+      const sk=btn.dataset.rrowSched;
+      const stateKey=sk+':alltab:'+_allDk;
+      if(_schedAddedDates[stateKey])return;
+      addSingleSubjectSchedule(btn,sk,vd,stateKey);
+    });
   });
   const _aBtn=el.querySelector('#allSubjSchedBtn');
   if(_aBtn&&!_allAdded){_aBtn.addEventListener('click',()=>addTodaySchedule(_aBtn,vd,'all:'+_allDk));}
@@ -3126,6 +3143,42 @@ function addTodaySchedule(btn,targetDate,stateKey){
   btn.disabled=true;
   const isToday=isSameDay(tgt,realToday);
   showReviewToast(isToday?'오늘 시간표에 추가됨!':`${tgt.getMonth()+1}월${tgt.getDate()}일 시간표에 추가됨!`);
+}
+
+function addSingleSubjectSchedule(btn,subjKey,targetDate,stateKey){
+  const SLOTS={
+    labor_law:[{startMin:480,endMin:660}],
+    admin_law:[{startMin:660,endMin:720},{startMin:780,endMin:900}],
+    hr_mgmt:[{startMin:900,endMin:1080}],
+    labor_econ:[{startMin:1200,endMin:1380}],
+  };
+  const slots=SLOTS[subjKey];if(!slots)return;
+  const realToday=new Date();realToday.setHours(0,0,0,0);
+  const tgt=targetDate?new Date(targetDate):realToday;tgt.setHours(0,0,0,0);
+  if(tgt.getDay()===0||tgt.getDay()===6){alert('주말에는 시간표를 추가할 수 없습니다.');return;}
+  const todayDi=dayIdx(tgt);
+  const todayMon=getMondayOf(tgt);
+  const todayWKey=weekKey(todayMon);
+  const isCurrentWeek=weekKey(currentMonday)===todayWKey;
+  let todayBlocks=isCurrentWeek?[...blocks]:loadWeek(todayMon);
+  const memo=getTodayMemoForSubject(subjKey)||SUBJECTS[subjKey]?.name||subjKey;
+  const hasConflict=slots.some(slot=>todayBlocks.some(b=>b.day===todayDi&&!b.ghost&&b.startMin<slot.endMin&&b.endMin>slot.startMin));
+  if(hasConflict){
+    if(!confirm('이미 해당 시간에 블록이 있습니다. 덮어쓸까요?'))return;
+    const toRemove=new Set();
+    slots.forEach(slot=>{todayBlocks.forEach(b=>{if(b.day===todayDi&&!b.ghost&&b.startMin<slot.endMin&&b.endMin>slot.startMin)toRemove.add(b.id);});});
+    todayBlocks=todayBlocks.filter(b=>!toRemove.has(b.id));
+  }
+  pushUndo();
+  slots.forEach(slot=>{todayBlocks.push({id:uid(),day:todayDi,startMin:slot.startMin,endMin:slot.endMin,subject:subjKey,memo,note:'',completed:false});});
+  if(isCurrentWeek){blocks=todayBlocks;saveWeek();}
+  else{const v=JSON.stringify(todayBlocks);localStorage.setItem(todayWKey,v);syncToSupabase(todayWKey,v);}
+  if(stateKey)_schedAddedDates[stateKey]=true;
+  btn.textContent='✓ 추가됨';btn.classList.add('used');
+  btn.style.cssText+='color:#81C995;border-color:#81C995;cursor:default;';
+  btn.disabled=true;
+  const isToday=isSameDay(tgt,realToday);
+  showReviewToast((isToday?'오늘 ':`${tgt.getMonth()+1}월${tgt.getDate()}일 `)+(SUBJECTS[subjKey]?.short||subjKey)+' 시간표 추가됨!');
 }
 
 document.getElementById('rsDaysMinus').addEventListener('click',()=>{
