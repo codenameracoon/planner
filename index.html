@@ -240,6 +240,8 @@ body.dark .stats-h2-val{color:#E8E8E6}
 .tmpl-apply:hover{background:#E9E9E7}
 .tmpl-del{background:none;border:none;cursor:pointer;font-size:15px;color:#C0BFBC;padding:0;line-height:1}
 .tmpl-del:hover{color:#E03E3E}
+.tmpl-apply-all{display:block;width:100%;margin-top:8px;padding:5px;background:#F1F1EF;border:none;border-radius:3px;font-family:inherit;font-size:12px;cursor:pointer;color:#37352F;text-align:center}
+.tmpl-apply-all:hover{background:#E9E9E7}
 .tmpl-empty{font-size:13px;color:#9B9A97;padding:2px 0}
 
 /* dday pixel grid */
@@ -388,6 +390,8 @@ body.dark .tmpl-panel{background:#1A1A1A;border-color:#2D2D2D}
 body.dark .tmpl-item{background:#252525;border-color:#2D2D2D;color:#E8E8E6}
 body.dark .tmpl-apply{background:#2D2D2D;color:#E8E8E6}
 body.dark .tmpl-apply:hover{background:#383838}
+body.dark .tmpl-apply-all{background:#2D2D2D;color:#E8E8E6}
+body.dark .tmpl-apply-all:hover{background:#383838}
 body.dark .daily-summary{background:#1A1A1A;border-color:#2D2D2D}
 body.dark .daily-summary-total{color:#E8E8E6}
 body.dark .daily-summary-item{color:#555}
@@ -1250,15 +1254,28 @@ function applyTemplate(tmpl){
   blocks.push({id:uid(),day:tmpl.day,startMin:tmpl.startMin,endMin:tmpl.endMin,subject:tmpl.subject,memo:tmpl.memo,completed:false});
   saveWeek();renderBlocks();
 }
+function applyAllTemplates(){
+  if(!templates.length)return;
+  pushUndo();
+  let added=false;
+  templates.forEach(t=>{
+    if(!blocks.some(b=>b.day===t.day&&b.startMin===t.startMin&&!b.ghost)){
+      blocks.push({id:uid(),day:t.day,startMin:t.startMin,endMin:t.endMin,subject:t.subject,memo:t.memo,completed:false});
+      added=true;
+    }
+  });
+  if(added){saveWeek();renderBlocks();}
+}
 function renderTemplates(){
   const body=document.getElementById('tmplBody');
   if(!templates.length){body.innerHTML='<span class="tmpl-empty">저장된 템플릿 없음</span>';return;}
   body.innerHTML=templates.map(t=>{
     const subj=SUBJECTS[t.subject]||SUBJECTS.rest;
     return `<div class="tmpl-item"><span class="tmpl-dot" style="background:${subj.color}"></span><span>${subj.short} ${DAYS[t.day]} ${fmtTime(t.startMin)}</span><button class="tmpl-apply" data-tapply="${t.id}">적용</button><button class="tmpl-del" data-tdel="${t.id}">×</button></div>`;
-  }).join('');
+  }).join('')+`<button class="tmpl-apply-all">이번 주 전체 적용</button>`;
   body.querySelectorAll('[data-tapply]').forEach(btn=>btn.addEventListener('click',()=>{const t=templates.find(x=>x.id===btn.dataset.tapply);if(t)applyTemplate(t);}));
   body.querySelectorAll('[data-tdel]').forEach(btn=>btn.addEventListener('click',()=>{templates=templates.filter(x=>x.id!==btn.dataset.tdel);saveTemplates();renderTemplates();}));
+  body.querySelector('.tmpl-apply-all').addEventListener('click',applyAllTemplates);
 }
 
 // ── spaced repetition ─────────────────────────────────────────────────────────
@@ -2602,16 +2619,34 @@ function renderReviewAll(el,today,vd){
     });
     const FRUITS={labor_law:'🍎',hr_mgmt:'🍉',admin_law:'🍒',labor_econ:'🍋'};
     const fruit=FRUITS[subj.key]||'';
+    const todayChecks=loadReviewChecks(subj.key,today);
     let squares='';
-    for(let i=0;i<nb;i++){
-      if(cur&&cur.blocksPerDay){
+    if(cur&&cur.blocksPerDay){
+      const todayIds=getTodayBlockIndices(dayIn,cur.blocksPerDay,nb).map(j=>data.blocks[j]?.id).filter(Boolean);
+      const allTodayDone=todayIds.length>0&&todayIds.every(id=>todayChecks[id]);
+      for(let i=0;i<nb;i++){
         const bd=Math.floor(i/cur.blocksPerDay);
         const dd=getCycleDayCalDate(cur,bd);
         const lbl=dd?`<span class="review-sq-lbl">${fmtDate(dd)}</span>`:'';
         if(bd<dayIn)squares+=`<div class="review-sq done">${lbl}${fruit}</div>`;
-        else if(bd===dayIn)squares+=`<div class="review-sq today">${lbl}${fruit}</div>`;
+        else if(bd===dayIn)squares+=`<div class="review-sq ${allTodayDone?'done':'today'}">${lbl}${fruit}</div>`;
         else squares+=`<div class="review-sq remaining">${lbl}${fruit}</div>`;
-      }else{squares+=`<div class="review-sq remaining">${fruit}</div>`;}
+      }
+    }else if(cur&&cur.dailyPlan){
+      const bDayMap={};
+      cur.dailyPlan.forEach(p=>{if(bDayMap[p.blockIdx]===undefined)bDayMap[p.blockIdx]=p.day;});
+      const todayPlanIds=cur.dailyPlan.filter(p=>p.day===dayIn).map(p=>data.blocks[p.blockIdx]?.id).filter(Boolean);
+      const allTodayDone=todayPlanIds.length>0&&todayPlanIds.every(id=>todayChecks[id]);
+      for(let i=0;i<nb;i++){
+        const bd=bDayMap[i]!==undefined?bDayMap[i]:cur.days;
+        const dd=getCycleDayCalDate(cur,bd);
+        const lbl=dd&&bd<cur.days?`<span class="review-sq-lbl">${fmtDate(dd)}</span>`:'';
+        if(bd<dayIn)squares+=`<div class="review-sq done">${lbl}${fruit}</div>`;
+        else if(bd===dayIn)squares+=`<div class="review-sq ${allTodayDone?'done':'today'}">${lbl}${fruit}</div>`;
+        else squares+=`<div class="review-sq remaining">${lbl}${fruit}</div>`;
+      }
+    }else{
+      for(let i=0;i<nb;i++)squares+=`<div class="review-sq remaining">${fruit}</div>`;
     }
     const info=cur?`${dayIn}/${cur.days}일 완료 · D-${cur.days-dayIn}`:doneCount>0?`${doneCount}회독 완료`:'미시작';
     html+=`<div class="review-all-row" data-rrow="${subj.key}"><div class="review-all-top"><span class="review-all-badge" style="background:${subj.color}">${subj.name}</span><span class="review-all-cycle">${cur?(cur.label||cur.num+'회독'):'—'}</span>${_subjSchedBtnHtml(subj.key)}</div><div class="review-squares">${squares}</div><span class="review-all-info">${info}</span></div>`;
