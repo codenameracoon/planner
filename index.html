@@ -287,6 +287,11 @@ body.dark .stats-h2-val{color:#E8E8E6}
 .month-wrap{flex:1;overflow:auto;padding:8px 12px;min-height:0}
 .month-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:4px}
 .month-hdr-cell{font-size:12px;font-weight:600;color:#ABABAB;text-align:center;padding:4px 0;text-transform:uppercase;letter-spacing:.04em}
+.month-week-hdr{grid-column:1/-1;display:flex;align-items:center;padding:3px 8px;background:#EEF4FF;border-radius:5px;min-height:22px;gap:6px;margin-top:2px}
+.month-week-res{font-size:12px;font-weight:700;color:#2383E2;flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.month-week-res-empty{color:#B8D0F4;font-weight:400;font-style:italic}
+.month-week-add{font-size:16px;font-weight:500;color:#2383E2;background:none;border:none;cursor:pointer;padding:0 3px;line-height:1;flex-shrink:0;opacity:.65}
+.month-week-add:hover{opacity:1}
 .month-cell{border:1px solid #E9E9E7;border-radius:6px;min-height:72px;padding:4px 6px;cursor:pointer;transition:background .1s;position:relative}
 .month-cell:hover{background:#F7F7F5}
 .month-cell.today-cell{border-color:#2383E2}
@@ -443,6 +448,10 @@ body.dark .retro-subj-inp{color:#E8E8E6;border-color:#2D2D2D}
 body.dark .month-cell-num{color:#E8E8E6}
 body.dark .month-cell.today-cell .month-cell-num{color:#5EA4F3}
 body.dark .month-hdr-cell{color:#555}
+body.dark .month-week-hdr{background:#1a2535}
+body.dark .month-week-res{color:#5EA4F3}
+body.dark .month-week-res-empty{color:#2E4A6A}
+body.dark .month-week-add{color:#5EA4F3}
 body.dark .month-expand{background:#252525;border-color:#2D2D2D}
 body.dark .month-expand-hdr{color:#E8E8E6}
 body.dark .month-blk-item{border-color:#2D2D2D}
@@ -1246,8 +1255,7 @@ function renderMonthEvents(wrap){
 
   const hdr=document.createElement('div');hdr.className='month-events-hdr';
   const title=document.createElement('span');title.className='month-events-title';title.textContent='이달의 일정';
-  const addBtn=document.createElement('button');addBtn.className='month-events-add-btn';addBtn.textContent='+ 일정 추가';
-  hdr.appendChild(title);hdr.appendChild(addBtn);panel.appendChild(hdr);
+  hdr.appendChild(title);panel.appendChild(hdr);
 
   const list=document.createElement('div');list.id='monthEventList';
   function _renderList(){
@@ -1274,47 +1282,6 @@ function renderMonthEvents(wrap){
   }
   _renderList();
   panel.appendChild(list);
-
-  // Add form (hidden by default)
-  const form=document.createElement('div');form.className='month-event-form';form.style.display='none';
-  const today=new Date();
-  const defaultDate=`${today.getFullYear()}-${String(today.getMonth()+1).padStart(2,'0')}-${String(today.getDate()).padStart(2,'0')}`;
-  form.innerHTML=`<div class="month-event-form-row">`+
-    `<input class="month-event-inp" id="evDate" type="date" value="${defaultDate}" style="flex:0 0 auto">`+
-    `<input class="month-event-inp" id="evTime" type="time" value="09:00" style="flex:0 0 auto;width:90px">`+
-    `<input class="month-event-inp" id="evTitle" type="text" placeholder="일정 제목" style="flex:1;min-width:120px">`+
-    `</div>`+
-    `<div class="month-event-form-row">`+
-    `<select class="month-event-sel" id="evAlarm">`+
-      `<option value="0">알림 없음</option>`+
-      `<option value="10">10분 전</option>`+
-      `<option value="30">30분 전</option>`+
-      `<option value="60">1시간 전</option>`+
-      `<option value="1440">하루 전</option>`+
-    `</select>`+
-    `<button class="month-event-save" id="evSave">추가</button>`+
-    `<button class="month-event-cancel" id="evCancel">취소</button>`+
-    `</div>`;
-  panel.appendChild(form);
-
-  addBtn.addEventListener('click',()=>{
-    const visible=form.style.display!=='none';
-    form.style.display=visible?'none':'';
-    if(!visible)form.querySelector('#evTitle').focus();
-  });
-  form.querySelector('#evCancel').addEventListener('click',()=>{form.style.display='none';});
-  form.querySelector('#evSave').addEventListener('click',()=>{
-    const date=form.querySelector('#evDate').value;
-    const time=form.querySelector('#evTime').value;
-    const title=form.querySelector('#evTitle').value.trim();
-    if(!title){form.querySelector('#evTitle').focus();return;}
-    const alarmMinutes=parseInt(form.querySelector('#evAlarm').value)||0;
-    if(alarmMinutes>0)requestNotifPermission();
-    const ev={id:uid(),date,time,title,alarmMinutes};
-    const evs=loadMonthEvents(mon);evs.push(ev);saveMonthEvents(mon,evs);
-    form.querySelector('#evTitle').value='';form.style.display='none';
-    _renderList();
-  });
 
   wrap.appendChild(panel);
 }
@@ -2096,6 +2063,53 @@ function buildWeeklyRetroInEl(container, wMon){
   container.appendChild(retroBody);
 }
 
+function showAddEventModal(defaultDate){
+  const existing=document.getElementById('addEventModal');
+  if(existing){existing.remove();return;}
+  const mon=currentMonday;
+  const isDark=document.body.classList.contains('dark');
+  const bg=isDark?'#252525':'#fff';
+  const bdr=isDark?'#3a3a3a':'#E9E9E7';
+  const overlay=document.createElement('div');
+  overlay.id='addEventModal';
+  overlay.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,.35);z-index:9999;display:flex;align-items:center;justify-content:center';
+  const box=document.createElement('div');
+  box.style.cssText=`background:${bg};border-radius:8px;padding:16px 18px;width:300px;display:flex;flex-direction:column;gap:9px;box-shadow:0 4px 24px rgba(0,0,0,.18)`;
+  const inpStyle=`font-family:inherit;font-size:13px;padding:5px 7px;border:1px solid ${bdr};border-radius:4px;outline:none;background:${bg};color:${isDark?'#E8E8E6':'#37352F'};width:100%;box-sizing:border-box`;
+  box.innerHTML=`<div style="font-size:14px;font-weight:600;color:${isDark?'#E8E8E6':'#37352F'}">일정 추가</div>`+
+    `<input id="aeDate" type="date" value="${defaultDate}" style="${inpStyle}">`+
+    `<div style="display:flex;gap:8px"><input id="aeTime" type="time" value="09:00" style="${inpStyle};width:120px;flex-shrink:0"><input id="aeTitle" type="text" placeholder="일정 제목" style="${inpStyle}"></div>`+
+    `<select id="aeAlarm" style="${inpStyle}">`+
+      `<option value="0">알림 없음</option>`+
+      `<option value="10">10분 전</option>`+
+      `<option value="30">30분 전</option>`+
+      `<option value="60">1시간 전</option>`+
+      `<option value="1440">하루 전</option>`+
+    `</select>`+
+    `<div style="display:flex;gap:8px;justify-content:flex-end">`+
+      `<button id="aeCancel" style="font-family:inherit;font-size:13px;padding:5px 14px;border:1px solid ${bdr};border-radius:4px;cursor:pointer;background:none;color:${isDark?'#E8E8E6':'#37352F'}">취소</button>`+
+      `<button id="aeSave" style="font-family:inherit;font-size:13px;padding:5px 14px;border:none;border-radius:4px;cursor:pointer;background:#2383E2;color:#fff;font-weight:600">추가</button>`+
+    `</div>`;
+  overlay.appendChild(box);
+  document.body.appendChild(overlay);
+  setTimeout(()=>box.querySelector('#aeTitle').focus(),40);
+  overlay.addEventListener('click',e=>{if(e.target===overlay)overlay.remove();});
+  box.querySelector('#aeCancel').addEventListener('click',()=>overlay.remove());
+  box.querySelector('#aeSave').addEventListener('click',()=>{
+    const date=box.querySelector('#aeDate').value;
+    const time=box.querySelector('#aeTime').value;
+    const title=box.querySelector('#aeTitle').value.trim();
+    if(!title){box.querySelector('#aeTitle').focus();return;}
+    const alarmMinutes=parseInt(box.querySelector('#aeAlarm').value)||0;
+    if(alarmMinutes>0)requestNotifPermission();
+    const evs=loadMonthEvents(mon);
+    evs.push({id:uid(),date,time,title,alarmMinutes});
+    saveMonthEvents(mon,evs);
+    overlay.remove();
+    renderMonthView();
+  });
+}
+
 function renderMonthView(){
   const wrap=document.getElementById('monthWrap');
   const today=new Date();today.setHours(0,0,0,0);
@@ -2104,24 +2118,34 @@ function renderMonthView(){
   const gridStart=getMondayOf(firstDay);
   let html='<div class="month-grid">';
   DAYS.forEach(d=>html+=`<div class="month-hdr-cell">${d}</div>`);
-  for(let i=0;i<42;i++){
-    const cellDate=addDays(gridStart,i);
-    const dk=dateKey(cellDate);
-    const isToday=isSameDay(cellDate,today);
-    const isOther=cellDate.getMonth()!==month;
-    const isSelected=dk===expandedMonthDay;
-    const db=loadBlocksForDate(cellDate).filter(b=>!b.ghost);
-    const tH=db.reduce((s,b)=>s+(b.endMin-b.startMin)/60,0);
-    const dH=db.filter(b=>b.completed).reduce((s,b)=>s+(b.endMin-b.startMin)/60,0);
-    const rate=tH>0?Math.round(dH/tH*100):0;
-    const subjKeys=[...new Set(db.map(b=>SUBJECTS[b.subject]?b.subject:'rest'))];
-    const intensity=Math.min(tH/8,1);
-    html+=`<div class="month-cell${isToday?' today-cell':''}${isOther?' other-month':''}${isSelected?' selected-cell':''}" data-mdate="${dk}" style="background:rgba(35,131,226,${(intensity*0.07).toFixed(2)})">`+
-      `<div class="month-cell-num">${cellDate.getDate()}</div>`+
-      `<div class="month-dots">${subjKeys.slice(0,6).map(k=>`<span class="month-dot" style="background:${SUBJECTS[k].color}"></span>`).join('')}</div>`+
-      (tH>0?`<div class="month-cell-info">${tH.toFixed(1)}h</div>`:'')+
-      (rate>0?`<div class="month-cell-rate">${rate}%</div>`:'')+
+  for(let w=0;w<6;w++){
+    const weekMonday=addDays(gridStart,w*7);
+    const wk=weekKey(weekMonday);
+    const res=localStorage.getItem('weekRes_'+wk)||'';
+    const wdStr=dateKey(weekMonday);
+    html+=`<div class="month-week-hdr">`+
+      `<span class="month-week-res${res?'':' month-week-res-empty'}">${res?escHtml(res):'이번 주 다짐 없음'}</span>`+
+      `<button class="month-week-add" data-wdate="${wdStr}" title="일정 추가">+</button>`+
     `</div>`;
+    for(let d=0;d<7;d++){
+      const cellDate=addDays(gridStart,w*7+d);
+      const dk=dateKey(cellDate);
+      const isToday=isSameDay(cellDate,today);
+      const isOther=cellDate.getMonth()!==month;
+      const isSelected=dk===expandedMonthDay;
+      const db=loadBlocksForDate(cellDate).filter(b=>!b.ghost);
+      const tH=db.reduce((s,b)=>s+(b.endMin-b.startMin)/60,0);
+      const dH=db.filter(b=>b.completed).reduce((s,b)=>s+(b.endMin-b.startMin)/60,0);
+      const rate=tH>0?Math.round(dH/tH*100):0;
+      const subjKeys=[...new Set(db.map(b=>SUBJECTS[b.subject]?b.subject:'rest'))];
+      const intensity=Math.min(tH/8,1);
+      html+=`<div class="month-cell${isToday?' today-cell':''}${isOther?' other-month':''}${isSelected?' selected-cell':''}" data-mdate="${dk}" style="background:rgba(35,131,226,${(intensity*0.07).toFixed(2)})">`+
+        `<div class="month-cell-num">${cellDate.getDate()}</div>`+
+        `<div class="month-dots">${subjKeys.slice(0,6).map(k=>`<span class="month-dot" style="background:${SUBJECTS[k].color}"></span>`).join('')}</div>`+
+        (tH>0?`<div class="month-cell-info">${tH.toFixed(1)}h</div>`:'')+
+        (rate>0?`<div class="month-cell-rate">${rate}%</div>`:'')+
+      `</div>`;
+    }
   }
   html+='</div>';
   if(expandedMonthDay){
@@ -2136,6 +2160,9 @@ function renderMonthView(){
   wrap.innerHTML=html;
   wrap.querySelectorAll('.month-cell').forEach(cell=>{
     cell.addEventListener('click',()=>{const dk=cell.dataset.mdate;expandedMonthDay=expandedMonthDay===dk?null:dk;renderMonthView();});
+  });
+  wrap.querySelectorAll('.month-week-add').forEach(btn=>{
+    btn.addEventListener('click',e=>{e.stopPropagation();showAddEventModal(btn.dataset.wdate);});
   });
   const closeBtn=document.getElementById('closeExpand');
   if(closeBtn)closeBtn.addEventListener('click',e=>{e.stopPropagation();expandedMonthDay=null;renderMonthView();});
