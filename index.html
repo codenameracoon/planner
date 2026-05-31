@@ -2624,12 +2624,11 @@ function renderReviewAll(el,today,vd){
     if(cur&&cur.blocksPerDay){
       const todayIds=getTodayBlockIndices(dayIn,cur.blocksPerDay,nb).map(j=>data.blocks[j]?.id).filter(Boolean);
       const allTodayDone=todayIds.length>0&&todayIds.every(id=>todayChecks[id]);
-      for(let i=0;i<nb;i++){
-        const bd=Math.floor(i/cur.blocksPerDay);
-        const dd=getCycleDayCalDate(cur,bd);
+      for(let day=0;day<cur.days;day++){
+        const dd=getCycleDayCalDate(cur,day);
         const lbl=dd?`<span class="review-sq-lbl">${fmtDate(dd)}</span>`:'';
-        if(bd<dayIn)squares+=`<div class="review-sq done">${lbl}${fruit}</div>`;
-        else if(bd===dayIn)squares+=`<div class="review-sq ${allTodayDone?'done':'today'}">${lbl}${fruit}</div>`;
+        if(day<dayIn)squares+=`<div class="review-sq done">${lbl}${fruit}</div>`;
+        else if(day===dayIn)squares+=`<div class="review-sq ${allTodayDone?'done':'today'}">${lbl}${fruit}</div>`;
         else squares+=`<div class="review-sq remaining">${lbl}${fruit}</div>`;
       }
     }else if(cur&&cur.dailyPlan){
