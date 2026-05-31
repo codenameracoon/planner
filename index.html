@@ -2622,23 +2622,30 @@ function renderReviewAll(el,today,vd){
     const todayChecks=loadReviewChecks(subj.key,today);
     let squares='';
     if(cur&&cur.blocksPerDay){
-      const todayIds=getTodayBlockIndices(dayIn,cur.blocksPerDay,nb).map(j=>data.blocks[j]?.id).filter(Boolean);
+      let todayDayIdx=-1;
+      for(let d=0;d<cur.days;d++){const td=getCycleDayCalDate(cur,d);if(td&&isSameDay(td,today)){todayDayIdx=d;break;}}
+      const todayIds=todayDayIdx>=0?getTodayBlockIndices(todayDayIdx,cur.blocksPerDay,nb).map(j=>data.blocks[j]?.id).filter(Boolean):[];
       const allTodayDone=todayIds.length>0&&todayIds.every(id=>todayChecks[id]);
       for(let day=0;day<cur.days;day++){
         const dd=getCycleDayCalDate(cur,day);
         const lbl=dd?`<span class="review-sq-lbl">${fmtDate(dd)}</span>`:'';
-        if(day<dayIn)squares+=`<div class="review-sq done">${lbl}${fruit}</div>`;
-        else if(day===dayIn)squares+=`<div class="review-sq ${allTodayDone?'done':'today'}">${lbl}${fruit}</div>`;
+        const isT=dd&&isSameDay(dd,today);
+        const isP=dd&&dd<today&&!isT;
+        if(isP)squares+=`<div class="review-sq done">${lbl}${fruit}</div>`;
+        else if(isT)squares+=`<div class="review-sq ${allTodayDone?'done':'today'}">${lbl}${fruit}</div>`;
         else squares+=`<div class="review-sq remaining">${lbl}${fruit}</div>`;
       }
     }else if(cur&&cur.dailyPlan){
-      // dailyPlan: one square per day in the cycle; checks keyed as 'dp_'+day
-      const allTodayDone=!!todayChecks['dp_'+dayIn];
+      let todayDayIdx=-1;
+      for(let d=0;d<cur.days;d++){const td=getCycleDayCalDate(cur,d);if(td&&isSameDay(td,today)){todayDayIdx=d;break;}}
+      const allTodayDone=todayDayIdx>=0?!!todayChecks['dp_'+todayDayIdx]:false;
       for(let day=0;day<cur.days;day++){
         const dd=getCycleDayCalDate(cur,day);
         const lbl=dd?`<span class="review-sq-lbl">${fmtDate(dd)}</span>`:'';
-        if(day<dayIn)squares+=`<div class="review-sq done">${lbl}${fruit}</div>`;
-        else if(day===dayIn)squares+=`<div class="review-sq ${allTodayDone?'done':'today'}">${lbl}${fruit}</div>`;
+        const isT=dd&&isSameDay(dd,today);
+        const isP=dd&&dd<today&&!isT;
+        if(isP)squares+=`<div class="review-sq done">${lbl}${fruit}</div>`;
+        else if(isT)squares+=`<div class="review-sq ${allTodayDone?'done':'today'}">${lbl}${fruit}</div>`;
         else squares+=`<div class="review-sq remaining">${lbl}${fruit}</div>`;
       }
     }else{
