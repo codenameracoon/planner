@@ -283,6 +283,10 @@ body.dark .stats-h2-val{color:#E8E8E6}
 .month-cell:hover{background:#F7F7F5}
 .month-cell.today-cell{border-color:#2383E2}
 .month-cell.other-month{opacity:.3}
+.month-cell.selected-cell{border-color:#2383E2;border-width:2px}
+.month-expand-section-title{font-size:11px;font-weight:600;color:#9B9A97;text-transform:uppercase;letter-spacing:.06em;margin:10px 0 6px;padding-top:10px;border-top:1px solid #E9E9E7}
+.retro-subj-inp{flex:1;font-size:12px;font-family:inherit;border:none;border-bottom:1px dashed #E9E9E7;outline:none;background:transparent;color:#37352F;padding:1px 0;min-width:0}
+.retro-subj-inp:focus{border-bottom-color:#8AB4F8}
 .month-cell-num{font-size:13px;font-weight:600;margin-bottom:2px}
 .month-cell.today-cell .month-cell-num{color:#2383E2}
 .month-dots{display:flex;flex-wrap:wrap;gap:2px;margin-bottom:2px}
@@ -426,6 +430,8 @@ body.dark .month-wrap{background:#191919}
 body.dark .month-cell{border-color:#2D2D2D}
 body.dark .month-cell:hover{background:#232323}
 body.dark .month-cell.today-cell{border-color:#5EA4F3}
+body.dark .month-cell.selected-cell{border-color:#5EA4F3}
+body.dark .retro-subj-inp{color:#E8E8E6;border-color:#2D2D2D}
 body.dark .month-cell-num{color:#E8E8E6}
 body.dark .month-cell.today-cell .month-cell-num{color:#5EA4F3}
 body.dark .month-hdr-cell{color:#555}
@@ -1157,7 +1163,7 @@ function loadBlocksForDate(date){
 
 // ── selection ─────────────────────────────────────────────────────────────────
 function clearSelection(){selectedIds.clear();document.querySelectorAll('.block.selected').forEach(el=>el.classList.remove('selected'));}
-function deleteSelected(){if(!selectedIds.size)return;pushUndo();blocks=blocks.filter(b=>!selectedIds.has(b.id));selectedIds.clear();saveWeek();renderBlocks();}
+function deleteSelected(){if(!selectedIds.size)return;pushUndo();blocks.filter(b=>selectedIds.has(b.id)).forEach(b=>removeGoalForBlock(b));blocks=blocks.filter(b=>!selectedIds.has(b.id));selectedIds.clear();saveWeek();renderBlocks();}
 function createSelRect(x,y){removeSelRect();selRectEl=document.createElement('div');selRectEl.className='sel-rect';selRectEl.style.cssText=`left:${x}px;top:${y}px;width:0;height:0;`;document.body.appendChild(selRectEl);}
 function updateSelRect(x1,y1,x2,y2){if(!selRectEl)return;selRectEl.style.left=Math.min(x1,x2)+'px';selRectEl.style.top=Math.min(y1,y2)+'px';selRectEl.style.width=Math.abs(x2-x1)+'px';selRectEl.style.height=Math.abs(y2-y1)+'px';}
 function removeSelRect(){if(selRectEl){selRectEl.remove();selRectEl=null;}}
@@ -1833,6 +1839,25 @@ function renderDailySummary(){
 }
 
 // ── monthly view ──────────────────────────────────────────────────────────────
+function buildWeeklyRetroInEl(container, wMon){
+  const data=loadRetro('week',wMon);
+  const secTitle=document.createElement('div');secTitle.className='month-expand-section-title';secTitle.textContent='주간 회고';
+  container.appendChild(secTitle);
+  const retroBody=document.createElement('div');retroBody.className='retro-body';retroBody.style.gap='6px';
+  const starRow=document.createElement('div');starRow.className='retro-row';
+  const starLbl=document.createElement('span');starLbl.className='retro-label';starLbl.textContent='이번 주 별점';
+  const stars=makeStars(data.rating||0,v=>{const d=loadRetro('week',wMon);d.rating=v;saveRetro('week',wMon,d);});
+  starRow.appendChild(starLbl);starRow.appendChild(stars);retroBody.appendChild(starRow);
+  [['good','이번 주 잘한 것'],['weak','아직 불안한 부분'],['next','다음 주 집중 과목/범위']].forEach(([key,label])=>{
+    const row=document.createElement('div');row.className='retro-row';
+    const lbl=document.createElement('span');lbl.className='retro-label';lbl.textContent=label;
+    const inp=document.createElement('input');inp.className='retro-input';inp.type='text';inp.value=data[key]||'';inp.placeholder='입력...';
+    inp.addEventListener('change',()=>{const d=loadRetro('week',wMon);d[key]=inp.value.trim();saveRetro('week',wMon,d);});
+    row.appendChild(lbl);row.appendChild(inp);retroBody.appendChild(row);
+  });
+  container.appendChild(retroBody);
+}
+
 function renderMonthView(){
   const wrap=document.getElementById('monthWrap');
   const today=new Date();today.setHours(0,0,0,0);
@@ -1846,13 +1871,14 @@ function renderMonthView(){
     const dk=dateKey(cellDate);
     const isToday=isSameDay(cellDate,today);
     const isOther=cellDate.getMonth()!==month;
+    const isSelected=dk===expandedMonthDay;
     const db=loadBlocksForDate(cellDate).filter(b=>!b.ghost);
     const tH=db.reduce((s,b)=>s+(b.endMin-b.startMin)/60,0);
     const dH=db.filter(b=>b.completed).reduce((s,b)=>s+(b.endMin-b.startMin)/60,0);
     const rate=tH>0?Math.round(dH/tH*100):0;
     const subjKeys=[...new Set(db.map(b=>SUBJECTS[b.subject]?b.subject:'rest'))];
     const intensity=Math.min(tH/8,1);
-    html+=`<div class="month-cell${isToday?' today-cell':''}${isOther?' other-month':''}" data-mdate="${dk}" style="background:rgba(35,131,226,${(intensity*0.07).toFixed(2)})">`+
+    html+=`<div class="month-cell${isToday?' today-cell':''}${isOther?' other-month':''}${isSelected?' selected-cell':''}" data-mdate="${dk}" style="background:rgba(35,131,226,${(intensity*0.07).toFixed(2)})">`+
       `<div class="month-cell-num">${cellDate.getDate()}</div>`+
       `<div class="month-dots">${subjKeys.slice(0,6).map(k=>`<span class="month-dot" style="background:${SUBJECTS[k].color}"></span>`).join('')}</div>`+
       (tH>0?`<div class="month-cell-info">${tH.toFixed(1)}h</div>`:'')+
@@ -1875,6 +1901,13 @@ function renderMonthView(){
   });
   const closeBtn=document.getElementById('closeExpand');
   if(closeBtn)closeBtn.addEventListener('click',e=>{e.stopPropagation();expandedMonthDay=null;renderMonthView();});
+  if(expandedMonthDay){
+    const expandEl=wrap.querySelector('.month-expand');
+    if(expandEl){
+      const expDate=new Date(expandedMonthDay);
+      buildWeeklyRetroInEl(expandEl,getMondayOf(expDate));
+    }
+  }
   renderMonthlyRetro(wrap);
   renderToolbarProgress();
 }
@@ -2041,7 +2074,7 @@ function onContextMenu(e){
       const btn=ev.target.closest('[data-action]');if(!btn)return;
       const id=btn.dataset.id;const b=getBlock(id);
       if(btn.dataset.action==='toggle'){if(b){pushUndo();const cur=b.status||(b.completed?'done':'');b.status=cur===''?'done':cur==='done'?'fail':'';b.completed=(b.status==='done');saveWeek();renderBlocks();}}
-      else if(btn.dataset.action==='delete'){pushUndo();blocks=blocks.filter(x=>x.id!==id);selectedIds.delete(id);saveWeek();renderBlocks();}
+      else if(btn.dataset.action==='delete'){pushUndo();if(b)removeGoalForBlock(b);blocks=blocks.filter(x=>x.id!==id);selectedIds.delete(id);saveWeek();renderBlocks();}
       else if(btn.dataset.action==='save-tmpl'){if(b)saveAsTemplate(b);}
       else if(btn.dataset.action==='review'){if(b)scheduleReview(b);}
       else if(btn.dataset.action==='confirm'){confirmGhost(id);}
@@ -2156,6 +2189,20 @@ function autoGoalFromBlock(blk){
   if(rowEl){buildGoalRowContent(rowEl,dk);syncGoalRowHeight();}
 }
 
+function removeGoalForBlock(blk){
+  if(!blk)return;
+  const date=addDays(currentMonday,blk.day);
+  const dk=dateKey(date);
+  let gs=loadDailyGoals(dk);
+  const before=gs.length;
+  gs=gs.filter(g=>g.blkId!==blk.id);
+  if(gs.length<before){
+    saveDailyGoals(dk,gs);
+    const rowEl=document.querySelector(`.daily-goal-row[data-day="${blk.day}"]`);
+    if(rowEl){buildGoalRowContent(rowEl,dk);syncGoalRowHeight();}
+  }
+}
+
 // ── edit modal ────────────────────────────────────────────────────────────────
 function openEditModal(blockId){
   const blk=getBlock(blockId);if(!blk)return;
@@ -2194,7 +2241,7 @@ function navigate(days){clearSelection();clearHistory();currentMonday=addDays(cu
 
 document.getElementById('copyPrevWeek').onclick=()=>{
   if(blocks.length>0&&!confirm('현재 주에 데이터가 있습니다. 전주 내용으로 교체할까요?'))return;
-  pushUndo();const prev=loadWeek(addDays(currentMonday,-7));blocks=prev.map(b=>({...b,id:uid(),completed:false,status:''}));saveWeek();renderBlocks();
+  pushUndo();const prev=loadWeek(addDays(currentMonday,-7));blocks=prev.map(b=>({...b,id:uid(),completed:false,status:''}));saveWeek();blocks.forEach(b=>autoGoalFromBlock(b));renderBlocks();
 };
 document.getElementById('resetWeek').onclick=()=>{
   if(!confirm('이번 주 데이터를 모두 삭제할까요?'))return;pushUndo();blocks=[];selectedIds.clear();saveWeek();renderBlocks();
@@ -2360,35 +2407,48 @@ function renderWeeklyRetro(){
 function renderMonthlyRetro(wrap){
   const now=currentMonday;
   const data=loadRetro('month',now);
-  let html=`<div class="retro-panel" id="monthlyRetroPanel"><div class="retro-header" id="monthlyRetroHdr"><span class="retro-title">월간 회고</span><button class="retro-toggle-btn" id="monthlyRetroToggle">펼치기 ▼</button></div><div class="retro-body" id="monthlyRetroBody" style="display:none">`;
-  html+=`<div class="retro-row"><span class="retro-label">이달의 별점</span><div id="monthlyStars"></div></div>`;
+  // Build panel via DOM (not innerHTML) so we can append stars + text inputs together
+  const panel=document.createElement('div');panel.className='retro-panel';panel.id='monthlyRetroPanel';
+  const hdr=document.createElement('div');hdr.className='retro-header';hdr.id='monthlyRetroHdr';
+  const title=document.createElement('span');title.className='retro-title';title.textContent='월간 회고';
+  const toggle=document.createElement('button');toggle.className='retro-toggle-btn';toggle.id='monthlyRetroToggle';toggle.textContent='펼치기 ▼';
+  hdr.appendChild(title);hdr.appendChild(toggle);panel.appendChild(hdr);
+  const body=document.createElement('div');body.className='retro-body';body.id='monthlyRetroBody';body.style.cssText='display:none;flex-direction:column;gap:6px';
+  // Monthly star row + note
+  const mStarRow=document.createElement('div');mStarRow.className='retro-row';
+  const mStarLbl=document.createElement('span');mStarLbl.className='retro-label';mStarLbl.textContent='이달의 별점';
+  const mStars=makeStars(data.rating||0,v=>{const d=loadRetro('month',now);d.rating=v;saveRetro('month',now,d);});
+  const mStarNote=document.createElement('input');mStarNote.className='retro-input';mStarNote.type='text';mStarNote.value=data.ratingNote||'';mStarNote.placeholder='한 줄 소감...';mStarNote.style.marginLeft='6px';
+  mStarNote.addEventListener('change',()=>{const d=loadRetro('month',now);d.ratingNote=mStarNote.value.trim();saveRetro('month',now,d);});
+  mStarRow.appendChild(mStarLbl);mStarRow.appendChild(mStars);mStarRow.appendChild(mStarNote);body.appendChild(mStarRow);
+  // Per-subject star rows + notes
   const studySubjs=[['labor_law','노동법'],['hr_mgmt','인사노무관리'],['admin_law','행정쟁송법'],['labor_econ','노동경제학'],['precedent','판례암기+타이핑']];
   studySubjs.forEach(([k,n])=>{
     const s=SUBJECTS[k];
-    html+=`<div class="retro-subj-row"><span class="retro-subj-dot" style="background:${s.color}"></span><span class="retro-subj-name">${n}</span><div class="retro-subj-stars" id="mstar_${k}"></div></div>`;
+    const row=document.createElement('div');row.className='retro-subj-row';
+    const dot=document.createElement('span');dot.className='retro-subj-dot';dot.style.background=s.color;
+    const name=document.createElement('span');name.className='retro-subj-name';name.textContent=n;
+    const stars=makeStars((data.subjRating||{})[k]||0,v=>{const d=loadRetro('month',now);d.subjRating=d.subjRating||{};d.subjRating[k]=v;saveRetro('month',now,d);},'retro-subj-star');
+    const note=document.createElement('input');note.className='retro-subj-inp';note.type='text';note.value=(data.subjNote||{})[k]||'';note.placeholder='한 줄 평...';
+    note.addEventListener('change',()=>{const d=loadRetro('month',now);d.subjNote=d.subjNote||{};d.subjNote[k]=note.value.trim();saveRetro('month',now,d);});
+    row.appendChild(dot);row.appendChild(name);row.appendChild(stars);row.appendChild(note);body.appendChild(row);
   });
-  const fields=[['pattern','고칠 공부 패턴'],['goal','다음 달 목표']];
-  fields.forEach(([key,label])=>{
-    html+=`<div class="retro-row"><span class="retro-label">${label}</span><input class="retro-input" id="mretro_${key}" type="text" value="${escHtml(data[key]||'')}" placeholder="입력..."></div>`;
+  // Text fields
+  [['pattern','고칠 공부 패턴'],['goal','다음 달 목표']].forEach(([key,label])=>{
+    const row=document.createElement('div');row.className='retro-row';
+    const lbl=document.createElement('span');lbl.className='retro-label';lbl.textContent=label;
+    const inp=document.createElement('input');inp.className='retro-input';inp.type='text';inp.value=data[key]||'';inp.placeholder='입력...';
+    inp.addEventListener('change',()=>{const d=loadRetro('month',now);d[key]=inp.value.trim();saveRetro('month',now,d);});
+    row.appendChild(lbl);row.appendChild(inp);body.appendChild(row);
   });
-  html+=`</div></div>`;
-  wrap.insertAdjacentHTML('beforeend',html);
-  const panel=document.getElementById('monthlyRetroPanel');
-  const toggle=document.getElementById('monthlyRetroToggle');
-  const body=document.getElementById('monthlyRetroBody');
-  document.getElementById('monthlyRetroHdr').addEventListener('click',()=>{
-    const open=body.style.display!=='none';body.style.display=open?'none':'flex';body.style.flexDirection=open?'':'column';body.style.gap=open?'':'6px';
+  panel.appendChild(body);
+  hdr.addEventListener('click',()=>{
+    const open=body.style.display!=='none';
+    body.style.display=open?'none':'flex';
+    if(!open){body.style.flexDirection='column';body.style.gap='6px';}
     toggle.textContent=open?'펼치기 ▼':'접기 ▲';
   });
-  const monthStars=makeStars(data.rating||0,v=>{const d=loadRetro('month',now);d.rating=v;saveRetro('month',now,d);});
-  document.getElementById('monthlyStars').appendChild(monthStars);
-  studySubjs.forEach(([k])=>{
-    const subjStars=makeStars((data.subjRating||{})[k]||0,v=>{const d=loadRetro('month',now);d.subjRating=d.subjRating||{};d.subjRating[k]=v;saveRetro('month',now,d);},'retro-subj-star');
-    document.getElementById(`mstar_${k}`).appendChild(subjStars);
-  });
-  fields.forEach(([key])=>{
-    document.getElementById(`mretro_${key}`).addEventListener('change',e=>{const d=loadRetro('month',now);d[key]=e.target.value.trim();saveRetro('month',now,d);});
-  });
+  wrap.appendChild(panel);
 }
 
 // retro collapse toggles
@@ -2461,6 +2521,25 @@ document.getElementById('retroPopupOverlay').addEventListener('click',e=>{if(e.t
 setInterval(buildRetroPopup,30000);
 buildRetroPopup();
 
+// one-time migration: add goals from pre-existing blocks for week of 2026-06-01
+(function migrateJune1Goals(){
+  const mKey='goalsMigrated_2026-W23';
+  if(localStorage.getItem(mKey))return;
+  const jun1=new Date(2026,5,1);
+  const wMon=getMondayOf(jun1);
+  const wb=loadWeek(wMon);
+  wb.forEach(blk=>{
+    const short=SUBJ_SHORT[blk.subject];if(!short)return;
+    const date=addDays(wMon,blk.day);const dk=dateKey(date);
+    const text=blk.memo?`${short} ${blk.memo}`:short;
+    let gs=loadDailyGoals(dk);
+    if(gs.some(g=>g.blkId===blk.id))return;
+    gs.push({id:uid(),text,status:'',done:false,blkId:blk.id});
+    saveDailyGoals(dk,gs);
+  });
+  localStorage.setItem(mKey,'1');
+})();
+
 // dark mode
 function applyDark(on){document.body.classList.toggle('dark',on);localStorage.setItem('darkMode',on?'1':'0');}
 
@@ -2514,7 +2593,7 @@ function showMobileCtx(blockId,x,y){
     const id=btn.dataset.id;const b=getBlock(id);
     if(btn.dataset.action==='toggle'){if(b){pushUndo();const cur=b.status||(b.completed?'done':'');b.status=cur===''?'done':cur==='done'?'fail':'';b.completed=(b.status==='done');saveWeek();renderBlocks();}}
     else if(btn.dataset.action==='edit'){openEditModal(id);}
-    else if(btn.dataset.action==='delete'){if(b){pushUndo();blocks=blocks.filter(x=>x.id!==id);selectedIds.delete(id);saveWeek();renderBlocks();}}
+    else if(btn.dataset.action==='delete'){if(b){pushUndo();removeGoalForBlock(b);blocks=blocks.filter(x=>x.id!==id);selectedIds.delete(id);saveWeek();renderBlocks();}}
     hideCtx();
   };
 }
