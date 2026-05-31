@@ -1079,7 +1079,19 @@ function saveMonthlyGoals(){const k='monthlyGoals_'+monthStorageKey(new Date());
 function loadTemplates(){try{const r=localStorage.getItem('templates');return r?JSON.parse(r):[];}catch{return[];}}
 function saveTemplates(){const v=JSON.stringify(templates);localStorage.setItem('templates',v);syncToSupabase('templates',v);}
 function loadDailyGoals(dk){try{const r=localStorage.getItem('dailyGoals_'+dk);return r?JSON.parse(r):[];}catch{return[];}}
+function hasDailyGoals(dk){return localStorage.getItem('dailyGoals_'+dk)!==null;}
 function saveDailyGoals(dk,goals){const k='dailyGoals_'+dk;const v=JSON.stringify(goals);localStorage.setItem(k,v);syncToSupabase(k,v);}
+function autoPopulateDailyGoals(dk){
+  if(hasDailyGoals(dk))return loadDailyGoals(dk);
+  const [y,mo,d]=dk.split('-').map(Number);
+  const dow=new Date(y,mo-1,d).getDay();
+  if(dow>=1&&dow<=6){
+    const goals=ROUTINES.map(rt=>({id:uid(),text:rt.icon+' '+rt.label,status:'',done:false}));
+    saveDailyGoals(dk,goals);
+    return goals;
+  }
+  return[];
+}
 function routineKey(dk){return 'routine_'+dk;}
 function loadRoutine(dk){try{return JSON.parse(localStorage.getItem(routineKey(dk))||'null')||{};}catch{return{};}}
 function saveRoutine(dk,data){const k=routineKey(dk);const v=JSON.stringify(data);localStorage.setItem(k,v);syncToSupabase(k,v);}
@@ -1534,7 +1546,7 @@ function syncGoalRowHeight(){
 }
 
 function buildGoalRowContent(rowEl, dk){
-  const goals=loadDailyGoals(dk);
+  const goals=autoPopulateDailyGoals(dk);
   const d=parseInt(rowEl.dataset.day);
   const{planned,actual}=computeDayHours(d);
   let html=`<div class="dgrow-hours"><span class="dgrow-hours-actual">${actual}h</span> / ${planned}h</div><div class="dgrow-goals">`;
@@ -1576,10 +1588,27 @@ function buildGoalRowContent(rowEl, dk){
     inp.addEventListener('change',_saveGoalText);
     inp.addEventListener('keydown',e=>{
       if(e.key==='Tab'){e.preventDefault();return;}
+      if(e.key==='Enter'){
+        e.preventDefault();
+        const curId=inp.dataset.dgtext;
+        const gs=loadDailyGoals(dk);
+        const curIdx=gs.findIndex(x=>x.id===curId);
+        if(curIdx>=0)gs[curIdx].text=inp.value.trim();
+        const ng={id:uid(),text:'',status:'',done:false};
+        gs.splice(curIdx>=0?curIdx+1:gs.length,0,ng);
+        saveDailyGoals(dk,gs);buildGoalRowContent(rowEl,dk);syncGoalRowHeight();
+        const ni=rowEl.querySelector(`[data-dgtext="${ng.id}"]`);if(ni)ni.focus();
+        return;
+      }
       if(e.key==='Backspace'&&inp.value===''){
         e.preventDefault();
-        let gs=loadDailyGoals(dk);gs=gs.filter(x=>x.id!==inp.dataset.dgtext);
+        const curId=inp.dataset.dgtext;
+        let gs=loadDailyGoals(dk);
+        const curIdx=gs.findIndex(x=>x.id===curId);
+        gs=gs.filter(x=>x.id!==curId);
         saveDailyGoals(dk,gs);buildGoalRowContent(rowEl,dk);syncGoalRowHeight();
+        const inps=[...rowEl.querySelectorAll('[data-dgtext]')];
+        if(inps.length)inps[Math.max(0,curIdx-1)].focus();
       }
     });
   });
