@@ -2539,18 +2539,31 @@ function updateStatsPanelTitle(){
 // ── stats panel collapse ──────────────────────────────────────────────────────
 document.getElementById('statsResolutionInline').addEventListener('click',e=>e.stopPropagation());
 document.getElementById('statsResolutionInline').addEventListener('mousedown',e=>e.stopPropagation());
-document.getElementById('statsCollapseBtn').addEventListener('click',e=>{
-  e.stopPropagation();
+// Enter in collapsed textarea inserts a space instead of a newline
+document.getElementById('statsResolutionInline').addEventListener('keydown',e=>{
+  if(e.key==='Enter'){
+    e.preventDefault();
+    const el=e.currentTarget,p=el.selectionStart;
+    el.value=el.value.slice(0,p)+' '+el.value.slice(p);
+    el.setSelectionRange(p+1,p+1);
+    el.dispatchEvent(new Event('input'));
+  }
+});
+function _toggleStatsCollapse(){
   statsCollapsed=!statsCollapsed;
   const body=document.getElementById('statsBody');
-  if(statsCollapsed){
-    body.style.display='none';
-  }else{
-    body.style.display='';
-    renderStats(); // re-render on expand to guarantee current view's goals show
-  }
-  e.currentTarget.textContent=statsCollapsed?'▶':'▼';
+  const btn=document.getElementById('statsCollapseBtn');
+  if(statsCollapsed){body.style.display='none';}
+  else{body.style.display='';renderStats();}
+  btn.textContent=statsCollapsed?'▶':'▼';
   updateStatsPanelTitle();
+}
+// Clicking anywhere on the header (except textarea/button which stopPropagation) toggles
+// Mobile has its own handler below; skip here to avoid double-fire
+document.getElementById('statsHdr').addEventListener('click',e=>{if(!isMobile())_toggleStatsCollapse();});
+document.getElementById('statsCollapseBtn').addEventListener('click',e=>{
+  e.stopPropagation();
+  _toggleStatsCollapse();
 });
 
 document.getElementById('goalCollapseBtn').addEventListener('click',()=>{
