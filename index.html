@@ -532,7 +532,7 @@ body.dark .routine-day-lbl{color:#555}
   /* week view: horizontal scroll with fixed time column */
   body[data-view="week"] .planner-wrapper{overflow-x:auto;-webkit-overflow-scrolling:touch}
   body[data-view="week"] .time-col{position:sticky;left:0;z-index:10}
-  body[data-view="week"] .day-col{flex:0 0 140px;min-width:140px}
+  body[data-view="week"] .day-col{flex:0 0 180px;min-width:180px}
   body[data-view="week"] .day-header{position:sticky;top:0;z-index:5}
 
   /* month view: no horizontal scroll */
@@ -1438,6 +1438,7 @@ function render(){
     todayBtn.classList.add('u-hidden');granGroup.classList.remove('u-hidden');
     document.getElementById('navLabel').textContent=weekLabelStr(currentMonday);
     buildTimeAxis();buildDayCols();renderBlocks();
+    if(isMobile()){requestAnimationFrame(()=>{const tc=document.querySelector('.day-col.today');if(tc){const pw=document.getElementById('plannerWrapper');pw.scrollLeft=Math.max(0,tc.offsetLeft-40);}});}
     renderWeeklyRetro();buildDdayGrid();
     renderRoutine();
   } else if(viewMode==='day'){
