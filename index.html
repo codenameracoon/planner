@@ -197,8 +197,8 @@ body.dark .stats-h2-val{color:#E8E8E6}
 .wgoal-text-input{flex:1;font-size:14px;font-family:inherit;border:none;border-bottom:1px dashed #E9E9E7;outline:none;background:transparent;color:#37352F;cursor:pointer;min-width:0;padding:1px 0}
 .wgoal-text-input:focus{border-bottom-color:#8AB4F8;cursor:text}
 .wgoal-text-input.done-text{text-decoration:line-through;color:#9B9A97}
-.wgoal-subj-name{font-size:12px;color:#9B9A97;white-space:nowrap;flex-shrink:0;min-width:32px}
-.wgoal-hrs{font-size:12px;font-weight:700;color:#37352F;white-space:nowrap;flex-shrink:0;min-width:28px}
+.wgoal-subj-name{font-size:12px;color:#9B9A97;white-space:nowrap;flex-shrink:0;width:58px}
+.wgoal-hrs{font-size:12px;font-weight:700;color:#37352F;white-space:nowrap;flex-shrink:0;width:34px;text-align:right}
 .week-resolution-inp{width:100%;box-sizing:border-box;font-size:16px;font-weight:700;color:#4A90E2;font-family:inherit;border:none;border-bottom:1.5px dashed #C8DCFA;outline:none;background:transparent;resize:none;line-height:1.7;min-height:80px;padding:4px 0}
 .week-resolution-inp:focus{border-bottom-color:#8AB4F8}
 .week-resolution-inp::placeholder{font-weight:400;color:#C0BFBC;font-size:13px}
@@ -611,24 +611,24 @@ body.dark .routine-day-lbl{color:#555}
 .review-sub-tab{background:none;border:1px solid #E9E9E7;border-radius:20px;padding:4px 14px;font-family:inherit;font-size:13px;cursor:pointer;color:#9B9A97;transition:background .12s,color .12s,border-color .12s;white-space:nowrap}
 .review-sub-tab.active{background:#37352F;border-color:#37352F;color:#fff}
 .review-sub-tab.subj-tab.active{color:#fff}
-.review-all-grid{display:flex;flex-direction:column;gap:8px}
-.review-all-row{display:flex;flex-direction:column;gap:6px;padding:10px 14px;border:1px solid #E9E9E7;border-radius:8px;cursor:pointer;transition:background .1s;box-sizing:border-box;width:100%;overflow:hidden}
+.review-all-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+.review-all-row{display:flex;flex-direction:column;gap:10px;padding:20px 22px;border:1px solid #E9E9E7;border-radius:12px;cursor:pointer;transition:background .1s;box-sizing:border-box;width:100%;overflow:hidden}
 .review-all-row:hover{background:#F7F7F5}
-.review-all-top{display:flex;align-items:center;gap:8px}
-.review-all-badge{font-size:12px;font-weight:600;color:#fff;border-radius:12px;padding:2px 10px;white-space:nowrap;flex-shrink:0}
-.review-all-cycle{font-size:12px;color:#9B9A97;white-space:nowrap}
-.review-squares{display:flex;flex-wrap:wrap;gap:3px;width:100%;box-sizing:border-box}
-.review-sq{width:20px;min-height:28px;border-radius:3px;flex-shrink:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1px;font-size:11px;line-height:1;padding:2px 0}
+.review-all-top{display:flex;align-items:center;gap:10px}
+.review-all-badge{font-size:14px;font-weight:600;color:#fff;border-radius:14px;padding:4px 14px;white-space:nowrap;flex-shrink:0}
+.review-all-cycle{font-size:13px;color:#9B9A97;white-space:nowrap}
+.review-squares{display:flex;flex-wrap:wrap;gap:4px;width:100%;box-sizing:border-box}
+.review-sq{width:28px;min-height:36px;border-radius:4px;flex-shrink:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;font-size:16px;line-height:1;padding:3px 0}
 .review-sq.done{background:#81C995;color:#fff}
 .review-sq.today{background:rgba(35,131,226,.12);border:2px solid #2383E2;color:#2383E2}
 .review-sq.remaining{background:#E9E9E7;color:#37352F;filter:opacity(.32)}
-.review-sq-lbl{font-size:6px;opacity:.85;line-height:1;letter-spacing:-.2px;font-weight:600}
+.review-sq-lbl{font-size:8px;opacity:.85;line-height:1;letter-spacing:-.2px;font-weight:600}
 .review-timeline{display:flex;align-items:center;gap:8px;margin:8px 0 4px}
 .review-tl-date{font-size:11px;color:#9B9A97;flex-shrink:0}
 .review-tl-bar{flex:1;height:12px;position:relative;display:flex;align-items:center}
 .review-tl-track{position:absolute;left:0;right:0;height:2px;border-radius:2px}
 .review-tl-dot{position:absolute;width:9px;height:9px;border-radius:50%;border:1.5px solid #fff;top:50%;transform:translate(-50%,-50%);z-index:1}
-.review-all-info{font-size:11px;color:#9B9A97}
+.review-all-info{font-size:12px;color:#9B9A97;font-weight:500}
 .review-section{margin-bottom:20px}
 .review-section-title{font-size:11px;font-weight:600;color:#9B9A97;text-transform:uppercase;letter-spacing:.06em;margin-bottom:8px;display:block}
 .review-cycle-card{border:1px solid #E9E9E7;border-radius:8px;padding:14px 16px}
@@ -2470,10 +2470,10 @@ document.getElementById('weeklyRetroHdr').addEventListener('click',()=>{
 // ── 11pm retro popup ──────────────────────────────────────────────────────────
 function buildRetroPopup(){
   const now=new Date();
-  if(now.getHours()!==23)return;
+  if(now.getHours()<22)return;
   const todayKey=`retroPopup_${dateKey(now)}`;
-  if(sessionStorage.getItem(todayKey))return;
-  sessionStorage.setItem(todayKey,'1');
+  if(localStorage.getItem(todayKey))return;
+  localStorage.setItem(todayKey,'1');
   const isSunday=now.getDay()===0;
   document.getElementById('retroPopupTitle').textContent=isSunday?'일간 회고 + 주간 회고':'주간 회고';
   const body=document.getElementById('retroPopupBody');
@@ -2998,10 +2998,6 @@ function renderReviewAll(el,today,vd){
 
   const _allAdded=!!_schedAddedDates['all:'+_allDk];
   let html='';
-  if(!_allIsWeekend){
-    const _abStyle=_allAdded?'background:#9B9A97;color:#fff;border-color:#9B9A97;cursor:default':'';
-    html+=`<div style="margin-bottom:12px;padding:0 4px"><button class="review-all-sched-btn" id="allSubjSchedBtn" ${_allAdded?'disabled':''} style="${_abStyle}">${_allAdded?'✓ 붙여넣기 완료':`📅 ${_allLabel} 전과목 시간표 붙여넣기`}</button></div>`;
-  }
   html+='<div class="review-all-grid">';
   REVIEW_SUBJECTS.forEach(subj=>{
     const data=loadReviewData(subj.key);
@@ -3097,6 +3093,12 @@ function renderReviewSubject(el,subj,today){
   const vd=reviewViewDate||today;
   const isTodayView=isSameDay(vd,today);
   const isFutureView=vd>today;
+
+  // weekend → show no-review message
+  if(vd.getDay()===0||vd.getDay()===6){
+    el.innerHTML=`<div style="text-align:center;padding:32px 16px;font-size:15px;color:#9B9A97">🌸 주말에는 회독이 없습니다</div>`;
+    return;
+  }
 
   // today's cycle (cycle card, roadmap, speed)
   let cur=null,dayIn=0;
