@@ -2633,16 +2633,13 @@ function renderReviewAll(el,today,vd){
         else squares+=`<div class="review-sq remaining">${lbl}${fruit}</div>`;
       }
     }else if(cur&&cur.dailyPlan){
-      const bDayMap={};
-      cur.dailyPlan.forEach(p=>{if(bDayMap[p.blockIdx]===undefined)bDayMap[p.blockIdx]=p.day;});
-      const todayPlanIds=cur.dailyPlan.filter(p=>p.day===dayIn).map(p=>data.blocks[p.blockIdx]?.id).filter(Boolean);
-      const allTodayDone=todayPlanIds.length>0&&todayPlanIds.every(id=>todayChecks[id]);
-      for(let i=0;i<nb;i++){
-        const bd=bDayMap[i]!==undefined?bDayMap[i]:cur.days;
-        const dd=getCycleDayCalDate(cur,bd);
-        const lbl=dd&&bd<cur.days?`<span class="review-sq-lbl">${fmtDate(dd)}</span>`:'';
-        if(bd<dayIn)squares+=`<div class="review-sq done">${lbl}${fruit}</div>`;
-        else if(bd===dayIn)squares+=`<div class="review-sq ${allTodayDone?'done':'today'}">${lbl}${fruit}</div>`;
+      // dailyPlan: one square per day in the cycle; checks keyed as 'dp_'+day
+      const allTodayDone=!!todayChecks['dp_'+dayIn];
+      for(let day=0;day<cur.days;day++){
+        const dd=getCycleDayCalDate(cur,day);
+        const lbl=dd?`<span class="review-sq-lbl">${fmtDate(dd)}</span>`:'';
+        if(day<dayIn)squares+=`<div class="review-sq done">${lbl}${fruit}</div>`;
+        else if(day===dayIn)squares+=`<div class="review-sq ${allTodayDone?'done':'today'}">${lbl}${fruit}</div>`;
         else squares+=`<div class="review-sq remaining">${lbl}${fruit}</div>`;
       }
     }else{
