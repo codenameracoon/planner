@@ -559,7 +559,7 @@ body.dark .routine-day-lbl{color:#555}
 .review-all-badge{font-size:12px;font-weight:600;color:#fff;border-radius:12px;padding:2px 10px;white-space:nowrap;flex-shrink:0}
 .review-all-cycle{font-size:12px;color:#9B9A97;white-space:nowrap}
 .review-squares{display:flex;flex-wrap:wrap;gap:3px;width:100%;box-sizing:border-box}
-.review-sq{width:14px;height:14px;border-radius:3px;flex-shrink:0}
+.review-sq{width:18px;height:18px;border-radius:3px;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:11px;line-height:1}
 .review-sq.done{background:#81C995}
 .review-sq.today{background:transparent;border:2px solid #2383E2}
 .review-sq.remaining{background:#E9E9E7}
@@ -2586,12 +2586,14 @@ function renderReviewAll(el,today,vd){
       if(st==='done')doneCount++;
       if(st==='current'&&!cur){cur=c;dayIn=getCycleDayIn(c,today);}
     });
+    const FRUITS={labor_law:'🍎',hr_mgmt:'🍉',admin_law:'🍒',labor_econ:'🍋'};
+    const fruit=FRUITS[subj.key]||'';
     let squares='';
     for(let i=0;i<nb;i++){
       if(cur&&cur.blocksPerDay){
         const bd=Math.floor(i/cur.blocksPerDay);
-        if(bd<dayIn)squares+=`<div class="review-sq done"></div>`;
-        else if(bd===dayIn)squares+=`<div class="review-sq today"></div>`;
+        if(bd<dayIn)squares+=`<div class="review-sq done">${fruit}</div>`;
+        else if(bd===dayIn)squares+=`<div class="review-sq today">${fruit}</div>`;
         else squares+=`<div class="review-sq remaining"></div>`;
       }else{squares+=`<div class="review-sq remaining"></div>`;}
     }
@@ -2837,7 +2839,7 @@ function renderReviewSubject(el,subj,today){
     if(c.startDate){sDate=new Date(c.startDate);sDate.setHours(0,0,0,0);const _ce=getCalendarEndForCycle(c);eDate=_ce?addDays(_ce,-1):addDays(sDate,c.days-1);}
     let circCls='',info='',editBtn='';
     if(st==='done'){circCls='done';info=`완료 · ${fmtDate(sDate)}~${fmtDate(eDate)}`;}
-    else if(st==='current'){circCls='current';info=`진행 중 · D-${cur?cur.days-dayIn-1:'?'}`;}
+    else if(st==='current'){circCls='current';info=`진행 중 · D-${cur?cur.days-dayIn-1:'?'}`;editBtn=`<button class="review-roadmap-edit" data-red="${c.num}" data-rsk="${subj.key}">편집</button>`;}
     else{info=c.startDate?`예정 · ${fmtDate(sDate)} 시작`:'예정 · 미설정';editBtn=`<button class="review-roadmap-edit" data-red="${c.num}" data-rsk="${subj.key}">편집</button>`;}
     const rowStyle=st==='current'?`style="background:${subj.color}15"`:'';
     const circLabel=c.label?c.label.slice(0,2):c.num;
