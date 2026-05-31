@@ -190,13 +190,22 @@ body.dark .stats-h2-val{color:#E8E8E6}
 .stats-completion-div{width:100%;height:1px;background:#E9E9E7;margin:2px 0}
 .stats-hours-grid{display:grid;grid-template-columns:auto auto;gap:2px 10px;justify-content:start}
 .stats-col-label{font-size:12px;font-weight:600;color:#9B9A97;text-transform:uppercase;letter-spacing:.04em;margin-bottom:6px}
-.wgoal-grid{display:grid;grid-template-columns:1fr 1fr;gap:4px 12px}
+.wgoal-grid{display:grid;grid-template-columns:1fr;gap:4px}
 .wgoal-row{display:flex;align-items:center;gap:6px}
 .wgoal-check{width:14px;height:14px;border:1.5px solid #C0BFBC;border-radius:3px;cursor:pointer;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:8px;font-weight:700;color:transparent;transition:background .1s,border-color .1s}
 .wgoal-check.done{background:#37352F;border-color:#37352F;color:#fff}
 .wgoal-text-input{flex:1;font-size:14px;font-family:inherit;border:none;border-bottom:1px dashed #E9E9E7;outline:none;background:transparent;color:#37352F;cursor:pointer;min-width:0;padding:1px 0}
 .wgoal-text-input:focus{border-bottom-color:#8AB4F8;cursor:text}
 .wgoal-text-input.done-text{text-decoration:line-through;color:#9B9A97}
+.wgoal-subj-name{font-size:12px;color:#9B9A97;white-space:nowrap;flex-shrink:0;min-width:32px}
+.wgoal-hrs{font-size:12px;font-weight:700;color:#37352F;white-space:nowrap;flex-shrink:0;min-width:28px}
+.week-resolution-inp{width:100%;box-sizing:border-box;font-size:16px;font-weight:700;color:#4A90E2;font-family:inherit;border:none;border-bottom:1.5px dashed #C8DCFA;outline:none;background:transparent;resize:none;line-height:1.7;min-height:80px;padding:4px 0}
+.week-resolution-inp:focus{border-bottom-color:#8AB4F8}
+.week-resolution-inp::placeholder{font-weight:400;color:#C0BFBC;font-size:13px}
+.mood-grid{display:flex;flex-wrap:wrap;gap:5px;margin-top:4px}
+.mood-btn{width:34px;height:34px;border:1.5px solid #E9E9E7;border-radius:6px;background:none;font-size:19px;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:border-color .1s,background .1s;padding:0;line-height:1}
+.mood-btn:hover{border-color:#C0BFBC;background:#F7F7F5}
+.mood-btn.active{border-color:#8AB4F8;background:rgba(138,180,248,.12)}
 
 /* block duration */
 .block-duration{position:absolute;bottom:4px;right:8px;font-size:13px;font-weight:700;color:#37352F;pointer-events:none;white-space:nowrap;line-height:1}
@@ -382,6 +391,12 @@ body.dark .wgoal-text-input{color:#E8E8E6;border-color:#2D2D2D}
 body.dark .wgoal-check{border-color:#444}
 body.dark .wgoal-check.done{background:#E8E8E6;border-color:#E8E8E6;color:#191919}
 body.dark .wgoal-text-input.done-text{color:#555}
+body.dark .wgoal-hrs{color:#E8E8E6}
+body.dark .week-resolution-inp{color:#6BAEE8;border-color:#2D2D2D}
+body.dark .week-resolution-inp::placeholder{color:#444}
+body.dark .mood-btn{border-color:#2D2D2D}
+body.dark .mood-btn:hover{border-color:#444;background:#272727}
+body.dark .mood-btn.active{border-color:#8AB4F8;background:rgba(138,180,248,.15)}
 body.dark .ctx-menu{background:#252525;border-color:#2D2D2D;box-shadow:0 2px 12px rgba(0,0,0,.4)}
 body.dark .ctx-item{color:#E8E8E6}
 body.dark .ctx-item:hover{background:#2D2D2D}
@@ -951,7 +966,8 @@ function _isPlannerKey(k){
   return k&&k!=='_planner_sync_meta'&&k!=='darkMode'&&(
     k.startsWith('week_')||k==='weeklyGoals'||k==='templates'||
     k.startsWith('weeklyTextGoals_')||k.startsWith('monthlyGoals_')||
-    k.startsWith('dailyGoals_')||k.startsWith('retro_')||k.startsWith('routine_')
+    k.startsWith('dailyGoals_')||k.startsWith('retro_')||k.startsWith('routine_')||
+    k.startsWith('weekRes_')
   );
 }
 
@@ -1121,13 +1137,6 @@ function hasDailyGoals(dk){return localStorage.getItem('dailyGoals_'+dk)!==null;
 function saveDailyGoals(dk,goals){const k='dailyGoals_'+dk;const v=JSON.stringify(goals);localStorage.setItem(k,v);syncToSupabase(k,v);}
 function autoPopulateDailyGoals(dk){
   if(hasDailyGoals(dk))return loadDailyGoals(dk);
-  const [y,mo,d]=dk.split('-').map(Number);
-  const dow=new Date(y,mo-1,d).getDay();
-  if(dow>=1&&dow<=6){
-    const goals=ROUTINES.map(rt=>({id:uid(),text:rt.icon+' '+rt.label,status:'',done:false}));
-    saveDailyGoals(dk,goals);
-    return goals;
-  }
   return[];
 }
 function routineKey(dk){return 'routine_'+dk;}
@@ -1175,37 +1184,35 @@ function renderStats(){
   });
   const studyKeys=keys.filter(k=>k!=='rest'&&k!=='precedent');
 
-  // Per-subject hours grid
-  let gridRows='<div class="stats-hours-grid2">';
-  studyKeys.forEach(key=>{
-    const subj=SUBJECTS[key];const{total}=stats[key];
-    gridRows+=`<div class="stats-h2-cell">`+
-      `<span class="stats-dot" style="background:${subj.color};width:7px;height:7px;margin-top:0;flex-shrink:0"></span>`+
-      `<span class="stats-h2-name">${subj.short}</span>`+
-      `<span class="stats-h2-val">${total>0?total.toFixed(1)+'h':'—'}</span>`+
-    `</div>`;
-  });
-  gridRows+='</div>';
-  const col2=`<div class="stats-col-hours">`+
-    `<div class="stats-col-label">과목별 공부시간</div>`+
-    `<div class="stats-hours-inner"><div>${gridRows}</div></div>`+
-  `</div>`;
-
-  // Weekly goals column (always shown)
+  // Weekly goals column with hours integrated
   let col3=`<div class="stats-col-goals"><div class="stats-col-label">주간 목표</div><div class="wgoal-grid">`;
   studyKeys.forEach(key=>{
     const subj=SUBJECTS[key];
     const tg=weeklyTextGoals[key]||{text:'',done:false};
+    const hrs=stats[key].total;
     col3+=`<div class="wgoal-row">`+
       `<div class="wgoal-check${tg.done?' done':''}" data-wcheck="${key}">${tg.done?'✓':''}</div>`+
       `<span class="stats-dot" style="background:${subj.color}"></span>`+
-      `<input class="wgoal-text-input${tg.done?' done-text':''}" data-wkey="${key}" value="${escHtml(tg.text)}" placeholder="${subj.short} 이번 주 목표...">`+
+      `<span class="wgoal-subj-name">${subj.short}</span>`+
+      `<span class="wgoal-hrs">${hrs>0?hrs.toFixed(1)+'h':'—'}</span>`+
+      `<input class="wgoal-text-input${tg.done?' done-text':''}" data-wkey="${key}" value="${escHtml(tg.text)}" placeholder="목표...">`+
     `</div>`;
   });
   col3+=`</div></div>`;
 
+  // 이번 주 다짐 column
+  const wrKey='weekRes_'+weekKey(currentMonday);
+  const wrVal=localStorage.getItem(wrKey)||'';
+  const col2=`<div class="stats-col-hours">`+
+    `<div class="stats-col-label">이번 주 다짐</div>`+
+    `<textarea class="week-resolution-inp" id="weekResolutionInp" placeholder="이번 주 나에게 하고 싶은 말...">${escHtml(wrVal)}</textarea>`+
+  `</div>`;
+
   const body=document.getElementById('statsBody');
   body.innerHTML=col3+col2;
+
+  const resInp=body.querySelector('#weekResolutionInp');
+  if(resInp){resInp.addEventListener('change',()=>{const v=resInp.value;localStorage.setItem(wrKey,v);syncToSupabase(wrKey,v);});}
 
   if(isMobile()){
     [['stats-col-goals','_mGoalsCollapsed'],['stats-col-hours','_mHoursCollapsed']].forEach(([cls,stateKey])=>{
@@ -2277,6 +2284,20 @@ function makeStars(val,cb,cls='retro-star',max=5){
   return starsEl;
 }
 
+const MOODS=[
+  {id:'bright',emoji:'😄',label:'밝은 웃음'},
+  {id:'meh',emoji:'😐',label:'그저 그런'},
+  {id:'tearup',emoji:'🥺',label:'눈물 고임'},
+  {id:'cry',emoji:'😭',label:'오열'},
+  {id:'angry',emoji:'😤',label:'화남'},
+  {id:'sick',emoji:'🤒',label:'아픔'},
+  {id:'study',emoji:'📚',label:'열공 모드'},
+  {id:'pumped',emoji:'💪',label:'의지 충만'},
+  {id:'sleepy',emoji:'😴',label:'졸음'},
+  {id:'anxious',emoji:'😰',label:'불안'},
+  {id:'blown',emoji:'🤯',label:'머리 폭발'},
+  {id:'touched',emoji:'🥹',label:'감동적'},
+];
 function renderDailyRetro(){
   const el=document.getElementById('dailyRetro');
   if(viewMode!=='day'){el.classList.add('u-hidden');return;}
@@ -2284,6 +2305,23 @@ function renderDailyRetro(){
   const data=loadRetro('day',currentDay);
   const body=document.getElementById('dailyRetroBody');
   body.innerHTML='';
+  // mood row
+  const moodRow=document.createElement('div');moodRow.className='retro-row';moodRow.style.flexDirection='column';moodRow.style.alignItems='flex-start';
+  const moodLbl=document.createElement('span');moodLbl.className='retro-label';moodLbl.textContent='오늘 기분';
+  const moodGrid=document.createElement('div');moodGrid.className='mood-grid';
+  MOODS.forEach(m=>{
+    const btn=document.createElement('button');btn.className='mood-btn'+(data.mood===m.id?' active':'');
+    btn.textContent=m.emoji;btn.title=m.label;
+    btn.addEventListener('click',()=>{
+      const d=loadRetro('day',currentDay);
+      d.mood=d.mood===m.id?null:m.id;
+      saveRetro('day',currentDay,d);
+      moodGrid.querySelectorAll('.mood-btn').forEach((b,i)=>b.classList.toggle('active',MOODS[i].id===d.mood));
+    });
+    moodGrid.appendChild(btn);
+  });
+  moodRow.appendChild(moodLbl);moodRow.appendChild(moodGrid);body.appendChild(moodRow);
+  // star row
   const starRow=document.createElement('div');starRow.className='retro-row';
   const starLbl=document.createElement('span');starLbl.className='retro-label';starLbl.textContent='오늘 별점';
   const stars=makeStars(data.rating||0,v=>{const d=loadRetro('day',currentDay);d.rating=v;saveRetro('day',currentDay,d);},undefined,3);
