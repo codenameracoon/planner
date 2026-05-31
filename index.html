@@ -81,6 +81,9 @@ body{font-family:'Inter',system-ui,sans-serif;background:#fff;color:#37352F;font
 .block-done-btn{position:absolute;top:3px;right:3px;width:16px;height:16px;border-radius:50%;border:1.5px solid #C0BFBC;background:transparent;font-size:8px;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;opacity:.5;transition:opacity .1s,background .1s,border-color .1s;z-index:5;color:#9B9A97;font-family:inherit;padding:0;line-height:1}
 .block-done-btn:hover{opacity:1}
 .block.completed .block-done-btn{background:rgba(52,168,83,.9);border-color:rgba(52,168,83,.9);color:#fff;opacity:1}
+.block.failed{opacity:.4}
+.block.failed .block-done-btn{background:rgba(234,67,53,.9);border-color:rgba(234,67,53,.9);color:#fff;opacity:1}
+.block-fail-badge{display:inline-flex;align-items:center;justify-content:center;width:11px;height:11px;background:rgba(234,67,53,.85);border-radius:2px;color:#fff;font-size:7px;font-weight:700;margin-right:3px;vertical-align:middle;flex-shrink:0}
 .block-subject{font-size:12px;font-weight:500;color:#9B9A97;text-transform:uppercase;letter-spacing:.05em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;line-height:1.5}
 .block-review-label{font-size:11px;font-style:italic;color:#9B9A97;margin-top:1px}
 .block-content-row{display:flex;align-items:flex-start;gap:4px;margin-top:7px}
@@ -415,6 +418,7 @@ body.dark .block-focus-btn{color:#555}
 body.dark .block-note{background:#2A2A2A;border-color:#444;color:#C0C0BE}
 body.dark .block-note[contenteditable="true"]{color:#E8E8E6}
 body.dark .block-done-badge{background:rgba(52,168,83,.7)}
+body.dark .block-fail-badge{background:rgba(234,67,53,.7)}
 
 /* subject picker */
 .subj-picker{position:fixed;background:#fff;border:1px solid #E9E9E7;border-radius:8px;padding:4px;z-index:1000;min-width:186px;box-shadow:0 4px 20px rgba(0,0,0,.1)}
@@ -1600,14 +1604,16 @@ function buildBlockEl(blk){
   const iconPaths=SUBJECT_ICONS[blk.subject]||SUBJECT_ICONS.rest;
   const tintBg=hexToRgba(subj.color,0.12);
   const el=document.createElement('div');
-  el.className='block'+(blk.completed?' completed':'')+(selectedIds.has(blk.id)?' selected':'')+(isGhost?' ghost-sr':'');
+  const blkStatus=blk.status||(blk.completed?'done':'');
+  el.className='block'+(blkStatus==='done'?' completed':blkStatus==='fail'?' failed':'')+(selectedIds.has(blk.id)?' selected':'')+(isGhost?' ghost-sr':'');
   el.dataset.id=blk.id;
   const borderStyle=subj.dashed?'dashed':'solid';
   el.style.cssText=`top:${minToY(blk.startMin)}px;height:${h}px;border-left:3px ${borderStyle} ${subj.color};--block-h:${h}px;`;
-  const subjLabel=(blk.completed?`<span class="block-done-badge">✓</span>`:'')+`<span class="block-subj-name" data-subj-pick="${blk.id}">${subj.name}</span>`+(blk.memo?`<span class="block-memo-dot" style="background:${subj.color}"></span>`:'');
+  const statusBadge=blkStatus==='done'?`<span class="block-done-badge">✓</span>`:blkStatus==='fail'?`<span class="block-fail-badge">✗</span>`:'';
+  const subjLabel=statusBadge+`<span class="block-subj-name" data-subj-pick="${blk.id}">${subj.name}</span>`+(blk.memo?`<span class="block-memo-dot" style="background:${subj.color}"></span>`:'');
   el.innerHTML=
     `<div class="resize-n" data-rid="${blk.id}" data-rdir="n"></div>`+
-    `<button class="block-done-btn" data-done="${blk.id}">✓</button>`+
+    `<button class="block-done-btn" data-done="${blk.id}">${blkStatus==='fail'?'✗':'✓'}</button>`+
     (!isGhost?`<button class="block-focus-btn" data-focus="${blk.id}">▶</button>`:'')+
     `<div class="block-subject">${subjLabel}</div>`+
     (isGhost?`<div class="block-review-label">${blk.ghostLabel||'복습'}</div>`:'')+
@@ -1643,7 +1649,7 @@ function updateDailyGoalRows(){
   document.querySelectorAll('.daily-goal-row').forEach(row=>{
     const d=parseInt(row.dataset.day);
     const el=row.querySelector('.dgrow-hours');
-    if(el){const{planned,actual}=computeDayHours(d);el.textContent=`${actual}h / ${planned}h`;}
+    if(el){const{planned,actual}=computeDayHours(d);el.innerHTML=`<span class="dgrow-hours-actual">${actual}h</span> / ${planned}h`;}
   });
 }
 
@@ -1766,7 +1772,7 @@ function onMouseDown(e){
   if(e.target.dataset&&e.target.dataset.done){
     e.preventDefault();e.stopPropagation();
     const blk=getBlock(e.target.dataset.done);
-    if(blk){if(blk.ghost){confirmGhost(blk.id);return;}pushUndo();blk.completed=!blk.completed;saveWeek();renderBlocks();}
+    if(blk){if(blk.ghost){confirmGhost(blk.id);return;}pushUndo();const cur=blk.status||(blk.completed?'done':'');blk.status=cur===''?'done':cur==='done'?'fail':'';blk.completed=(blk.status==='done');saveWeek();renderBlocks();}
     return;
   }
   // 90-min rest
@@ -1884,7 +1890,7 @@ function onContextMenu(e){
   const menu=document.getElementById('ctxMenu');
   menu.innerHTML=
     (blk.ghost?`<button class="ctx-item" data-action="confirm" data-id="${blk.id}">복습 확정 (일반 블록으로)</button><div class="ctx-divider"></div>`:'')+
-    `<button class="ctx-item" data-action="toggle" data-id="${blk.id}">${blk.completed?'미완료로 표시':'완료로 표시'}</button>`+
+    (()=>{const st=blk.status||(blk.completed?'done':'');const lbl=st===''?'완료로 표시':st==='done'?'실패로 표시':'미완료로 표시';return`<button class="ctx-item" data-action="toggle" data-id="${blk.id}">${lbl}</button>`;})()+
     (!blk.ghost?`<button class="ctx-item" data-action="save-tmpl" data-id="${blk.id}">반복 템플릿으로 저장</button><button class="ctx-item" data-action="review" data-id="${blk.id}">복습 예약 (+3/+7/+14일)</button>`:'')+
     `<div class="ctx-divider"></div>`+
     `<button class="ctx-item danger" data-action="delete" data-id="${blk.id}">삭제</button>`;
@@ -1893,7 +1899,7 @@ function onContextMenu(e){
   menu.onclick=ev=>{
     const btn=ev.target.closest('[data-action]');if(!btn)return;
     const id=btn.dataset.id;const b=getBlock(id);
-    if(btn.dataset.action==='toggle'){if(b){pushUndo();b.completed=!b.completed;saveWeek();renderBlocks();}}
+    if(btn.dataset.action==='toggle'){if(b){pushUndo();const cur=b.status||(b.completed?'done':'');b.status=cur===''?'done':cur==='done'?'fail':'';b.completed=(b.status==='done');saveWeek();renderBlocks();}}
     else if(btn.dataset.action==='delete'){pushUndo();blocks=blocks.filter(x=>x.id!==id);selectedIds.delete(id);saveWeek();renderBlocks();}
     else if(btn.dataset.action==='save-tmpl'){if(b)saveAsTemplate(b);}
     else if(btn.dataset.action==='review'){if(b)scheduleReview(b);}
@@ -2158,7 +2164,7 @@ function showMobileCtx(blockId,x,y){
   const blk=getBlock(blockId);if(!blk)return;
   const menu=document.getElementById('ctxMenu');
   menu.innerHTML=
-    `<button class="ctx-item" data-action="toggle" data-id="${blk.id}">${blk.completed?'미완료로 표시':'완료로 표시'}</button>`+
+    (()=>{const st=blk.status||(blk.completed?'done':'');const lbl=st===''?'완료로 표시':st==='done'?'실패로 표시':'미완료로 표시';return`<button class="ctx-item" data-action="toggle" data-id="${blk.id}">${lbl}</button>`;})()+
     `<button class="ctx-item" data-action="edit" data-id="${blk.id}">메모 편집</button>`+
     `<div class="ctx-divider"></div>`+
     `<button class="ctx-item danger" data-action="delete" data-id="${blk.id}">삭제</button>`;
@@ -2168,7 +2174,7 @@ function showMobileCtx(blockId,x,y){
   menu.onclick=ev=>{
     const btn=ev.target.closest('[data-action]');if(!btn)return;
     const id=btn.dataset.id;const b=getBlock(id);
-    if(btn.dataset.action==='toggle'){if(b){pushUndo();b.completed=!b.completed;saveWeek();renderBlocks();}}
+    if(btn.dataset.action==='toggle'){if(b){pushUndo();const cur=b.status||(b.completed?'done':'');b.status=cur===''?'done':cur==='done'?'fail':'';b.completed=(b.status==='done');saveWeek();renderBlocks();}}
     else if(btn.dataset.action==='edit'){openEditModal(id);}
     else if(btn.dataset.action==='delete'){if(b){pushUndo();blocks=blocks.filter(x=>x.id!==id);selectedIds.delete(id);saveWeek();renderBlocks();}}
     hideCtx();
