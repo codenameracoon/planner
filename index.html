@@ -1980,31 +1980,59 @@ function onMouseUp(){
 
 // ── context menu ──────────────────────────────────────────────────────────────
 function onContextMenu(e){
-  const blkEl=findBlockEl(e.target);if(!blkEl)return;
+  const blkEl=findBlockEl(e.target);
+  if(blkEl){
+    e.preventDefault();e.stopPropagation();
+    const blk=getBlock(blkEl.dataset.id);if(!blk)return;
+    const menu=document.getElementById('ctxMenu');
+    menu.innerHTML=
+      (blk.ghost?`<button class="ctx-item" data-action="confirm" data-id="${blk.id}">복습 확정 (일반 블록으로)</button><div class="ctx-divider"></div>`:'')+
+      (()=>{const st=blk.status||(blk.completed?'done':'');const lbl=st===''?'완료로 표시':st==='done'?'실패로 표시':'미완료로 표시';return`<button class="ctx-item" data-action="toggle" data-id="${blk.id}">${lbl}</button>`;})()+
+      (!blk.ghost?`<button class="ctx-item" data-action="save-tmpl" data-id="${blk.id}">반복 템플릿으로 저장</button><button class="ctx-item" data-action="review" data-id="${blk.id}">복습 예약 (+3/+7/+14일)</button><button class="ctx-item" data-action="repeat-set" data-id="${blk.id}">요일 반복 설정</button>${blk.repeat?`<button class="ctx-item" data-action="repeat-clear" data-id="${blk.id}">반복 해제</button>`:``}`:'')+
+      `<div class="ctx-divider"></div>`+
+      `<button class="ctx-item danger" data-action="delete" data-id="${blk.id}">삭제</button>`;
+    menu.style.display='block';menu.style.left=e.clientX+'px';menu.style.top=e.clientY+'px';
+    requestAnimationFrame(()=>{const r=menu.getBoundingClientRect();if(r.right>window.innerWidth)menu.style.left=(e.clientX-r.width)+'px';if(r.bottom>window.innerHeight)menu.style.top=(e.clientY-r.height)+'px';});
+    menu.onclick=ev=>{
+      const btn=ev.target.closest('[data-action]');if(!btn)return;
+      const id=btn.dataset.id;const b=getBlock(id);
+      if(btn.dataset.action==='toggle'){if(b){pushUndo();const cur=b.status||(b.completed?'done':'');b.status=cur===''?'done':cur==='done'?'fail':'';b.completed=(b.status==='done');saveWeek();renderBlocks();}}
+      else if(btn.dataset.action==='delete'){pushUndo();blocks=blocks.filter(x=>x.id!==id);selectedIds.delete(id);saveWeek();renderBlocks();}
+      else if(btn.dataset.action==='save-tmpl'){if(b)saveAsTemplate(b);}
+      else if(btn.dataset.action==='review'){if(b)scheduleReview(b);}
+      else if(btn.dataset.action==='confirm'){confirmGhost(id);}
+      else if(btn.dataset.action==='repeat-set'){if(b)openRepeatModal(b.id);}
+      else if(btn.dataset.action==='repeat-clear'){if(b){pushUndo();b.repeat=false;saveWeek();renderBlocks();}}
+      hideCtx();
+    };
+    return;
+  }
+  // empty cell right-click — show review content insertion menu
+  const body=findDayBody(e.target);if(!body)return;
   e.preventDefault();e.stopPropagation();
-  const blk=getBlock(blkEl.dataset.id);if(!blk)return;
+  const dayIdx=parseInt(body.dataset.day);
+  const targetDate=addDays(currentMonday,dayIdx);
+  const tgt=dateKey(targetDate);
+  const startMin=snapMin(clampMin(yToMin(bodyY(body,e.clientY))));
+  const endMin=startMin+60;
   const menu=document.getElementById('ctxMenu');
-  menu.innerHTML=
-    (blk.ghost?`<button class="ctx-item" data-action="confirm" data-id="${blk.id}">복습 확정 (일반 블록으로)</button><div class="ctx-divider"></div>`:'')+
-    (()=>{const st=blk.status||(blk.completed?'done':'');const lbl=st===''?'완료로 표시':st==='done'?'실패로 표시':'미완료로 표시';return`<button class="ctx-item" data-action="toggle" data-id="${blk.id}">${lbl}</button>`;})()+
-    (!blk.ghost?`<button class="ctx-item" data-action="save-tmpl" data-id="${blk.id}">반복 템플릿으로 저장</button><button class="ctx-item" data-action="review" data-id="${blk.id}">복습 예약 (+3/+7/+14일)</button><button class="ctx-item" data-action="repeat-set" data-id="${blk.id}">요일 반복 설정</button>${blk.repeat?`<button class="ctx-item" data-action="repeat-clear" data-id="${blk.id}">반복 해제</button>`:``}`:'')+
-    `<div class="ctx-divider"></div>`+
-    `<button class="ctx-item danger" data-action="delete" data-id="${blk.id}">삭제</button>`;
+  const reviewItems=REVIEW_SUBJECTS.map(rs=>{
+    const memo=getTodayMemoForSubject(rs.key,tgt);
+    const label=memo?escHtml(memo):rs.name;
+    const dot=`<span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:${rs.color};margin-right:6px;flex-shrink:0;vertical-align:middle"></span>`;
+    return`<button class="ctx-item" data-action="ins-review" data-subj="${rs.key}" data-start="${startMin}" data-end="${endMin}" data-day="${dayIdx}" data-memo="${escHtml(memo||'')}" style="white-space:normal;max-width:260px;line-height:1.3">${dot}${label}</button>`;
+  }).join('');
+  menu.innerHTML=`<div style="font-size:11px;color:#9B9A97;padding:6px 10px 2px;font-weight:600;letter-spacing:.3px">회독 내용 삽입 · ${fmtTime(startMin)}</div>`+reviewItems;
   menu.style.display='block';menu.style.left=e.clientX+'px';menu.style.top=e.clientY+'px';
   requestAnimationFrame(()=>{const r=menu.getBoundingClientRect();if(r.right>window.innerWidth)menu.style.left=(e.clientX-r.width)+'px';if(r.bottom>window.innerHeight)menu.style.top=(e.clientY-r.height)+'px';});
   menu.onclick=ev=>{
-    const btn=ev.target.closest('[data-action]');if(!btn)return;
-    const id=btn.dataset.id;const b=getBlock(id);
-    if(btn.dataset.action==='toggle'){if(b){pushUndo();const cur=b.status||(b.completed?'done':'');b.status=cur===''?'done':cur==='done'?'fail':'';b.completed=(b.status==='done');saveWeek();renderBlocks();}}
-    else if(btn.dataset.action==='delete'){pushUndo();blocks=blocks.filter(x=>x.id!==id);selectedIds.delete(id);saveWeek();renderBlocks();}
-    else if(btn.dataset.action==='save-tmpl'){if(b)saveAsTemplate(b);}
-    else if(btn.dataset.action==='review'){if(b)scheduleReview(b);}
-    else if(btn.dataset.action==='confirm'){confirmGhost(id);}
-    else if(btn.dataset.action==='repeat-set'){if(b)openRepeatModal(b.id);}
-    else if(btn.dataset.action==='repeat-clear'){if(b){pushUndo();b.repeat=false;saveWeek();renderBlocks();}}
-    hideCtx();
+    const btn=ev.target.closest('[data-action="ins-review"]');if(!btn)return;
+    pushUndo();
+    blocks.push({id:uid(),day:parseInt(btn.dataset.day),startMin:parseInt(btn.dataset.start),endMin:parseInt(btn.dataset.end),subject:btn.dataset.subj,memo:btn.dataset.memo,note:'',completed:false});
+    saveWeek();renderBlocks();hideCtx();
   };
 }
+
 function hideCtx(){document.getElementById('ctxMenu').style.display='none';}
 
 // ── weekday repeat ─────────────────────────────────────────────────────────────
