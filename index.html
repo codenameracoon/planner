@@ -300,8 +300,12 @@ body.dark .stats-h2-val{color:#E8E8E6}
 .month-expand-section-title{font-size:11px;font-weight:600;color:#9B9A97;text-transform:uppercase;letter-spacing:.06em;margin:10px 0 6px;padding-top:10px;border-top:1px solid #E9E9E7}
 .retro-subj-inp{flex:1;font-size:12px;font-family:inherit;border:none;border-bottom:1px dashed #E9E9E7;outline:none;background:transparent;color:#37352F;padding:1px 0;min-width:0}
 .retro-subj-inp:focus{border-bottom-color:#8AB4F8}
-.month-cell-num{font-size:13px;font-weight:600;margin-bottom:2px}
+.month-cell-top{display:flex;justify-content:space-between;align-items:center;margin-bottom:2px}
+.month-cell-num{font-size:13px;font-weight:600}
 .month-cell.today-cell .month-cell-num{color:#2383E2}
+.month-cell-add{font-size:13px;font-weight:500;color:#ABABAB;background:none;border:none;cursor:pointer;padding:0 1px;line-height:1;opacity:0;transition:opacity .15s}
+.month-cell:hover .month-cell-add{opacity:1}
+.month-cell-add:hover{color:#2383E2}
 .month-dots{display:flex;flex-wrap:wrap;gap:2px;margin-bottom:2px}
 .month-dot{width:6px;height:6px;border-radius:2px}
 .month-cell-info{font-size:11px;color:#9B9A97;line-height:1.4}
@@ -447,6 +451,8 @@ body.dark .month-cell.selected-cell{border-color:#5EA4F3}
 body.dark .retro-subj-inp{color:#E8E8E6;border-color:#2D2D2D}
 body.dark .month-cell-num{color:#E8E8E6}
 body.dark .month-cell.today-cell .month-cell-num{color:#5EA4F3}
+body.dark .month-cell-add{color:#555}
+body.dark .month-cell-add:hover{color:#5EA4F3}
 body.dark .month-hdr-cell{color:#555}
 body.dark .month-week-hdr{background:#1a2535}
 body.dark .month-week-res{color:#5EA4F3}
@@ -1139,8 +1145,8 @@ let weeklyGoals = {};
 let weeklyTextGoals = {};
 let monthlyGoals = [];
 let templates = [];
-let statsCollapsed = false;
-let goalsCollapsed = false;
+let statsCollapsed = true;
+let goalsCollapsed = true;
 let reviewSubTab = 'all';
 let reviewViewDate = null;
 let reviewAllViewDate = null;
@@ -2125,7 +2131,6 @@ function renderMonthView(){
     const wdStr=dateKey(weekMonday);
     html+=`<div class="month-week-hdr">`+
       `<span class="month-week-res${res?'':' month-week-res-empty'}">${res?escHtml(res):'이번 주 다짐 없음'}</span>`+
-      `<button class="month-week-add" data-wdate="${wdStr}" title="일정 추가">+</button>`+
     `</div>`;
     for(let d=0;d<7;d++){
       const cellDate=addDays(gridStart,w*7+d);
@@ -2140,7 +2145,7 @@ function renderMonthView(){
       const subjKeys=[...new Set(db.map(b=>SUBJECTS[b.subject]?b.subject:'rest'))];
       const intensity=Math.min(tH/8,1);
       html+=`<div class="month-cell${isToday?' today-cell':''}${isOther?' other-month':''}${isSelected?' selected-cell':''}" data-mdate="${dk}" style="background:rgba(35,131,226,${(intensity*0.07).toFixed(2)})">`+
-        `<div class="month-cell-num">${cellDate.getDate()}</div>`+
+        `<div class="month-cell-top"><span class="month-cell-num">${cellDate.getDate()}</span><button class="month-cell-add" data-adddate="${dk}" title="일정 추가">+</button></div>`+
         `<div class="month-dots">${subjKeys.slice(0,6).map(k=>`<span class="month-dot" style="background:${SUBJECTS[k].color}"></span>`).join('')}</div>`+
         (tH>0?`<div class="month-cell-info">${tH.toFixed(1)}h</div>`:'')+
         (rate>0?`<div class="month-cell-rate">${rate}%</div>`:'')+
@@ -2161,8 +2166,8 @@ function renderMonthView(){
   wrap.querySelectorAll('.month-cell').forEach(cell=>{
     cell.addEventListener('click',()=>{const dk=cell.dataset.mdate;expandedMonthDay=expandedMonthDay===dk?null:dk;renderMonthView();});
   });
-  wrap.querySelectorAll('.month-week-add').forEach(btn=>{
-    btn.addEventListener('click',e=>{e.stopPropagation();showAddEventModal(btn.dataset.wdate);});
+  wrap.querySelectorAll('.month-cell-add').forEach(btn=>{
+    btn.addEventListener('click',e=>{e.stopPropagation();showAddEventModal(btn.dataset.adddate);});
   });
   const closeBtn=document.getElementById('closeExpand');
   if(closeBtn)closeBtn.addEventListener('click',e=>{e.stopPropagation();expandedMonthDay=null;renderMonthView();});
@@ -2598,6 +2603,16 @@ document.getElementById('goalCollapseBtn').addEventListener('click',()=>{
   document.getElementById('goalCollapseBtn').textContent=goalsCollapsed?'▶':'▼';
   syncGoalRowHeight();
 });
+// Apply initial collapsed states
+{
+  const _sb=document.getElementById('statsBody');
+  if(_sb)_sb.style.display='none';
+  const _scb=document.getElementById('statsCollapseBtn');
+  if(_scb)_scb.textContent='▶';
+  updateStatsPanelTitle();
+  const _gcb=document.getElementById('goalCollapseBtn');
+  if(_gcb)_gcb.textContent='▶';
+}
 
 // ── template panel ────────────────────────────────────────────────────────────
 document.getElementById('tmplToggleBtn').addEventListener('click',()=>{
