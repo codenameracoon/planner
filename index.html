@@ -9,6 +9,9 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
 <meta name="apple-mobile-web-app-title" content="플래너">
+<meta http-equiv="cache-control" content="no-cache, no-store, must-revalidate">
+<meta http-equiv="pragma" content="no-cache">
+<meta http-equiv="expires" content="0">
 <link rel="manifest" href="manifest.json">
 <link rel="apple-touch-icon" href="icon-192.png">
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
@@ -149,6 +152,9 @@ body{font-family:'Inter',system-ui,sans-serif;background:#fff;color:#37352F;font
 
 /* stats strip */
 .stats-strip{flex-shrink:0;border-bottom:2px solid #E9E9E7;background:#FAFAFA}
+body[data-view="review"] #statsPanel{display:none!important}
+.stats-resolution-inline{flex:1;min-width:0;font-size:13px;font-weight:700;color:#4A90E2;font-family:inherit;border:none;border-bottom:1.5px dashed #C8DCFA;outline:none;background:transparent;resize:none;min-height:24px;max-height:56px;padding:2px 4px;line-height:1.5;display:none}
+.stats-resolution-inline::placeholder{color:#A8C4F0;font-weight:400}
 .stats-strip-head{display:flex;align-items:center;gap:10px;padding:5px 14px;border-bottom:1px solid #E9E9E7;flex-wrap:wrap}
 .stats-strip-title{font-size:12px;font-weight:600;color:#9B9A97;text-transform:uppercase;letter-spacing:.06em;white-space:nowrap}
 #statsHoursBadge{display:flex;align-items:center;gap:6px;flex:1;flex-wrap:wrap}
@@ -212,8 +218,10 @@ body.dark .stats-h2-val{color:#E8E8E6}
 
 /* daily goal row */
 .daily-goal-row{position:sticky;top:36px;background:#F7F6F3;border-bottom:1px solid #E9E9E7;z-index:5;flex-shrink:0;padding:5px 6px 4px;display:flex;flex-direction:column;gap:3px;cursor:default}
-.dgrow-hours{font-size:11px;color:#37352F;white-space:nowrap;flex-shrink:0;line-height:1.3;font-weight:700;text-align:right;width:100%}
+.dgrow-hours-wrap{display:flex;align-items:baseline;gap:6px;width:100%;flex-wrap:nowrap}
+.dgrow-hours{font-size:11px;color:#37352F;white-space:nowrap;flex-shrink:0;line-height:1.3;font-weight:700;text-align:right}
 .dgrow-hours-actual{color:#27AE60}
+.dgrow-dayres{font-size:11px;color:#4A90E2;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0;flex:1;line-height:1.3}
 .daily-goal-row.goals-hidden .dgrow-goals,.daily-goal-row.goals-hidden .dgrow-add{display:none}
 .dgrow-goals{}
 .dgrow-item{display:flex;align-items:center;gap:3px;margin-bottom:2px}
@@ -604,6 +612,17 @@ body.dark .routine-day-lbl{color:#555}
   .routine-day-hdr-item{width:20px}
   .routine-day-items{gap:12px;padding:6px 8px}
   .routine-day-big-btn{width:40px;height:40px;font-size:22px}
+
+  /* review tab: 4 cards per row */
+  .review-wrap{padding:10px 8px}
+  .review-all-grid{grid-template-columns:repeat(4,1fr);gap:6px}
+  .review-all-row{padding:10px 8px;gap:6px}
+  .review-all-badge{font-size:11px;padding:2px 7px}
+  .review-all-cycle{font-size:10px}
+  .review-squares{gap:3px}
+  .review-sq{width:22px;min-height:28px;font-size:12px}
+  .review-sq-lbl{font-size:6px}
+  .review-all-info{font-size:10px}
 }
 /* ── review ────────────────────────────────────────────────────────── */
 .review-wrap{flex:1;overflow-y:auto;padding:16px 20px;min-height:0;background:#fff}
@@ -671,6 +690,37 @@ body.dark .routine-day-lbl{color:#555}
 .review-banner-edit{background:none;border:1px solid #81C995;border-radius:3px;cursor:pointer;font-size:12px;padding:2px 8px;color:#37352F;font-family:inherit;white-space:nowrap}
 .review-banner-close{background:none;border:none;cursor:pointer;font-size:14px;color:#9B9A97;padding:0 2px;line-height:1;flex-shrink:0}
 .review-weak-section{margin-top:16px;border-top:1px solid #E9E9E7;padding-top:16px}
+/* ── monthly events ── */
+.month-events-panel{margin-top:14px;border:1px solid #E9E9E7;border-radius:8px;overflow:hidden}
+.month-events-hdr{display:flex;align-items:center;padding:8px 12px;background:#FAFAFA;border-bottom:1px solid #E9E9E7;gap:8px}
+.month-events-title{font-size:12px;font-weight:600;color:#37352F;flex:1;text-transform:uppercase;letter-spacing:.04em}
+.month-events-add-btn{font-size:11px;color:#2383E2;background:none;border:1px solid #2383E2;border-radius:4px;padding:2px 8px;cursor:pointer;font-family:inherit;flex-shrink:0}
+.month-events-add-btn:hover{background:rgba(35,131,226,.08)}
+.month-event-item{display:flex;align-items:center;gap:8px;padding:8px 12px;border-bottom:1px solid #F4F4F2}
+.month-event-item:last-child{border-bottom:none}
+.month-event-date{font-size:11px;color:#9B9A97;flex-shrink:0;width:40px;font-weight:600}
+.month-event-time{font-size:11px;color:#9B9A97;flex-shrink:0;width:34px}
+.month-event-title{font-size:13px;color:#37352F;flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.month-event-alarm{font-size:10px;color:#E8A500;background:rgba(253,214,99,.22);border:1px solid rgba(253,214,99,.6);border-radius:3px;padding:1px 5px;flex-shrink:0;white-space:nowrap}
+.month-event-del{background:none;border:none;cursor:pointer;color:#C0BFBC;font-size:15px;padding:0 2px;line-height:1;flex-shrink:0}
+.month-event-del:hover{color:#E03E3E}
+.month-event-empty{padding:14px 12px;font-size:12px;color:#9B9A97;text-align:center}
+.month-event-form{padding:10px 12px;border-top:1px solid #E9E9E7;background:#F9F9F7;display:flex;flex-direction:column;gap:8px}
+.month-event-form-row{display:flex;gap:6px;align-items:center;flex-wrap:wrap}
+.month-event-inp{border:1px solid #E9E9E7;border-radius:4px;padding:4px 8px;font-size:12px;font-family:inherit;color:#37352F;outline:none;background:#fff}
+.month-event-inp:focus{border-color:#8AB4F8}
+.month-event-sel{border:1px solid #E9E9E7;border-radius:4px;padding:4px 6px;font-size:12px;font-family:inherit;color:#37352F;background:#fff;outline:none;cursor:pointer}
+.month-event-save{background:#37352F;color:#fff;border:none;border-radius:4px;padding:5px 14px;font-family:inherit;font-size:12px;cursor:pointer;font-weight:600}
+.month-event-save:hover{background:#2D2D2D}
+.month-event-cancel{background:none;border:1px solid #E9E9E7;border-radius:4px;padding:5px 10px;font-family:inherit;font-size:12px;cursor:pointer;color:#9B9A97}
+body.dark .month-events-panel{border-color:#2D2D2D}
+body.dark .month-events-hdr{background:#1A1A1A;border-color:#2D2D2D}
+body.dark .month-events-title{color:#E8E8E6}
+body.dark .month-event-item{border-color:#2D2D2D}
+body.dark .month-event-title{color:#E8E8E6}
+body.dark .month-event-form{background:#1F1F1F;border-color:#2D2D2D}
+body.dark .month-event-inp{border-color:#2D2D2D;background:#1A1A1A;color:#E8E8E6}
+body.dark .month-event-sel{border-color:#2D2D2D;background:#1A1A1A;color:#E8E8E6}
 .review-weak-subj{font-size:12px;font-weight:600;margin-bottom:4px;margin-top:10px}
 .review-weak-item{font-size:12px;padding:2px 0;display:flex;align-items:center;gap:6px;color:#37352F}
 #reviewToast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:#37352F;color:#fff;padding:8px 16px;border-radius:6px;font-size:13px;z-index:800;pointer-events:none;opacity:0;transition:opacity .3s}
@@ -771,7 +821,8 @@ body.dark .rcex-name{color:#C0C0BE}
 <div id="statsPanel" class="stats-strip">
   <div class="stats-strip-head" id="statsHdr" style="cursor:pointer">
     <span class="stats-strip-title">목표 &amp; 통계</span>
-    <button class="btn btn-icon" id="statsCollapseBtn" style="margin-left:auto;font-size:11px;padding:2px 6px;line-height:1.4">▼</button>
+    <textarea class="stats-resolution-inline" id="statsResolutionInline" rows="1" placeholder="다짐을 입력하세요..."></textarea>
+    <button class="btn btn-icon" id="statsCollapseBtn" style="margin-left:auto;font-size:11px;padding:2px 6px;line-height:1.4;flex-shrink:0">▼</button>
   </div>
   <div class="stats-body" id="statsBody"></div>
 </div>
@@ -973,7 +1024,9 @@ function _isPlannerKey(k){
     k.startsWith('week_')||k==='weeklyGoals'||k==='templates'||
     k.startsWith('weeklyTextGoals_')||k.startsWith('monthlyGoals_')||
     k.startsWith('dailyGoals_')||k.startsWith('retro_')||k.startsWith('routine_')||
-    k.startsWith('weekRes_')
+    k.startsWith('weekRes_')||k.startsWith('dayRes_')||k.startsWith('monthRes_')||
+    k.startsWith('monthlyTextGoals_')||k.startsWith('monthEvents_')||
+    k.startsWith('review_')
   );
 }
 
@@ -986,12 +1039,12 @@ async function _loadFromSupabase(){
     const remoteKeys=new Set(data.map(r=>r.key));
     let updated=false;
     data.forEach(row=>{
-      const localTs=meta[row.key];
-      if(!localTs||new Date(row.updated_at)>new Date(localTs)){
+      const current=localStorage.getItem(row.key);
+      if(current!==row.value){
         localStorage.setItem(row.key,row.value);
-        _setSyncMeta(row.key,row.updated_at);
         updated=true;
       }
+      _setSyncMeta(row.key,row.updated_at);
     });
     return{updated,remoteKeys};
   }catch(e){return{updated:false,remoteKeys:new Set()};}
@@ -1015,8 +1068,11 @@ async function _pushMissingToSupabase(remoteKeys){
 }
 
 async function initAndSync(){
+  // retry if supabase CDN hasn't loaded yet (e.g., slow mobile network)
+  if(!window.supabase){
+    setTimeout(initAndSync,1500);return;
+  }
   try{
-    if(!window.supabase)return;
     _sb=window.supabase.createClient(SUPABASE_URL,SUPABASE_ANON_KEY);
   }catch(e){_sb=null;return;}
   const{updated,remoteKeys}=await _loadFromSupabase();
@@ -1178,8 +1234,156 @@ function renderDday(){
   el.textContent=diff>0?`2차 시험 D-${diff}`:diff===0?'2차 시험 D-Day':`2차 시험 D+${Math.abs(diff)}`;
 }
 
+// ── monthly events ────────────────────────────────────────────────────────────
+function monthEventsKey(mon){return 'monthEvents_'+monthStorageKey(mon);}
+function loadMonthEvents(mon){try{return JSON.parse(localStorage.getItem(monthEventsKey(mon))||'[]');}catch{return[];}}
+function saveMonthEvents(mon,events){const k=monthEventsKey(mon);const v=JSON.stringify(events);localStorage.setItem(k,v);syncToSupabase(k,v);}
+
+function renderMonthEvents(wrap){
+  const mon=currentMonday;
+  const events=loadMonthEvents(mon).slice().sort((a,b)=>a.date.localeCompare(b.date)||a.time.localeCompare(b.time));
+  const panel=document.createElement('div');panel.className='month-events-panel';
+
+  const hdr=document.createElement('div');hdr.className='month-events-hdr';
+  const title=document.createElement('span');title.className='month-events-title';title.textContent='이달의 일정';
+  const addBtn=document.createElement('button');addBtn.className='month-events-add-btn';addBtn.textContent='+ 일정 추가';
+  hdr.appendChild(title);hdr.appendChild(addBtn);panel.appendChild(hdr);
+
+  const list=document.createElement('div');list.id='monthEventList';
+  function _renderList(){
+    list.innerHTML='';
+    const evs=loadMonthEvents(mon).slice().sort((a,b)=>a.date.localeCompare(b.date)||a.time.localeCompare(b.time));
+    if(!evs.length){const emp=document.createElement('div');emp.className='month-event-empty';emp.textContent='등록된 일정이 없습니다';list.appendChild(emp);return;}
+    evs.forEach(ev=>{
+      const item=document.createElement('div');item.className='month-event-item';
+      const ds=ev.date.slice(5).replace('-','/');
+      const alarmLabels={10:'10분 전',30:'30분 전',60:'1시간 전',1440:'하루 전'};
+      const alarmText=ev.alarmMinutes?alarmLabels[ev.alarmMinutes]||`${ev.alarmMinutes}분 전`:'';
+      item.innerHTML=`<span class="month-event-date">${ds}</span>`+
+        `<span class="month-event-time">${ev.time||''}</span>`+
+        `<span class="month-event-title">${escHtml(ev.title)}</span>`+
+        (alarmText?`<span class="month-event-alarm">🔔 ${alarmText}</span>`:'')+
+        `<button class="month-event-del" data-evdel="${ev.id}">×</button>`;
+      item.querySelector('[data-evdel]').addEventListener('click',e=>{
+        e.stopPropagation();
+        const evs2=loadMonthEvents(mon).filter(x=>x.id!==ev.id);
+        saveMonthEvents(mon,evs2);_renderList();
+      });
+      list.appendChild(item);
+    });
+  }
+  _renderList();
+  panel.appendChild(list);
+
+  // Add form (hidden by default)
+  const form=document.createElement('div');form.className='month-event-form';form.style.display='none';
+  const today=new Date();
+  const defaultDate=`${today.getFullYear()}-${String(today.getMonth()+1).padStart(2,'0')}-${String(today.getDate()).padStart(2,'0')}`;
+  form.innerHTML=`<div class="month-event-form-row">`+
+    `<input class="month-event-inp" id="evDate" type="date" value="${defaultDate}" style="flex:0 0 auto">`+
+    `<input class="month-event-inp" id="evTime" type="time" value="09:00" style="flex:0 0 auto;width:90px">`+
+    `<input class="month-event-inp" id="evTitle" type="text" placeholder="일정 제목" style="flex:1;min-width:120px">`+
+    `</div>`+
+    `<div class="month-event-form-row">`+
+    `<select class="month-event-sel" id="evAlarm">`+
+      `<option value="0">알림 없음</option>`+
+      `<option value="10">10분 전</option>`+
+      `<option value="30">30분 전</option>`+
+      `<option value="60">1시간 전</option>`+
+      `<option value="1440">하루 전</option>`+
+    `</select>`+
+    `<button class="month-event-save" id="evSave">추가</button>`+
+    `<button class="month-event-cancel" id="evCancel">취소</button>`+
+    `</div>`;
+  panel.appendChild(form);
+
+  addBtn.addEventListener('click',()=>{
+    const visible=form.style.display!=='none';
+    form.style.display=visible?'none':'';
+    if(!visible)form.querySelector('#evTitle').focus();
+  });
+  form.querySelector('#evCancel').addEventListener('click',()=>{form.style.display='none';});
+  form.querySelector('#evSave').addEventListener('click',()=>{
+    const date=form.querySelector('#evDate').value;
+    const time=form.querySelector('#evTime').value;
+    const title=form.querySelector('#evTitle').value.trim();
+    if(!title){form.querySelector('#evTitle').focus();return;}
+    const alarmMinutes=parseInt(form.querySelector('#evAlarm').value)||0;
+    if(alarmMinutes>0)requestNotifPermission();
+    const ev={id:uid(),date,time,title,alarmMinutes};
+    const evs=loadMonthEvents(mon);evs.push(ev);saveMonthEvents(mon,evs);
+    form.querySelector('#evTitle').value='';form.style.display='none';
+    _renderList();
+  });
+
+  wrap.appendChild(panel);
+}
+
+function requestNotifPermission(){
+  if(!('Notification' in window))return;
+  if(Notification.permission==='default')Notification.requestPermission();
+}
+
+function checkEventAlarms(){
+  if(!('Notification' in window)||Notification.permission!=='granted')return;
+  const now=new Date();
+  [-1,0,1].forEach(offset=>{
+    const d=new Date(now.getFullYear(),now.getMonth()+offset,1);
+    const events=loadMonthEvents(d);
+    events.forEach(ev=>{
+      if(!ev.alarmMinutes)return;
+      const notifKey='evNotif_'+ev.id+dateKey(now);
+      if(sessionStorage.getItem(notifKey))return;
+      const [h,m]=(ev.time||'09:00').split(':').map(Number);
+      const evDate=new Date(ev.date);evDate.setHours(h,m,0,0);
+      const alarmTime=new Date(evDate.getTime()-ev.alarmMinutes*60000);
+      if(alarmTime<=now&&now<evDate){
+        try{new Notification('📅 '+ev.title,{body:ev.date.slice(5)+' '+ev.time+' 일정 알림'});}catch(e){}
+        sessionStorage.setItem(notifKey,'1');
+      }
+    });
+  });
+}
+setInterval(checkEventAlarms,30000);
+
 // ── statistics ────────────────────────────────────────────────────────────────
+function loadMonthlyTextGoals(mon){try{const r=localStorage.getItem('monthlyTextGoals_'+monthStorageKey(mon));return r?JSON.parse(r):{};}catch{return{};}}
+function saveMonthlyTextGoals(mon,obj){const k='monthlyTextGoals_'+monthStorageKey(mon);const v=JSON.stringify(obj);localStorage.setItem(k,v);syncToSupabase(k,v);}
+
 function renderStats(){
+  const body=document.getElementById('statsBody');
+  const studyKeys=Object.keys(SUBJECTS).filter(k=>k!=='rest'&&k!=='precedent');
+
+  if(viewMode==='month'){
+    // Monthly: per-subject text goals (no hours) + 월간 다짐
+    const mKey=monthStorageKey(currentMonday);
+    const mtg=loadMonthlyTextGoals(currentMonday);
+    let col3=`<div class="stats-col-goals"><div class="stats-col-label">월간 목표</div><div class="wgoal-grid">`;
+    studyKeys.forEach(key=>{
+      const subj=SUBJECTS[key];
+      const text=mtg[key]||'';
+      col3+=`<div class="wgoal-row">`+
+        `<span class="stats-dot" style="background:${subj.color}"></span>`+
+        `<span class="wgoal-subj-name" style="width:64px">${subj.short}</span>`+
+        `<input class="wgoal-text-input" data-mkey="${key}" value="${escHtml(text)}" placeholder="목표...">`+
+      `</div>`;
+    });
+    col3+=`</div></div>`;
+    const mrKey='monthRes_'+mKey;
+    const mrVal=localStorage.getItem(mrKey)||'';
+    const col2=`<div class="stats-col-hours">`+
+      `<div class="stats-col-label">월간 다짐</div>`+
+      `<textarea class="week-resolution-inp" id="monthResolutionInp" placeholder="이번 달 나에게 하고 싶은 말...">${escHtml(mrVal)}</textarea>`+
+    `</div>`;
+    body.innerHTML=col3+col2;
+    body.querySelectorAll('[data-mkey]').forEach(inp=>{
+      inp.addEventListener('change',()=>{const k=inp.dataset.mkey;const obj=loadMonthlyTextGoals(currentMonday);obj[k]=inp.value.trim();saveMonthlyTextGoals(currentMonday,obj);});
+    });
+    const resInp=body.querySelector('#monthResolutionInp');
+    if(resInp){resInp.addEventListener('change',()=>{const v=resInp.value;localStorage.setItem(mrKey,v);syncToSupabase(mrKey,v);updateStatsPanelTitle();});}
+    return;
+  }
+
   const keys=Object.keys(SUBJECTS);
   const stats={};keys.forEach(k=>{stats[k]={done:0,total:0};});
   blocks.forEach(blk=>{
@@ -1188,9 +1392,45 @@ function renderStats(){
     const dur=(blk.endMin-blk.startMin)/60;
     stats[k].total+=dur;if(blk.completed)stats[k].done+=dur;
   });
-  const studyKeys=keys.filter(k=>k!=='rest'&&k!=='precedent');
 
-  // Weekly goals column with hours integrated
+  if(viewMode==='day'){
+    // Daily: per-subject hours (today) + 오늘 다짐
+    const dk=dateKey(currentDay);
+    const vDay=dayIdx(currentDay);
+    const todayStats={};studyKeys.forEach(k=>{todayStats[k]={done:0,total:0};});
+    blocks.filter(b=>b.day===vDay&&!b.ghost).forEach(blk=>{
+      const k=SUBJECTS[blk.subject]?blk.subject:'rest';
+      if(!todayStats[k])return;
+      const dur=(blk.endMin-blk.startMin)/60;
+      todayStats[k].total+=dur;if(blk.completed)todayStats[k].done+=dur;
+    });
+    let col3=`<div class="stats-col-goals"><div class="stats-col-label">일간 목표</div><div class="wgoal-grid">`;
+    studyKeys.forEach(key=>{
+      const subj=SUBJECTS[key];
+      const hrs=todayStats[key]?todayStats[key].total:0;
+      const tg=weeklyTextGoals[key]||{text:'',done:false};
+      col3+=`<div class="wgoal-row">`+
+        `<span class="stats-dot" style="background:${subj.color}"></span>`+
+        `<span class="wgoal-subj-name">${subj.short}</span>`+
+        `<span class="wgoal-hrs">${hrs>0?hrs.toFixed(1)+'h':'—'}</span>`+
+        `<input class="wgoal-text-input${tg.done?' done-text':''}" data-wkey="${key}" value="${escHtml(tg.text)}" placeholder="목표...">`+
+      `</div>`;
+    });
+    col3+=`</div></div>`;
+    const drKey='dayRes_'+dk;
+    const drVal=localStorage.getItem(drKey)||'';
+    const col2=`<div class="stats-col-hours">`+
+      `<div class="stats-col-label">오늘 다짐</div>`+
+      `<textarea class="week-resolution-inp" id="dayResolutionInp" placeholder="오늘 나에게 하고 싶은 말...">${escHtml(drVal)}</textarea>`+
+    `</div>`;
+    body.innerHTML=col3+col2;
+    const resInp=body.querySelector('#dayResolutionInp');
+    if(resInp){resInp.addEventListener('change',()=>{const v=resInp.value;localStorage.setItem(drKey,v);syncToSupabase(drKey,v);updateStatsPanelTitle();updateDailyGoalRows();});}
+    body.querySelectorAll('[data-wkey]').forEach(inp=>{inp.addEventListener('change',()=>{const k=inp.dataset.wkey;if(!weeklyTextGoals[k])weeklyTextGoals[k]={text:'',done:false};weeklyTextGoals[k].text=inp.value.trim();saveWeeklyTextGoals();});});
+    return;
+  }
+
+  // Week view: per-subject hours + text goals + 이번 주 다짐
   let col3=`<div class="stats-col-goals"><div class="stats-col-label">주간 목표</div><div class="wgoal-grid">`;
   studyKeys.forEach(key=>{
     const subj=SUBJECTS[key];
@@ -1205,21 +1445,15 @@ function renderStats(){
     `</div>`;
   });
   col3+=`</div></div>`;
-
-  // 이번 주 다짐 column
   const wrKey='weekRes_'+weekKey(currentMonday);
   const wrVal=localStorage.getItem(wrKey)||'';
   const col2=`<div class="stats-col-hours">`+
     `<div class="stats-col-label">이번 주 다짐</div>`+
     `<textarea class="week-resolution-inp" id="weekResolutionInp" placeholder="이번 주 나에게 하고 싶은 말...">${escHtml(wrVal)}</textarea>`+
   `</div>`;
-
-  const body=document.getElementById('statsBody');
   body.innerHTML=col3+col2;
-
   const resInp=body.querySelector('#weekResolutionInp');
-  if(resInp){resInp.addEventListener('change',()=>{const v=resInp.value;localStorage.setItem(wrKey,v);syncToSupabase(wrKey,v);});}
-
+  if(resInp){resInp.addEventListener('change',()=>{const v=resInp.value;localStorage.setItem(wrKey,v);syncToSupabase(wrKey,v);updateStatsPanelTitle();});}
   if(isMobile()){
     [['stats-col-goals','_mGoalsCollapsed'],['stats-col-hours','_mHoursCollapsed']].forEach(([cls,stateKey])=>{
       const col=body.querySelector('.'+cls);if(!col)return;
@@ -1236,7 +1470,6 @@ function renderStats(){
       });
     });
   }
-
   body.querySelectorAll('[data-wcheck]').forEach(el=>{
     el.addEventListener('click',()=>{
       const k=el.dataset.wcheck;
@@ -1540,6 +1773,7 @@ function render(){
     pw.classList.remove('u-hidden');mw.classList.add('u-hidden');if(rw)rw.classList.add('u-hidden');ds.classList.add('u-hidden');
     cpBtn.classList.remove('u-hidden');rsBtn.classList.remove('u-hidden');
     todayBtn.classList.add('u-hidden');granGroup.classList.remove('u-hidden');
+    document.getElementById('dailyRetro').classList.add('u-hidden');
     document.getElementById('navLabel').textContent=weekLabelStr(currentMonday);
     buildTimeAxis();buildDayCols();renderBlocks();
     if(isMobile()){requestAnimationFrame(()=>{const tc=document.querySelector('.day-col.today');if(tc){const pw=document.getElementById('plannerWrapper');pw.scrollLeft=Math.max(0,tc.offsetLeft-40);}});}
@@ -1558,6 +1792,7 @@ function render(){
     todayBtn.classList.add('u-hidden');granGroup.classList.add('u-hidden');
     document.getElementById('weeklyRetro').classList.add('u-hidden');
     document.getElementById('ddayGrid').classList.add('u-hidden');
+    document.getElementById('dailyRetro').classList.add('u-hidden');
     document.getElementById('navLabel').textContent='회독 관리';
     renderReview();
   } else {
@@ -1566,6 +1801,7 @@ function render(){
     todayBtn.classList.add('u-hidden');granGroup.classList.add('u-hidden');
     document.getElementById('weeklyRetro').classList.add('u-hidden');
     document.getElementById('ddayGrid').classList.add('u-hidden');
+    document.getElementById('dailyRetro').classList.add('u-hidden');
     document.getElementById('navLabel').textContent=monthLabelStr(currentMonday);
     renderMonthView();
     renderRoutine();
@@ -1600,7 +1836,9 @@ function buildGoalRowContent(rowEl, dk){
   const goals=autoPopulateDailyGoals(dk);
   const d=parseInt(rowEl.dataset.day);
   const{planned,actual}=computeDayHours(d);
-  let html=`<div class="dgrow-hours"><span class="dgrow-hours-actual">${actual}h</span> / ${planned}h</div><div class="dgrow-goals">`;
+  const dayResText=viewMode==='week'?(localStorage.getItem('dayRes_'+dk)||''):'';
+  const dayResTrunc=dayResText.length>14?dayResText.slice(0,14)+'…':dayResText;
+  let html=`<div class="dgrow-hours-wrap"><div class="dgrow-hours"><span class="dgrow-hours-actual">${actual}h</span> / ${planned}h</div>${dayResTrunc?`<span class="dgrow-dayres">${escHtml(dayResTrunc)}</span>`:''}</div><div class="dgrow-goals">`;
   goals.forEach(g=>{
     const status=getGoalStatus(g);
     const isDone=status==='done';const isFail=status==='fail';
@@ -1808,7 +2046,7 @@ function renderBlocks(){
     body.appendChild(buildBlockEl(blk));
   });
   updateDailyGoalRows();
-  renderStats();renderTimeIndicator();renderTemplates();
+  renderStats();updateStatsPanelTitle();renderTimeIndicator();renderTemplates();
   renderDailySummary();renderDailyRetro();buildDdayGrid();
   renderToolbarProgress();
 }
@@ -1909,6 +2147,8 @@ function renderMonthView(){
     }
   }
   renderMonthlyRetro(wrap);
+  renderMonthEvents(wrap);
+  renderStats();updateStatsPanelTitle();
   renderToolbarProgress();
 }
 
@@ -2263,12 +2503,54 @@ document.querySelectorAll('[data-gran]').forEach(btn=>{
   btn.onclick=()=>{gran=parseInt(btn.dataset.gran);document.querySelectorAll('[data-gran]').forEach(b=>b.classList.remove('active'));btn.classList.add('active');render();};
 });
 
+// ── stats panel title (collapse state) ───────────────────────────────────────
+function updateStatsPanelTitle(){
+  const titleEl=document.querySelector('#statsHdr .stats-strip-title');
+  const inlineEl=document.getElementById('statsResolutionInline');
+  if(!titleEl||!inlineEl)return;
+
+  const collapsed=statsCollapsed||(document.getElementById('statsPanel').classList.contains('m-collapsed'));
+
+  if(collapsed){
+    let storKey='',placeholder='';
+    if(viewMode==='day'){storKey='dayRes_'+dateKey(currentDay);placeholder='오늘 다짐을 입력하세요...';}
+    else if(viewMode==='week'){storKey='weekRes_'+weekKey(currentMonday);placeholder='이번 주 다짐을 입력하세요...';}
+    else if(viewMode==='month'){storKey='monthRes_'+monthStorageKey(currentMonday);placeholder='월간 다짐을 입력하세요...';}
+    if(storKey){
+      inlineEl.value=localStorage.getItem(storKey)||'';
+      inlineEl.placeholder=placeholder;
+      inlineEl.style.display='block';
+      if(inlineEl.dataset.storKey!==storKey){
+        inlineEl.dataset.storKey=storKey;
+        inlineEl.oninput=()=>{const v=inlineEl.value;localStorage.setItem(storKey,v);syncToSupabase(storKey,v);};
+      }
+    }else{
+      inlineEl.style.display='none';
+    }
+    titleEl.style.display='none';
+  }else{
+    inlineEl.style.display='none';
+    titleEl.style.display='';
+    titleEl.textContent='목표 & 통계';
+    titleEl.style.color='';titleEl.style.fontWeight='';
+  }
+}
+
 // ── stats panel collapse ──────────────────────────────────────────────────────
+document.getElementById('statsResolutionInline').addEventListener('click',e=>e.stopPropagation());
+document.getElementById('statsResolutionInline').addEventListener('mousedown',e=>e.stopPropagation());
 document.getElementById('statsCollapseBtn').addEventListener('click',e=>{
   e.stopPropagation();
   statsCollapsed=!statsCollapsed;
-  document.getElementById('statsBody').style.display=statsCollapsed?'none':'';
+  const body=document.getElementById('statsBody');
+  if(statsCollapsed){
+    body.style.display='none';
+  }else{
+    body.style.display='';
+    renderStats(); // re-render on expand to guarantee current view's goals show
+  }
   e.currentTarget.textContent=statsCollapsed?'▶':'▼';
+  updateStatsPanelTitle();
 });
 
 document.getElementById('goalCollapseBtn').addEventListener('click',()=>{
@@ -2471,10 +2753,20 @@ document.getElementById('weeklyRetroHdr').addEventListener('click',()=>{
 function buildRetroPopup(){
   const now=new Date();
   if(now.getHours()<22)return;
+  const isSunday=now.getDay()===0;
+  // Skip if retro content already written
+  const weekData=loadRetro('week',getMondayOf(now));
+  const weeklyDone=!!(weekData.good||weekData.weak||weekData.next||weekData.rating);
+  if(isSunday){
+    const dayData=loadRetro('day',now);
+    const dailyDone=!!(dayData.good||dayData.bad||dayData.tomorrow||dayData.mood||dayData.rating);
+    if(dailyDone&&weeklyDone)return;
+  }else{
+    if(weeklyDone)return;
+  }
   const todayKey=`retroPopup_${dateKey(now)}`;
   if(localStorage.getItem(todayKey))return;
   localStorage.setItem(todayKey,'1');
-  const isSunday=now.getDay()===0;
   document.getElementById('retroPopupTitle').textContent=isSunday?'일간 회고 + 주간 회고':'주간 회고';
   const body=document.getElementById('retroPopupBody');
   body.innerHTML='';
@@ -2498,7 +2790,6 @@ function buildRetroPopup(){
   const wsec=document.createElement('div');wsec.className='retro-popup-section';
   const whdr=document.createElement('div');whdr.className='retro-popup-section-label';whdr.textContent='주간 회고';wsec.appendChild(whdr);
   const wMon=getMondayOf(now);
-  const weekData=loadRetro('week',wMon);
   const wsr=document.createElement('div');wsr.className='retro-popup-row';
   const wsl=document.createElement('span');wsl.className='retro-popup-lbl';wsl.textContent='이번 주 별점';
   const wss=makeStars(weekData.rating||0,v=>{const d=loadRetro('week',wMon);d.rating=v;saveRetro('week',wMon,d);});
@@ -2771,8 +3062,12 @@ if(isMobile()){
     _stog.textContent='펼치기 ▼';
     _sh.appendChild(_stog);
     _sh.addEventListener('click',e=>{
+      if(e.target===document.getElementById('statsResolutionInline'))return;
       _sp.classList.toggle('m-collapsed');
-      _stog.textContent=_sp.classList.contains('m-collapsed')?'펼치기 ▼':'접기 ▲';
+      const isCol=_sp.classList.contains('m-collapsed');
+      _stog.textContent=isCol?'펼치기 ▼':'접기 ▲';
+      if(!isCol)renderStats();
+      updateStatsPanelTitle();
     });
   }
   // D-day grid: start collapsed, tap header to toggle
@@ -3886,6 +4181,9 @@ setInterval(_pollSync,30000);
 document.addEventListener('visibilitychange',function(){if(!document.hidden)_pollSync();});
 
 if('serviceWorker' in navigator){
+  // Force update existing registrations and clear caches so Chrome picks up new version
+  navigator.serviceWorker.getRegistrations().then(regs=>{regs.forEach(r=>r.update());});
+  if('caches' in window){caches.keys().then(ns=>ns.forEach(n=>caches.delete(n)));}
   navigator.serviceWorker.register('./sw.js').catch(()=>{});
 }
 </script>
