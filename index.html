@@ -1970,7 +1970,7 @@ function navigate(days){clearSelection();clearHistory();currentMonday=addDays(cu
 
 document.getElementById('copyPrevWeek').onclick=()=>{
   if(blocks.length>0&&!confirm('현재 주에 데이터가 있습니다. 전주 내용으로 교체할까요?'))return;
-  pushUndo();const prev=loadWeek(addDays(currentMonday,-7));blocks=prev.map(b=>({...b,id:uid(),completed:false}));saveWeek();renderBlocks();
+  pushUndo();const prev=loadWeek(addDays(currentMonday,-7));blocks=prev.map(b=>({...b,id:uid(),completed:false,status:''}));saveWeek();renderBlocks();
 };
 document.getElementById('resetWeek').onclick=()=>{
   if(!confirm('이번 주 데이터를 모두 삭제할까요?'))return;pushUndo();blocks=[];selectedIds.clear();saveWeek();renderBlocks();
