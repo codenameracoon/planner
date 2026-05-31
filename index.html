@@ -771,6 +771,7 @@ body.dark .rcex-name{color:#C0C0BE}
       <label class="review-edit-label">시작일</label>
       <input type="date" class="review-date-input" id="rsStartDate">
       <label class="review-auto-label"><input type="checkbox" id="rsAutoDate"> 이전 회독 종료 다음날로 자동 설정</label>
+      <label class="review-auto-label" style="margin-top:6px"><input type="checkbox" id="rsWeekdayOnly"> 주말(토/일) 제외 — 평일만 카운트</label>
     </div>
     <div class="review-suggestion" id="rsSuggestion"></div>
     <div class="review-edit-actions">
@@ -2442,10 +2443,29 @@ function initAdminLawData(){
   saveReviewData('admin_law',{blocks,cycles,version:3});
 }
 
+function getCalendarEndForCycle(c){
+  if(!c||!c.startDate)return null;
+  const start=new Date(c.startDate);start.setHours(0,0,0,0);
+  if(!c.weekdayOnly)return addDays(start,c.days);
+  let d=new Date(start);let count=0;
+  while(count<c.days){const dow=d.getDay();if(dow!==0&&dow!==6)count++;if(count<c.days)d=addDays(d,1);}
+  return addDays(d,1);
+}
+function getCycleDayIn(c,date){
+  if(!c||!c.startDate)return 0;
+  const start=new Date(c.startDate);start.setHours(0,0,0,0);
+  if(!c.weekdayOnly)return Math.max(0,Math.floor((date-start)/86400000));
+  let d=new Date(date);d.setHours(0,0,0,0);
+  while(d.getDay()===0||d.getDay()===6)d=addDays(d,-1);
+  if(d<start)return 0;
+  let count=0;let cur=new Date(start);
+  while(cur<d){const dow=cur.getDay();if(dow!==0&&dow!==6)count++;cur=addDays(cur,1);}
+  return count;
+}
 function getCycleStatus(c,today){
   if(!c.startDate)return 'future';
   const start=new Date(c.startDate);start.setHours(0,0,0,0);
-  const end=addDays(start,c.days);
+  const end=getCalendarEndForCycle(c);
   if(today>=end)return 'done';
   if(today>=start)return 'current';
   return 'future';
@@ -2558,7 +2578,7 @@ function renderReviewAll(el,today,vd){
     cycles.forEach(c=>{
       const st=getCycleStatus(c,today);
       if(st==='done')doneCount++;
-      if(st==='current'&&!cur){cur=c;const s=new Date(c.startDate);s.setHours(0,0,0,0);dayIn=Math.floor((today-s)/86400000);}
+      if(st==='current'&&!cur){cur=c;dayIn=getCycleDayIn(c,today);}
     });
     let squares='';
     for(let i=0;i<nb;i++){
@@ -2627,14 +2647,14 @@ function renderReviewSubject(el,subj,today){
   let cur=null,dayIn=0;
   cycles.forEach(c=>{
     const st=getCycleStatus(c,today);
-    if(st==='current'&&!cur){cur=c;const s=new Date(c.startDate);s.setHours(0,0,0,0);dayIn=Math.floor((today-s)/86400000);}
+    if(st==='current'&&!cur){cur=c;dayIn=getCycleDayIn(c,today);}
   });
 
   // viewDate's cycle (오늘 체크 section)
   let viewCur=null,viewDayIn=0;
   cycles.forEach(c=>{
     const st=getCycleStatus(c,vd);
-    if(st==='current'&&!viewCur){viewCur=c;const s=new Date(c.startDate);s.setHours(0,0,0,0);viewDayIn=Math.floor((vd-s)/86400000);}
+    if(st==='current'&&!viewCur){viewCur=c;viewDayIn=getCycleDayIn(c,vd);}
   });
 
   let html='';
@@ -2724,9 +2744,13 @@ function renderReviewSubject(el,subj,today){
     // starred blocks float to top
     todayItems.sort((a,b)=>(weaks[b.blockId]?1:0)-(weaks[a.blockId]?1:0));
 
+    // weekend rest check
+    const isWeekendRest=!!(viewCur?.weekdayOnly&&(vd.getDay()===0||vd.getDay()===6));
+
     // section title reflects viewDate
     let checkTitle='오늘 체크';
-    if(!isTodayView){const vm=vd.getMonth()+1,vda=vd.getDate();checkTitle=isFutureView?`${vm}/${vda} 예정`:`${vm}/${vda} 체크`;}
+    if(isWeekendRest){checkTitle='주말 휴식일';}
+    else if(!isTodayView){const vm=vd.getMonth()+1,vda=vd.getDate();checkTitle=isFutureView?`${vm}/${vda} 예정`:`${vm}/${vda} 체크`;}
 
     const _sbStyle=_sbAdded?'background:#9B9A97;color:#fff;border-color:#9B9A97;cursor:default':'';
     const _sbDateLabel=isTodayView?'오늘':`${vd.getMonth()+1}월${vd.getDate()}일`;
@@ -2735,8 +2759,8 @@ function renderReviewSubject(el,subj,today){
 
     html+=`<div class="review-section"><div style="display:flex;align-items:center;gap:8px;margin-bottom:8px"><span class="review-section-title" style="margin-bottom:0;display:inline">${checkTitle}</span>${_sbHtml}</div><div class="review-today-list" id="rtl_${subj.key}">`;
     if(!todayItems.length){
-      const emptyMsg=isFutureView?'아직 체크할 수 없습니다':!viewCur?'이 날은 복습 없는 날입니다':'오늘은 복습 없는 날입니다';
-      html+=`<div class="review-empty"${isFutureView?' style="color:#C0BFBC"':''}>${emptyMsg}</div>`;
+      const emptyMsg=isWeekendRest?'주말 — 평일 기준 회독 중, 오늘은 휴식일입니다':isFutureView?'아직 체크할 수 없습니다':!viewCur?'이 날은 복습 없는 날입니다':'오늘은 복습 없는 날입니다';
+      html+=`<div class="review-empty"${(isFutureView||isWeekendRest)?' style="color:#C0BFBC"':''}>${emptyMsg}</div>`;
     }else{
       todayItems.forEach(item=>{
         const done=!!checks[item.checkId];
@@ -2804,7 +2828,7 @@ function renderReviewSubject(el,subj,today){
   cycles.forEach(c=>{
     const st=getCycleStatus(c,today);
     let sDate=null,eDate=null;
-    if(c.startDate){sDate=new Date(c.startDate);sDate.setHours(0,0,0,0);eDate=addDays(sDate,c.days-1);}
+    if(c.startDate){sDate=new Date(c.startDate);sDate.setHours(0,0,0,0);const _ce=getCalendarEndForCycle(c);eDate=_ce?addDays(_ce,-1):addDays(sDate,c.days-1);}
     let circCls='',info='',editBtn='';
     if(st==='done'){circCls='done';info=`완료 · ${fmtDate(sDate)}~${fmtDate(eDate)}`;}
     else if(st==='current'){circCls='current';info=`진행 중 · D-${cur?cur.days-dayIn-1:'?'}`;}
@@ -2956,6 +2980,7 @@ function openReviewEditModal(sk,cycleNum,cycles){
   const prevEndDate=prev&&prev.startDate?dateKey(addDays(new Date(prev.startDate),prev.days)):'';
   document.getElementById('rsAutoDate').checked=false;
   document.getElementById('rsAutoDate').dataset.prevend=prevEndDate;
+  document.getElementById('rsWeekdayOnly').checked=!!(c&&c.weekdayOnly);
   const rec=cycleNum>1?`추천: ${cycleNum}회독은 이전 회독 대비 ~20% 단축 권장`:'';
   document.getElementById('rsSuggestion').textContent=rec;
   document.getElementById('reviewModalOverlay').classList.add('open');
@@ -2982,18 +3007,20 @@ function getCompletedDaysInCycle(sk,cur,data){
   const s=new Date(cur.startDate);s.setHours(0,0,0,0);
   const today=new Date();today.setHours(0,0,0,0);
   const nb=data.blocks.length;
-  let count=0;
-  for(let d=0;d<cur.days;d++){
-    const date=addDays(s,d);
-    if(date>=today)break;
-    const ch=loadReviewChecks(sk,date);
-    let ids=[];
-    if(cur.dailyPlan){
-      ids=cur.dailyPlan.filter(p=>p.day===d).map(()=>'dp_'+d);
-    }else if(cur.blocksPerDay){
-      ids=getTodayBlockIndices(d,cur.blocksPerDay,nb).map(i=>data.blocks[i]?.id).filter(Boolean);
+  let count=0,d=0;
+  let calDate=new Date(s);
+  while(d<cur.days){
+    if(calDate>=today)break;
+    const dow=calDate.getDay();
+    if(!cur.weekdayOnly||dow!==0&&dow!==6){
+      const ch=loadReviewChecks(sk,calDate);
+      let ids=[];
+      if(cur.dailyPlan){ids=cur.dailyPlan.filter(p=>p.day===d).map(()=>'dp_'+d);}
+      else if(cur.blocksPerDay){ids=getTodayBlockIndices(d,cur.blocksPerDay,nb).map(i=>data.blocks[i]?.id).filter(Boolean);}
+      if(ids.length&&ids.every(id=>ch[id]))count++;
+      d++;
     }
-    if(ids.length&&ids.every(id=>ch[id]))count++;
+    calDate=addDays(calDate,1);
   }
   return count;
 }
@@ -3002,8 +3029,8 @@ function tryAutoNextCycle(sk,data){
   const today=new Date();today.setHours(0,0,0,0);
   const cur=data.cycles.find(c=>getCycleStatus(c,today)==='current');
   if(!cur)return;
-  const s=new Date(cur.startDate);s.setHours(0,0,0,0);
-  const dayIn=Math.floor((today-s)/86400000);
+  if(cur.weekdayOnly&&(today.getDay()===0||today.getDay()===6))return;
+  const dayIn=getCycleDayIn(cur,today);
   if(dayIn!==cur.days-1)return;
   const checks=loadReviewChecks(sk);
   let todayIds=[];
@@ -3020,7 +3047,8 @@ function tryAutoNextCycle(sk,data){
     data.cycles.push(next);
   }
   if(next.startDate)return;
-  next.startDate=dateKey(addDays(new Date(cur.startDate),cur.days));
+  const _calEnd=getCalendarEndForCycle(cur);
+  next.startDate=dateKey(_calEnd||addDays(new Date(cur.startDate),cur.days));
   saveReviewData(sk,data);
   showReviewToast(`${cur.label||cur.num+'회독'} 완료!`);
   const banner=document.getElementById('reviewBanner');
@@ -3208,6 +3236,7 @@ document.getElementById('rsSave').addEventListener('click',()=>{
   if(c){
     c.days=parseInt(document.getElementById('rsDaysVal').textContent);
     c.startDate=document.getElementById('rsStartDate').value||null;
+    c.weekdayOnly=document.getElementById('rsWeekdayOnly').checked;
   }
   saveReviewData(_rsSubjectKey,d);closeReviewModal();renderReview();
 });
@@ -3369,6 +3398,15 @@ function initLaborEconData(){
   saveReviewData('labor_econ',{blocks,cycles});
 }
 initLaborEconData();
+
+function migrateWeekdayOnly(){
+  ['labor_law','admin_law','hr_mgmt','labor_econ'].forEach(sk=>{
+    const d=loadReviewData(sk);if(!d)return;
+    const c1=d.cycles.find(x=>x.num===1);
+    if(c1&&c1.weekdayOnly===undefined){c1.weekdayOnly=true;saveReviewData(sk,d);}
+  });
+}
+migrateWeekdayOnly();
 
 initAndSync();
 
