@@ -561,8 +561,8 @@ body.dark .routine-day-lbl{color:#555}
 .review-squares{display:flex;flex-wrap:wrap;gap:3px;width:100%;box-sizing:border-box}
 .review-sq{width:18px;height:18px;border-radius:3px;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:11px;line-height:1}
 .review-sq.done{background:#81C995}
-.review-sq.today{background:transparent;border:2px solid #2383E2}
-.review-sq.remaining{background:#E9E9E7}
+.review-sq.today{background:rgba(35,131,226,.12);border:2px solid #2383E2}
+.review-sq.remaining{background:#E9E9E7;filter:opacity(.32)}
 .review-all-info{font-size:11px;color:#9B9A97}
 .review-section{margin-bottom:20px}
 .review-section-title{font-size:11px;font-weight:600;color:#9B9A97;text-transform:uppercase;letter-spacing:.06em;margin-bottom:8px;display:block}
@@ -609,7 +609,7 @@ body.dark .routine-day-lbl{color:#555}
 .review-weak-subj{font-size:12px;font-weight:600;margin-bottom:4px;margin-top:10px}
 .review-weak-item{font-size:12px;padding:2px 0;display:flex;align-items:center;gap:6px;color:#37352F}
 #reviewToast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:#37352F;color:#fff;padding:8px 16px;border-radius:6px;font-size:13px;z-index:800;pointer-events:none;opacity:0;transition:opacity .3s}
-.review-today-check{width:16px;height:16px;border:1.5px solid #C0BFBC;border-radius:3px;cursor:pointer;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:700;color:transparent;transition:background .1s,border-color .1s}
+.review-today-check{width:16px;height:16px;border:1.5px solid #C0BFBC;border-radius:3px;cursor:pointer;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:700;color:#C5C4C0;transition:background .1s,border-color .1s}
 .review-today-check.done{background:#81C995;border-color:#81C995;color:#fff}
 .review-today-name{flex:1;font-size:13px;font-family:inherit;border:none;background:transparent;color:#37352F;outline:none;cursor:text;padding:0;line-height:1.4}
 .review-today-name.done-text{text-decoration:line-through;color:#9B9A97}
@@ -2595,7 +2595,7 @@ function renderReviewAll(el,today,vd){
         if(bd<dayIn)squares+=`<div class="review-sq done">${fruit}</div>`;
         else if(bd===dayIn)squares+=`<div class="review-sq today">${fruit}</div>`;
         else squares+=`<div class="review-sq remaining"></div>`;
-      }else{squares+=`<div class="review-sq remaining"></div>`;}
+      }else{squares+=`<div class="review-sq remaining">${fruit}</div>`;}
     }
     const info=cur?`${dayIn}/${cur.days}일 완료 · D-${cur.days-dayIn}`:doneCount>0?`${doneCount}회독 완료`:'미시작';
     html+=`<div class="review-all-row" data-rrow="${subj.key}"><div class="review-all-top"><span class="review-all-badge" style="background:${subj.color}">${subj.name}</span><span class="review-all-cycle">${cur?(cur.label||cur.num+'회독'):'—'}</span>${_subjSchedBtnHtml(subj.key)}</div><div class="review-squares">${squares}</div><span class="review-all-info">${info}</span></div>`;
@@ -2777,7 +2777,7 @@ function renderReviewSubject(el,subj,today){
         const hourOpts=Array.from({length:14},(_,i)=>i+7).map(h=>`<option value="${h}"${h===9?' selected':''}>${h}:00</option>`).join('');
         const faded=isFutureView?' style="opacity:.45"':'';
         html+=`<div class="review-today-item"${faded}>`;
-        html+=`<div class="review-today-check${done?' done':''}" data-rck="${item.checkId}" data-bid="${item.blockId}" data-rsk="${subj.key}"${isFutureView?' style="pointer-events:none;opacity:.4"':''}>${done?'✓':''}</div>`;
+        html+=`<div class="review-today-check${done?' done':''}" data-rck="${item.checkId}" data-bid="${item.blockId}" data-rsk="${subj.key}"${isFutureView?' style="pointer-events:none;opacity:.4"':''}>${done?'✓':'✗'}</div>`;
         html+=`<div class="review-item-body">`;
         html+=`<input class="review-today-name${done?' done-text':''}" data-rnm="${item.blockId}" data-rsk="${subj.key}" value="${escHtml(item.name)}"${isFutureView?' disabled':''}>`;
         if(isWeak)html+=`<span class="review-weak-badge">⚠ 약점</span>`;
@@ -2869,7 +2869,7 @@ function renderReviewSubject(el,subj,today){
       if(isFutureView)return;
       const id=btn.dataset.rck,sk=btn.dataset.rsk,bid=btn.dataset.bid;
       const ch=loadReviewChecks(sk,vd);ch[id]=!ch[id];saveReviewChecks(sk,ch,vd);
-      btn.classList.toggle('done',!!ch[id]);btn.textContent=ch[id]?'✓':'';
+      btn.classList.toggle('done',!!ch[id]);btn.textContent=ch[id]?'✓':'✗';
       const nm=el.querySelector(`[data-rnm="${bid}"]`);if(nm)nm.classList.toggle('done-text',!!ch[id]);
       if(ch[id]&&isTodayView){const d2=loadReviewData(sk);if(d2)tryAutoNextCycle(sk,d2);}
     });
