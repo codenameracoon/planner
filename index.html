@@ -2342,32 +2342,29 @@ function onMouseMove(e){
     return;
   }
   if(drag.type==='move'){
-    const anchorBlk=getBlock(drag.id);if(!anchorBlk)return;
     const tb=dayBodyAt(e.clientX);if(!tb)return;
     const nd=parseInt(tb.dataset.day);
     let ns=snapMin(clampMin(yToMin(bodyY(tb,e.clientY)-drag.offsetY)));
-    let ne=ns+drag.duration;if(ne>END_M){ne=END_M;ns=END_M-drag.duration;}
+    if(ns+drag.duration>END_M)ns=END_M-drag.duration;
+    if(ns<START_M)ns=START_M;
     const dayDelta=nd-drag.origDay;
     const minDelta=ns-drag.origStart;
     selectedIds.forEach(sid=>{
       const selBlk=getBlock(sid);if(!selBlk)return;
       const orig=drag.origPositions[sid];if(!orig)return;
       const newDay=Math.max(0,Math.min(6,orig.day+dayDelta));
+      const dur=orig.endMin-orig.startMin;
       let newStart=orig.startMin+minDelta;
-      let newEnd=orig.endMin+minDelta;
-      if(newEnd>END_M){newEnd=END_M;newStart=END_M-(orig.endMin-orig.startMin);}
-      if(newStart<START_M){newStart=START_M;newEnd=START_M+(orig.endMin-orig.startMin);}
+      let newEnd=newStart+dur;
+      if(newEnd>END_M){newEnd=END_M;newStart=END_M-dur;}
+      if(newStart<START_M){newStart=START_M;newEnd=START_M+dur;}
       selBlk.day=newDay;selBlk.startMin=newStart;selBlk.endMin=newEnd;
-      const old=document.querySelector(`.block[data-id="${sid}"]`);if(old)old.remove();
-      const subj=SUBJECTS[selBlk.subject]||SUBJECTS.rest;
-      const h2=Math.max((selBlk.endMin-selBlk.startMin)*ppm(),14);
-      const el=document.createElement('div');
-      el.className='block selected';
-      el.dataset.id=sid;
-      el.style.cssText=`top:${minToY(selBlk.startMin)}px;height:${h2}px;border-left:3px solid ${subj.color};opacity:.55;`;
-      el.innerHTML=`<div class="block-subject">${subj.name}</div><div class="block-content-row">`+(selBlk.memo?`<span class="block-memo-text">${escHtml(selBlk.memo)}</span>`:'')+`</div><div class="block-time-label">${fmtTime(selBlk.startMin)}–${fmtTime(selBlk.endMin)}</div>`;
-      const targetBody=document.querySelector(`.day-body[data-day="${selBlk.day}"]`);
-      if(targetBody)targetBody.appendChild(el);
+      const el=document.querySelector(`.block[data-id="${sid}"]`);if(!el)return;
+      const newBody=document.querySelector(`.day-body[data-day="${newDay}"]`);
+      if(newBody&&el.parentElement!==newBody)newBody.appendChild(el);
+      el.style.top=minToY(newStart)+'px';
+      el.style.height=Math.max(dur*ppm(),14)+'px';
+      const tl=el.querySelector('.block-time-label');if(tl)tl.textContent=`${fmtTime(newStart)}–${fmtTime(newEnd)}`;
     });
   }
 }
