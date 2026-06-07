@@ -1598,6 +1598,22 @@ function openEditModal(blockId){
 }
 
 document.getElementById('editGoalsAdd').addEventListener('click',()=>{if(_editGoalsDk)_addEditGoal(_editGoalsDk);});
+
+function _syncMemoToLinkedGoal(){
+  if(!editBlockId||!_editGoalsDk)return;
+  const subject=document.getElementById('editSubject').value;
+  const short=SUBJ_SHORT[subject]||'';
+  const memo=document.getElementById('editMemo').value.trim();
+  const newText=memo?`${short} ${memo}`:short;
+  const gs=loadDailyGoals(_editGoalsDk);
+  const linked=gs.find(g=>g.blkId===editBlockId);
+  if(!linked)return;
+  const row=document.getElementById('editGoalsList').querySelector(`.edit-goal-item[data-gid="${linked.id}"]`);
+  if(row){const inp=row.querySelector('.edit-goal-text');if(inp)inp.value=newText;}
+}
+document.getElementById('editMemo').addEventListener('input',_syncMemoToLinkedGoal);
+document.getElementById('editSubject').addEventListener('change',_syncMemoToLinkedGoal);
+
 document.getElementById('modalCancel').onclick=closeModal;
 document.getElementById('modalOverlay').onclick=e=>{if(e.target===document.getElementById('modalOverlay'))closeModal();};
 document.getElementById('modalSave').onclick=()=>{
