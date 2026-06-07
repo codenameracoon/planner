@@ -749,6 +749,8 @@ body.dark .month-event-sel{border-color:#2D2D2D;background:#1A1A1A;color:#E8E8E6
 .review-roadmap-info{font-size:12px;color:#9B9A97;white-space:nowrap}
 .review-roadmap-edit{background:none;border:1px solid #E9E9E7;border-radius:3px;font-size:11px;cursor:pointer;padding:2px 7px;color:#9B9A97;font-family:inherit;flex-shrink:0;line-height:1.5;transition:background .1s,color .1s}
 .review-roadmap-edit:hover{background:#F7F7F5;color:#37352F}
+.review-roadmap-end{background:none;border:1px solid #F28B82;border-radius:3px;font-size:11px;cursor:pointer;padding:2px 7px;color:#F28B82;font-family:inherit;flex-shrink:0;line-height:1.5;transition:background .1s,color .1s}
+.review-roadmap-end:hover{background:#F28B82;color:#fff}
 .review-add-btn{margin-top:10px;width:100%;padding:9px;border:1px dashed #E9E9E7;border-radius:6px;background:none;font-family:inherit;font-size:13px;color:#9B9A97;cursor:pointer;transition:background .1s;text-align:center;display:block}
 .review-add-btn:hover{background:#F7F7F5;color:#37352F}
 .review-newround-bar{display:flex;align-items:center;gap:12px;margin-bottom:14px;padding:10px 14px;background:#FFF8E6;border:1px solid #FDD663;border-radius:8px}

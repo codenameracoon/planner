@@ -2888,8 +2888,9 @@ function renderReviewSubject(el,subj,today){
     else{info=c.startDate?`예정 · ${fmtDate(sDate)} 시작`:'예정 · 미설정';editBtn=`<button class="review-roadmap-edit" data-red="${c.num}" data-rsk="${subj.key}">편집</button>`;}
     const rowStyle=st==='current'?`style="background:${subj.color}15"`:'';
     const circLabel=c.label?c.label.slice(0,2):c.num;
+    const endBtn=st==='current'?`<button class="review-roadmap-end" data-rend="${c.num}" data-rsk="${subj.key}">종료</button>`:'';
     const contentBtn=`<button class="review-roadmap-content-btn" data-ckey="${c.num}" data-rsk="${subj.key}">내용</button>`;
-    html+=`<div class="review-roadmap-row${st==='current'?' current-cycle':''}" ${rowStyle}><div class="review-roadmap-circle ${circCls}">${circLabel}</div><span class="review-roadmap-name">${c.label||c.num+'회독'}</span><span class="review-roadmap-info">${info}</span>${editBtn}${contentBtn}</div>`;
+    html+=`<div class="review-roadmap-row${st==='current'?' current-cycle':''}" ${rowStyle}><div class="review-roadmap-circle ${circCls}">${circLabel}</div><span class="review-roadmap-name">${c.label||c.num+'회독'}</span><span class="review-roadmap-info">${info}</span>${editBtn}${endBtn}${contentBtn}</div>`;
     const contentRows=buildCycleContentHtml(c,data,subj.key,weaks);
     html+=`<div class="rcex-cycle-content" id="rcexc_${subj.key}_${c.num}" style="display:none">${contentRows}</div>`;
   });
@@ -2938,6 +2939,27 @@ function renderReviewSubject(el,subj,today){
         const bi=parseInt(inp.dataset.blockidx);
         if(!isNaN(bi)&&bi>=0&&d.blocks[bi]){d.blocks[bi].name=inp.value.trim();saveReviewData(sk,d);}
       }
+    });
+  });
+
+  // bind: end-cycle buttons
+  el.querySelectorAll('[data-rend]').forEach(btn=>{
+    btn.addEventListener('click',e=>{
+      e.stopPropagation();
+      const sk=btn.dataset.rsk,num=parseInt(btn.dataset.rend);
+      const d=loadReviewData(sk);if(!d)return;
+      const c=d.cycles.find(x=>x.num===num);if(!c||!c.startDate)return;
+      if(!confirm(`${c.label||num+'회독'}을 오늘(${dateKey(today)})로 종료할까요?`))return;
+      const start=new Date(c.startDate);start.setHours(0,0,0,0);
+      if(c.weekdayOnly){
+        let count=0,dd=new Date(start);
+        while(dd<=today){if(dd.getDay()!==0&&dd.getDay()!==6)count++;dd=addDays(dd,1);}
+        c.days=Math.max(1,count);
+      }else{
+        c.days=Math.max(1,Math.round((today-start)/86400000)+1);
+      }
+      saveReviewData(sk,d);
+      renderReview();
     });
   });
 
