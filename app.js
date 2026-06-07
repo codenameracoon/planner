@@ -112,6 +112,7 @@ async function initAndSync(){
     monthlyGoals=loadMonthlyGoals(new Date());
     templates=loadTemplates();
     blocks=loadWeek(currentMonday);
+    ensureGoalLinksForWeek();
     render();
   }
   setSyncStatus('synced');
@@ -576,20 +577,22 @@ function saveAsTemplate(blk){
 function applyTemplate(tmpl){
   if(blocks.some(b=>b.day===tmpl.day&&b.startMin===tmpl.startMin&&!b.ghost))return;
   pushUndo();
-  blocks.push({id:uid(),day:tmpl.day,startMin:tmpl.startMin,endMin:tmpl.endMin,subject:tmpl.subject,memo:tmpl.memo,completed:false});
+  const nb={id:uid(),day:tmpl.day,startMin:tmpl.startMin,endMin:tmpl.endMin,subject:tmpl.subject,memo:tmpl.memo,completed:false};
+  blocks.push(nb);
   saveWeek();renderBlocks();
+  autoGoalFromBlock(nb);
 }
 function applyAllTemplates(){
   if(!templates.length)return;
   pushUndo();
-  let added=false;
+  const added=[];
   templates.forEach(t=>{
     if(!blocks.some(b=>b.day===t.day&&b.startMin===t.startMin&&!b.ghost)){
-      blocks.push({id:uid(),day:t.day,startMin:t.startMin,endMin:t.endMin,subject:t.subject,memo:t.memo,completed:false});
-      added=true;
+      const nb={id:uid(),day:t.day,startMin:t.startMin,endMin:t.endMin,subject:t.subject,memo:t.memo,completed:false};
+      blocks.push(nb);added.push(nb);
     }
   });
-  if(added){saveWeek();renderBlocks();}
+  if(added.length){saveWeek();renderBlocks();added.forEach(b=>autoGoalFromBlock(b));}
 }
 function renderTemplates(){
   const body=document.getElementById('tmplBody');
@@ -852,6 +855,7 @@ function buildGoalRowContent(rowEl, dk){
         g.status=next;g.done=next==='done';
         gs.sort((a,b)=>(getGoalStatus(a)===''?0:1)-(getGoalStatus(b)===''?0:1));
         saveDailyGoals(dk,gs);
+        if(g.blkId){const blk=getBlock(g.blkId);if(blk){blk.status=next;blk.completed=next==='done';saveWeek();renderBlocks();}}
         buildGoalRowContent(rowEl,dk);
         syncGoalRowHeight();
       }
@@ -1235,7 +1239,7 @@ function onMouseDown(e){
   if(e.target.dataset&&e.target.dataset.done){
     e.preventDefault();e.stopPropagation();
     const blk=getBlock(e.target.dataset.done);
-    if(blk){if(blk.ghost){confirmGhost(blk.id);return;}pushUndo();const cur=blk.status||(blk.completed?'done':'');blk.status=cur===''?'done':cur==='done'?'fail':'';blk.completed=(blk.status==='done');saveWeek();renderBlocks();}
+    if(blk){if(blk.ghost){confirmGhost(blk.id);return;}pushUndo();const cur=blk.status||(blk.completed?'done':'');blk.status=cur===''?'done':cur==='done'?'fail':'';blk.completed=(blk.status==='done');saveWeek();renderBlocks();const _bdk=dateKey(addDays(currentMonday,blk.day));const _bgs=loadDailyGoals(_bdk);const _bg=_bgs.find(g=>g.blkId===blk.id);if(_bg){_bg.status=blk.status;_bg.done=blk.completed;saveDailyGoals(_bdk,_bgs);const _brow=document.querySelector(`.daily-goal-row[data-day="${blk.day}"]`);if(_brow){buildGoalRowContent(_brow,_bdk);syncGoalRowHeight();}}}
     return;
   }
   // 90-min rest
@@ -1381,7 +1385,7 @@ function onContextMenu(e){
     menu.onclick=ev=>{
       const btn=ev.target.closest('[data-action]');if(!btn)return;
       const id=btn.dataset.id;const b=getBlock(id);
-      if(btn.dataset.action==='toggle'){if(b){pushUndo();const cur=b.status||(b.completed?'done':'');b.status=cur===''?'done':cur==='done'?'fail':'';b.completed=(b.status==='done');saveWeek();renderBlocks();}}
+      if(btn.dataset.action==='toggle'){if(b){pushUndo();const cur=b.status||(b.completed?'done':'');b.status=cur===''?'done':cur==='done'?'fail':'';b.completed=(b.status==='done');saveWeek();renderBlocks();const _bdk=dateKey(addDays(currentMonday,b.day));const _bgs=loadDailyGoals(_bdk);const _bg=_bgs.find(g=>g.blkId===b.id);if(_bg){_bg.status=b.status;_bg.done=b.completed;saveDailyGoals(_bdk,_bgs);const _brow=document.querySelector(`.daily-goal-row[data-day="${b.day}"]`);if(_brow){buildGoalRowContent(_brow,_bdk);syncGoalRowHeight();}}}}
       else if(btn.dataset.action==='delete'){pushUndo();if(b)removeGoalForBlock(b);blocks=blocks.filter(x=>x.id!==id);selectedIds.delete(id);saveWeek();renderBlocks();}
       else if(btn.dataset.action==='save-tmpl'){if(b)saveAsTemplate(b);}
       else if(btn.dataset.action==='review'){if(b)scheduleReview(b);}
@@ -1413,8 +1417,10 @@ function onContextMenu(e){
   menu.onclick=ev=>{
     const btn=ev.target.closest('[data-action="ins-review"]');if(!btn)return;
     pushUndo();
-    blocks.push({id:uid(),day:parseInt(btn.dataset.day),startMin:parseInt(btn.dataset.start),endMin:parseInt(btn.dataset.end),subject:btn.dataset.subj,memo:btn.dataset.memo,note:'',completed:false});
+    const nb={id:uid(),day:parseInt(btn.dataset.day),startMin:parseInt(btn.dataset.start),endMin:parseInt(btn.dataset.end),subject:btn.dataset.subj,memo:btn.dataset.memo,note:'',completed:false};
+    blocks.push(nb);
     saveWeek();renderBlocks();hideCtx();
+    autoGoalFromBlock(nb);
   };
 }
 
@@ -1491,10 +1497,37 @@ function autoGoalFromBlock(blk){
   let gs=loadDailyGoals(dk);
   const existing=gs.find(g=>g.blkId===blk.id);
   if(existing){existing.text=text;}
-  else{gs.push({id:uid(),text,status:'',done:false,blkId:blk.id});}
+  else{
+    // adopt an orphaned goal with the same text instead of duplicating
+    const orphan=gs.find(g=>!g.blkId&&g.text===text);
+    if(orphan){orphan.blkId=blk.id;}
+    else{gs.push({id:uid(),text,status:'',done:false,blkId:blk.id});}
+  }
   saveDailyGoals(dk,gs);
   const rowEl=document.querySelector(`.daily-goal-row[data-day="${blk.day}"]`);
   if(rowEl){buildGoalRowContent(rowEl,dk);syncGoalRowHeight();}
+}
+
+function ensureGoalLinksForWeek(){
+  blocks.filter(b=>!b.ghost).forEach(blk=>{
+    const short=SUBJ_SHORT[blk.subject];if(!short)return;
+    const date=addDays(currentMonday,blk.day);const dk=dateKey(date);
+    let gs=loadDailyGoals(dk);
+    const text=blk.memo?`${short} ${blk.memo}`:short;
+    const linked=gs.find(g=>g.blkId===blk.id);
+    if(linked){
+      // remove orphaned duplicates with same text that would confuse the user
+      const before=gs.length;
+      gs=gs.filter(g=>g===linked||g.blkId||g.text!==text);
+      if(gs.length<before)saveDailyGoals(dk,gs);
+      return;
+    }
+    // no linked goal: adopt orphan with same text, or create new
+    const orphan=gs.find(g=>!g.blkId&&g.text===text);
+    if(orphan){orphan.blkId=blk.id;}
+    else{gs.push({id:uid(),text,status:blk.status||'',done:blk.completed,blkId:blk.id});}
+    saveDailyGoals(dk,gs);
+  });
 }
 
 function removeGoalForBlock(blk){
@@ -1582,18 +1615,18 @@ function closeModal(){document.getElementById('modalOverlay').classList.remove('
 document.getElementById('prevBtn').onclick=()=>{
   if(viewMode==='review')return;
   if(viewMode==='week'){navigate(-7);}
-  else if(viewMode==='day'){currentDay=addDays(currentDay,-1);currentMonday=getMondayOf(currentDay);blocks=loadWeek(currentMonday);renderDailyView();}
+  else if(viewMode==='day'){currentDay=addDays(currentDay,-1);currentMonday=getMondayOf(currentDay);blocks=loadWeek(currentMonday);ensureGoalLinksForWeek();renderDailyView();}
   else{currentMonday=new Date(currentMonday.getFullYear(),currentMonday.getMonth()-1,1);render();}
 };
 document.getElementById('nextBtn').onclick=()=>{
   if(viewMode==='review')return;
   if(viewMode==='week'){navigate(7);}
-  else if(viewMode==='day'){currentDay=addDays(currentDay,1);currentMonday=getMondayOf(currentDay);blocks=loadWeek(currentMonday);renderDailyView();}
+  else if(viewMode==='day'){currentDay=addDays(currentDay,1);currentMonday=getMondayOf(currentDay);blocks=loadWeek(currentMonday);ensureGoalLinksForWeek();renderDailyView();}
   else{currentMonday=new Date(currentMonday.getFullYear(),currentMonday.getMonth()+1,1);render();}
 };
-document.getElementById('todayBtn').onclick=()=>{currentDay=new Date();currentDay.setHours(0,0,0,0);currentMonday=getMondayOf(currentDay);blocks=loadWeek(currentMonday);renderDailyView();};
+document.getElementById('todayBtn').onclick=()=>{currentDay=new Date();currentDay.setHours(0,0,0,0);currentMonday=getMondayOf(currentDay);blocks=loadWeek(currentMonday);ensureGoalLinksForWeek();renderDailyView();};
 
-function navigate(days){clearSelection();clearHistory();currentMonday=addDays(currentMonday,days);blocks=loadWeek(currentMonday);weeklyTextGoals=loadWeeklyTextGoals();render();}
+function navigate(days){clearSelection();clearHistory();currentMonday=addDays(currentMonday,days);blocks=loadWeek(currentMonday);weeklyTextGoals=loadWeeklyTextGoals();ensureGoalLinksForWeek();render();}
 
 document.getElementById('copyPrevWeek').onclick=()=>{
   if(blocks.length>0&&!confirm('현재 주에 데이터가 있습니다. 전주 내용으로 교체할까요?'))return;
@@ -1682,10 +1715,15 @@ document.getElementById('statsCollapseBtn').addEventListener('click',e=>{
   _toggleStatsCollapse();
 });
 
-document.getElementById('goalCollapseBtn').addEventListener('click',()=>{
+function _doGoalToggle(){
   goalsCollapsed=!goalsCollapsed;
   document.getElementById('goalCollapseBtn').textContent=goalsCollapsed?'▶':'▼';
-  syncGoalRowHeight();
+  if(isMobile())document.body.classList.toggle('goals-m-hidden',goalsCollapsed);
+  requestAnimationFrame(()=>syncGoalRowHeight());
+}
+document.getElementById('goalCollapseBtn').addEventListener('click',_doGoalToggle);
+document.getElementById('goalCollapseBtn').addEventListener('touchend',e=>{
+  e.preventDefault();e.stopPropagation();_doGoalToggle();
 });
 // Apply initial collapsed states
 {
@@ -1806,7 +1844,8 @@ function renderDailyRetro(){
 
 function renderWeeklyRetro(){
   const el=document.getElementById('weeklyRetro');
-  if(viewMode!=='week'){el.classList.add('u-hidden');return;}
+  const isSunday=new Date().getDay()===0;
+  if(viewMode!=='week'||!isSunday){el.classList.add('u-hidden');return;}
   el.classList.remove('u-hidden');
   const data=loadRetro('week',currentMonday);
   const body=document.getElementById('weeklyRetroBody');
@@ -1926,11 +1965,22 @@ function buildRetroPopup(){
   const dsl=document.createElement('span');dsl.className='retro-popup-lbl';dsl.textContent='오늘 별점';
   const dss=makeStars(dayData.rating||0,v=>{const d=loadRetro('day',now);d.rating=v;saveRetro('day',now,d);},undefined,3);
   dsr.appendChild(dsl);dsr.appendChild(dss);dsec.appendChild(dsr);
+  const dmoodRow=document.createElement('div');dmoodRow.className='retro-popup-row';dmoodRow.style.flexDirection='column';dmoodRow.style.alignItems='flex-start';
+  const dmoodLbl=document.createElement('span');dmoodLbl.className='retro-popup-lbl';dmoodLbl.textContent='오늘 기분';
+  const dmoodGrid=document.createElement('div');dmoodGrid.className='mood-grid';
+  MOODS.forEach(m=>{
+    const btn=document.createElement('button');btn.className='mood-btn'+(dayData.mood===m.id?' active':'');
+    btn.textContent=m.emoji;btn.title=m.label;
+    btn.onclick=()=>{const d=loadRetro('day',now);d.mood=d.mood===m.id?null:m.id;saveRetro('day',now,d);dmoodGrid.querySelectorAll('.mood-btn').forEach((b,i)=>b.classList.toggle('active',MOODS[i].id===d.mood));};
+    dmoodGrid.appendChild(btn);
+  });
+  dmoodRow.appendChild(dmoodLbl);dmoodRow.appendChild(dmoodGrid);dsec.appendChild(dmoodRow);
   [['good','잘 된 것'],['bad','안 된 것'],['tomorrow','내일 가장 먼저 할 것']].forEach(([k,lbl])=>{
     const row=document.createElement('div');row.className='retro-popup-row';
     const l=document.createElement('span');l.className='retro-popup-lbl';l.textContent=lbl;
     const inp=document.createElement('input');inp.className='retro-popup-inp';inp.type='text';inp.value=dayData[k]||'';inp.placeholder='입력...';
-    inp.addEventListener('change',()=>{const d=loadRetro('day',now);d[k]=inp.value.trim();saveRetro('day',now,d);});
+    const _save=()=>{const d=loadRetro('day',now);d[k]=inp.value.trim();saveRetro('day',now,d);};
+    inp.addEventListener('input',_save);inp.addEventListener('change',_save);
     row.appendChild(l);row.appendChild(inp);dsec.appendChild(row);
   });
   body.appendChild(dsec);
@@ -1948,7 +1998,8 @@ function buildRetroPopup(){
       const row=document.createElement('div');row.className='retro-popup-row';
       const l=document.createElement('span');l.className='retro-popup-lbl';l.textContent=lbl;
       const inp=document.createElement('input');inp.className='retro-popup-inp';inp.type='text';inp.value=weekData[k]||'';inp.placeholder='입력...';
-      inp.addEventListener('change',()=>{const d=loadRetro('week',wMon);d[k]=inp.value.trim();saveRetro('week',wMon,d);});
+      const _save=()=>{const d=loadRetro('week',wMon);d[k]=inp.value.trim();saveRetro('week',wMon,d);};
+      inp.addEventListener('input',_save);inp.addEventListener('change',_save);
       row.appendChild(l);row.appendChild(inp);wsec.appendChild(row);
     });
     body.appendChild(wsec);
@@ -1963,7 +2014,8 @@ function buildRetroPopup(){
     const msl=document.createElement('span');msl.className='retro-popup-lbl';msl.textContent='이달의 별점';
     const mss=makeStars(mData.rating||0,v=>{const d=loadRetro('month',now);d.rating=v;saveRetro('month',now,d);});
     const msNote=document.createElement('input');msNote.className='retro-popup-inp';msNote.type='text';msNote.value=mData.ratingNote||'';msNote.placeholder='한 줄 소감...';msNote.style.marginLeft='6px';
-    msNote.addEventListener('change',()=>{const d=loadRetro('month',now);d.ratingNote=msNote.value.trim();saveRetro('month',now,d);});
+    const _msNoteSave=()=>{const d=loadRetro('month',now);d.ratingNote=msNote.value.trim();saveRetro('month',now,d);};
+    msNote.addEventListener('input',_msNoteSave);msNote.addEventListener('change',_msNoteSave);
     msr.appendChild(msl);msr.appendChild(mss);msr.appendChild(msNote);msec.appendChild(msr);
     [['labor_law','노동법'],['hr_mgmt','인사노무관리'],['admin_law','행정쟁송법'],['labor_econ','노동경제학'],['precedent','판례암기+타이핑']].forEach(([k,n])=>{
       const s=SUBJECTS[k];
@@ -1972,14 +2024,16 @@ function buildRetroPopup(){
       const nm=document.createElement('span');nm.className='retro-popup-lbl';nm.style.minWidth='76px';nm.textContent=n;
       const stars=makeStars((mData.subjRating||{})[k]||0,v=>{const d=loadRetro('month',now);d.subjRating=d.subjRating||{};d.subjRating[k]=v;saveRetro('month',now,d);},'retro-star');
       const note=document.createElement('input');note.className='retro-popup-inp';note.type='text';note.value=(mData.subjNote||{})[k]||'';note.placeholder='한 줄 평...';note.style.marginLeft='4px';
-      note.addEventListener('change',()=>{const d=loadRetro('month',now);d.subjNote=d.subjNote||{};d.subjNote[k]=note.value.trim();saveRetro('month',now,d);});
+      const _noteSave=()=>{const d=loadRetro('month',now);d.subjNote=d.subjNote||{};d.subjNote[k]=note.value.trim();saveRetro('month',now,d);};
+      note.addEventListener('input',_noteSave);note.addEventListener('change',_noteSave);
       row.appendChild(dot);row.appendChild(nm);row.appendChild(stars);row.appendChild(note);msec.appendChild(row);
     });
     [['pattern','고칠 공부 패턴'],['goal','다음 달 목표']].forEach(([key,lbl])=>{
       const row=document.createElement('div');row.className='retro-popup-row';
       const l=document.createElement('span');l.className='retro-popup-lbl';l.textContent=lbl;
       const inp=document.createElement('input');inp.className='retro-popup-inp';inp.type='text';inp.value=mData[key]||'';inp.placeholder='입력...';
-      inp.addEventListener('change',()=>{const d=loadRetro('month',now);d[key]=inp.value.trim();saveRetro('month',now,d);});
+      const _save=()=>{const d=loadRetro('month',now);d[key]=inp.value.trim();saveRetro('month',now,d);};
+      inp.addEventListener('input',_save);inp.addEventListener('change',_save);
       row.appendChild(l);row.appendChild(inp);msec.appendChild(row);
     });
     body.appendChild(msec);
@@ -1987,11 +2041,19 @@ function buildRetroPopup(){
 
   document.getElementById('retroPopupOverlay').classList.add('open');
 }
-function closeRetroPopup(){document.getElementById('retroPopupOverlay').classList.remove('open');}
+function closeRetroPopup(){
+  document.querySelectorAll('#retroPopupBody .retro-popup-inp').forEach(inp=>{
+    inp.dispatchEvent(new Event('input'));inp.dispatchEvent(new Event('change'));
+  });
+  document.getElementById('retroPopupOverlay').classList.remove('open');
+}
 document.getElementById('retroPopupClose').onclick=closeRetroPopup;
 document.getElementById('retroPopupDismiss').onclick=closeRetroPopup;
 document.getElementById('retroPopupSave').onclick=closeRetroPopup;
-document.getElementById('retroPopupOverlay').addEventListener('click',e=>{if(e.target===document.getElementById('retroPopupOverlay'))closeRetroPopup();});
+let _retroScrolled=false;
+document.getElementById('retroPopupOverlay').addEventListener('touchmove',()=>{_retroScrolled=true;},{passive:true});
+document.getElementById('retroPopupOverlay').addEventListener('touchend',()=>{setTimeout(()=>{_retroScrolled=false;},300);},{passive:true});
+document.getElementById('retroPopupOverlay').addEventListener('click',e=>{if(_retroScrolled)return;if(e.target===document.getElementById('retroPopupOverlay'))closeRetroPopup();});
 setInterval(buildRetroPopup,30000);
 buildRetroPopup();
 
@@ -2065,7 +2127,7 @@ function showMobileCtx(blockId,x,y){
   menu.onclick=ev=>{
     const btn=ev.target.closest('[data-action]');if(!btn)return;
     const id=btn.dataset.id;const b=getBlock(id);
-    if(btn.dataset.action==='toggle'){if(b){pushUndo();const cur=b.status||(b.completed?'done':'');b.status=cur===''?'done':cur==='done'?'fail':'';b.completed=(b.status==='done');saveWeek();renderBlocks();}}
+    if(btn.dataset.action==='toggle'){if(b){pushUndo();const cur=b.status||(b.completed?'done':'');b.status=cur===''?'done':cur==='done'?'fail':'';b.completed=(b.status==='done');saveWeek();renderBlocks();const _bdk=dateKey(addDays(currentMonday,b.day));const _bgs=loadDailyGoals(_bdk);const _bg=_bgs.find(g=>g.blkId===b.id);if(_bg){_bg.status=b.status;_bg.done=b.completed;saveDailyGoals(_bdk,_bgs);const _brow=document.querySelector(`.daily-goal-row[data-day="${b.day}"]`);if(_brow){buildGoalRowContent(_brow,_bdk);syncGoalRowHeight();}}}}
     else if(btn.dataset.action==='edit'){openEditModal(id);}
     else if(btn.dataset.action==='delete'){if(b){pushUndo();removeGoalForBlock(b);blocks=blocks.filter(x=>x.id!==id);selectedIds.delete(id);saveWeek();renderBlocks();}}
     hideCtx();
@@ -2116,6 +2178,7 @@ function onTouchEnd(e){
       currentDay=addDays(currentDay,dx<0?1:-1);
       currentMonday=getMondayOf(currentDay);
       blocks=loadWeek(currentMonday);
+      ensureGoalLinksForWeek();
       renderDailyView();
     }
     return;
@@ -2230,11 +2293,13 @@ if(isMobile()){
   currentMonday=getMondayOf(currentDay);
 }
 blocks=loadWeek(currentMonday);
+ensureGoalLinksForWeek();
 render();
 
 requestAnimationFrame(()=>{document.getElementById('plannerWrapper').scrollTop=minToY(7*60);});
 
 if(isMobile()){
+  document.body.classList.add('goals-m-hidden');
   // Stats panel: start collapsed, tap header to toggle
   const _sp=document.getElementById('statsPanel');
   const _sh=document.getElementById('statsHdr');
@@ -2389,6 +2454,41 @@ function getTodayBlockIndices(dayInCycle,blocksPerDay,numBlocks){
   return r;
 }
 
+function buildCycleContentHtml(c,data,subjKey,weaks){
+  if(!data)return'';
+  const nb=data.blocks.length;
+  let rows='';
+  if(c.dailyPlan){
+    const dg={};
+    c.dailyPlan.forEach(p=>{
+      if(!dg[p.day])dg[p.day]=[];
+      const blk=data.blocks[p.blockIdx];
+      dg[p.day].push({text:p.text||blk?.name||'',planDay:p.day,blockIdx:p.blockIdx,blockId:blk?.id});
+    });
+    Object.keys(dg).sort((a,b)=>+a-+b).forEach(d=>{
+      const di=parseInt(d);const dayLbl=`${di+1}일`;
+      dg[d].forEach((item,ni)=>{
+        const wr=weaks&&item.blockId&&weaks[item.blockId]?' ⭐':'';
+        rows+=`<div class="rcex-row rcex-future"><span class="rcex-icon"></span><span class="rcex-day">${ni===0?dayLbl:''}</span><input class="rcex-name-inp" data-rsk="${subjKey}" data-rcycle="${c.num}" data-isplan="true" data-planday="${item.planDay}" data-blockidx="${item.blockIdx}" value="${escHtml(item.text)}"${wr?` title="${wr.trim()}"`:''}></div>`;
+      });
+    });
+  }else if(c.blocksPerDay){
+    for(let d=0;d<c.days;d++){
+      const idxs=getTodayBlockIndices(d,c.blocksPerDay,nb);
+      const dayLbl=`${d+1}일`;
+      if(!idxs.length){rows+=`<div class="rcex-row rcex-future"><span class="rcex-icon"></span><span class="rcex-day">${dayLbl}</span><span class="rcex-name" style="opacity:.4">—</span></div>`;continue;}
+      idxs.forEach((bi,ni)=>{
+        const blk=data.blocks[bi];if(!blk)return;
+        const wr=weaks&&weaks[blk.id]?' ⭐':'';
+        rows+=`<div class="rcex-row rcex-future"><span class="rcex-icon"></span><span class="rcex-day">${ni===0?dayLbl:''}</span><input class="rcex-name-inp" data-rsk="${subjKey}" data-rcycle="${c.num}" data-isplan="false" data-planday="" data-blockidx="${bi}" value="${escHtml(blk.name)}"${wr?` title="${wr.trim()}"`:''}></div>`;
+      });
+    }
+  }else{
+    rows=`<div class="rcex-row"><span class="rcex-name" style="opacity:.4;font-size:12px">일정 미설정</span></div>`;
+  }
+  return rows;
+}
+
 function renderReview(){
   const wrap=document.getElementById('reviewWrap');
   if(!wrap)return;
@@ -2475,7 +2575,12 @@ function renderReviewAll(el,today,vd){
   }
 
   const _allAdded=!!_schedAddedDates['all:'+_allDk];
+  const _hasAnyCurrent=REVIEW_SUBJECTS.some(s=>{const _d=loadReviewData(s.key);return _d&&(_d.cycles||[]).some(c=>getCycleStatus(c,today)==='current');});
+  const _maxCycleNum=REVIEW_SUBJECTS.reduce((mx,s)=>{const _d=loadReviewData(s.key);if(!_d||!_d.cycles||!_d.cycles.length)return mx;return Math.max(mx,_d.cycles[_d.cycles.length-1].num);},0);
+  const _nextRoundNum=_maxCycleNum+1;
+  const _tomorrowKey=dateKey(addDays(today,1));
   let html='';
+  if(_hasAnyCurrent)html+=`<div class="review-newround-bar"><span class="review-newround-label">현재 회독 진행 중</span><button class="review-newround-btn" id="newRoundBtn">${_nextRoundNum}회독 시작 (${_tomorrowKey}부터)</button></div>`;
   html+='<div class="review-all-grid">';
   REVIEW_SUBJECTS.forEach(subj=>{
     const data=loadReviewData(subj.key);
@@ -2559,6 +2664,8 @@ function renderReviewAll(el,today,vd){
   });
   const _aBtn=el.querySelector('#allSubjSchedBtn');
   if(_aBtn&&!_allAdded){_aBtn.addEventListener('click',()=>addTodaySchedule(_aBtn,vd,'all:'+_allDk));}
+  const _nrBtn=el.querySelector('#newRoundBtn');
+  if(_nrBtn){_nrBtn.addEventListener('click',()=>{if(!confirm(`현재 회독을 오늘로 종료하고 ${_nextRoundNum}회독을 ${_tomorrowKey}부터 시작할까요?`))return;startNewRound(_tomorrowKey);});}
 }
 
 function renderReviewSubject(el,subj,today){
@@ -2622,7 +2729,7 @@ function renderReviewSubject(el,subj,today){
       cur.dailyPlan.forEach(p=>{
         if(!dg[p.day])dg[p.day]=[];
         const blk=data.blocks[p.blockIdx];
-        dg[p.day].push({name:p.text||blk?.name||'',blockId:blk?.id});
+        dg[p.day].push({name:p.text||blk?.name||'',blockId:blk?.id,planDay:p.day,blockIdx:p.blockIdx,isPlan:true});
       });
       Object.keys(dg).sort((a,b)=>+a-+b).forEach(d=>{
         const di=parseInt(d);
@@ -2631,7 +2738,7 @@ function renderReviewSubject(el,subj,today){
     }else if(cur.blocksPerDay){
       for(let d=0;d<cur.days;d++){
         const idxs=getTodayBlockIndices(d,cur.blocksPerDay,nb);
-        const items=idxs.map(i=>({name:data.blocks[i]?.name,blockId:data.blocks[i]?.id})).filter(x=>x.name);
+        const items=idxs.map(i=>({name:data.blocks[i]?.name||'',blockId:data.blocks[i]?.id,blockIdx:i})).filter(x=>x.blockId);
         if(items.length)detailEntries.push({day:d,status:d<dayIn?'done':d===dayIn?'today':'future',items});
       }
     }
@@ -2644,7 +2751,7 @@ function renderReviewSubject(el,subj,today){
       const dayLbl=e.status==='today'?'오늘':`${e.day+1}일`;
       e.items.forEach((item,ni)=>{
         const weakMark=weaks[item.blockId]?' ⭐':'';
-        detailHtml+=`<div class="rcex-row rcex-${e.status}"><span class="rcex-icon">${ni===0?icon:''}</span><span class="rcex-day">${ni===0?dayLbl:''}</span><span class="rcex-name">${escHtml(item.name)}${weakMark}</span></div>`;
+        detailHtml+=`<div class="rcex-row rcex-${e.status}"><span class="rcex-icon">${ni===0?icon:''}</span><span class="rcex-day">${ni===0?dayLbl:''}</span><input class="rcex-name-inp" data-rsk="${subj.key}" data-rcycle="${cur.num}" data-isplan="${item.isPlan||false}" data-planday="${item.planDay??''}" data-blockidx="${item.blockIdx??''}" value="${escHtml(item.name)}"${weakMark?` title="${weakMark.trim()}"`:''}></div>`;
       });
     });
 
@@ -2771,12 +2878,15 @@ function renderReviewSubject(el,subj,today){
     else{info=c.startDate?`예정 · ${fmtDate(sDate)} 시작`:'예정 · 미설정';editBtn=`<button class="review-roadmap-edit" data-red="${c.num}" data-rsk="${subj.key}">편집</button>`;}
     const rowStyle=st==='current'?`style="background:${subj.color}15"`:'';
     const circLabel=c.label?c.label.slice(0,2):c.num;
-    html+=`<div class="review-roadmap-row${st==='current'?' current-cycle':''}" ${rowStyle}><div class="review-roadmap-circle ${circCls}">${circLabel}</div><span class="review-roadmap-name">${c.label||c.num+'회독'}</span><span class="review-roadmap-info">${info}</span>${editBtn}</div>`;
+    const contentBtn=`<button class="review-roadmap-content-btn" data-ckey="${c.num}" data-rsk="${subj.key}">내용</button>`;
+    html+=`<div class="review-roadmap-row${st==='current'?' current-cycle':''}" ${rowStyle}><div class="review-roadmap-circle ${circCls}">${circLabel}</div><span class="review-roadmap-name">${c.label||c.num+'회독'}</span><span class="review-roadmap-info">${info}</span>${editBtn}${contentBtn}</div>`;
+    const contentRows=buildCycleContentHtml(c,data,subj.key,weaks);
+    html+=`<div class="rcex-cycle-content" id="rcexc_${subj.key}_${c.num}" style="display:none">${contentRows}</div>`;
   });
   html+=`</div></div>`;
   el.innerHTML=html;
 
-  // bind: rcex expand toggle
+  // bind: rcex expand toggle (current cycle)
   const rcexBtn=el.querySelector(`#rcex_${subj.key}`);
   const rcexBody=el.querySelector(`#rcexb_${subj.key}`);
   if(rcexBtn&&rcexBody){
@@ -2786,6 +2896,40 @@ function renderReviewSubject(el,subj,today){
       rcexBtn.textContent=open?'전체 보기 ▼':'접기 ▲';
     });
   }
+
+  // bind: roadmap content toggle
+  el.querySelectorAll('[data-ckey]').forEach(btn=>{
+    btn.addEventListener('click',e=>{
+      e.stopPropagation();
+      const cnum=btn.dataset.ckey,sk=btn.dataset.rsk;
+      const body=document.getElementById(`rcexc_${sk}_${cnum}`);
+      if(!body)return;
+      const open=body.style.display!=='none';
+      body.style.display=open?'none':'block';
+      btn.textContent=open?'내용':'접기';
+    });
+  });
+
+  // bind: content edit (rcex-name-inp in roadmap and current-cycle detail)
+  el.querySelectorAll('.rcex-name-inp').forEach(inp=>{
+    inp.addEventListener('change',()=>{
+      const sk=inp.dataset.rsk;
+      const d=loadReviewData(sk);if(!d)return;
+      if(inp.dataset.isplan==='true'){
+        const planDay=parseInt(inp.dataset.planday);
+        const cycleNum=parseInt(inp.dataset.rcycle);
+        const c=d.cycles.find(x=>x.num===cycleNum);
+        if(c&&c.dailyPlan){
+          const p=c.dailyPlan.find(x=>x.day===planDay);
+          if(p)p.text=inp.value.trim();
+          saveReviewData(sk,d);
+        }
+      }else{
+        const bi=parseInt(inp.dataset.blockidx);
+        if(!isNaN(bi)&&bi>=0&&d.blocks[bi]){d.blocks[bi].name=inp.value.trim();saveReviewData(sk,d);}
+      }
+    });
+  });
 
   // bind: add-schedule button (any date)
   const _schedBtn=el.querySelector(`#addTodaySched_${subj.key}`);
@@ -2905,6 +3049,36 @@ function addReviewCycle(sk){
   saveReviewData(sk,d);renderReview();
 }
 
+function startNewRound(startDate){
+  const today=new Date();today.setHours(0,0,0,0);
+  REVIEW_SUBJECTS.forEach(subj=>{
+    const d=loadReviewData(subj.key);
+    if(!d)return;
+    const cycles=d.cycles||[];
+    const cur=cycles.find(c=>getCycleStatus(c,today)==='current');
+    if(cur&&cur.startDate){
+      const start=new Date(cur.startDate);start.setHours(0,0,0,0);
+      if(cur.weekdayOnly){
+        let count=0,dd=new Date(start);
+        while(dd<today){if(dd.getDay()!==0&&dd.getDay()!==6)count++;dd=addDays(dd,1);}
+        cur.days=Math.max(1,count);
+      }else{
+        cur.days=Math.max(1,Math.round((today-start)/86400000));
+      }
+    }
+    const alreadyNext=cur&&cycles.find(c=>c.num===cur.num+1);
+    if(!alreadyNext){
+      const nextNum=(cycles.length?cycles[cycles.length-1].num:0)+1;
+      const baseDays=cur?Math.max(1,Math.round((cur.days||7)*0.8)):7;
+      cycles.push({num:nextNum,days:baseDays,blocksPerDay:cur?cur.blocksPerDay:1,weekdayOnly:cur?!!cur.weekdayOnly:false,startDate});
+      d.cycles=cycles;
+      saveReviewData(subj.key,d);
+    }
+  });
+  renderReview();
+  showReviewToast('새 회독이 시작되었습니다.');
+}
+
 function openReviewEditModal(sk,cycleNum,cycles){
   _rsSubjectKey=sk;_rsCycleNum=cycleNum;
   const d=loadReviewData(sk);
@@ -2919,6 +3093,87 @@ function openReviewEditModal(sk,cycleNum,cycles){
   document.getElementById('rsWeekdayOnly').checked=!!(c&&c.weekdayOnly);
   const rec=cycleNum>1?`추천: ${cycleNum}회독은 이전 회독 대비 ~20% 단축 권장`:'';
   document.getElementById('rsSuggestion').textContent=rec;
+
+  // populate content section
+  const contentField=document.getElementById('rsContentField');
+  const contentSection=document.getElementById('rsContentSection');
+  contentSection.innerHTML='';
+  if(c&&d){
+    const nb=d.blocks.length;
+    let hasContent=false;
+    if(c.dailyPlan){
+      hasContent=true;
+      const dg={};
+      c.dailyPlan.forEach(p=>{
+        if(!dg[p.day])dg[p.day]=[];
+        const blk=d.blocks[p.blockIdx];
+        dg[p.day].push({text:p.text||blk?.name||'',planDay:p.day,blockIdx:p.blockIdx});
+      });
+      Object.keys(dg).sort((a,b)=>+a-+b).forEach(day=>{
+        const di=parseInt(day);
+        dg[day].forEach((item,ni)=>{
+          const row=document.createElement('div');row.className='rs-content-row';
+          const lbl=document.createElement('span');lbl.className='rs-content-day';lbl.textContent=ni===0?`${di+1}일`:'';
+          const inp=document.createElement('input');inp.className='rs-content-inp';inp.type='text';
+          inp.value=item.text;inp.dataset.planday=item.planDay;inp.dataset.isplan='true';inp.dataset.blockidx=item.blockIdx;
+          row.appendChild(lbl);row.appendChild(inp);contentSection.appendChild(row);
+        });
+      });
+    }else if(c.blocksPerDay){
+      hasContent=true;
+      for(let day=0;day<c.days;day++){
+        const idxs=getTodayBlockIndices(day,c.blocksPerDay,nb);
+        if(!idxs.length){
+          const row=document.createElement('div');row.className='rs-content-row';
+          const lbl=document.createElement('span');lbl.className='rs-content-day';lbl.textContent=`${day+1}일`;
+          const empty=document.createElement('span');empty.style.cssText='font-size:12px;color:#C0BFBC';empty.textContent='—';
+          row.appendChild(lbl);row.appendChild(empty);contentSection.appendChild(row);
+          continue;
+        }
+        idxs.forEach((bi,ni)=>{
+          const blk=d.blocks[bi];if(!blk)return;
+          const row=document.createElement('div');row.className='rs-content-row';
+          const lbl=document.createElement('span');lbl.className='rs-content-day';lbl.textContent=ni===0?`${day+1}일`:'';
+          const inp=document.createElement('input');inp.className='rs-content-inp';inp.type='text';
+          inp.value=blk.name;inp.dataset.isplan='false';inp.dataset.blockidx=bi;
+          row.appendChild(lbl);row.appendChild(inp);contentSection.appendChild(row);
+        });
+      }
+    }
+    contentField.style.display=hasContent?'':'none';
+  }else{
+    contentField.style.display='none';
+  }
+
+  // populate blocks editing section
+  const blocksField=document.getElementById('rsBlocksField');
+  const blocksSection=document.getElementById('rsBlocksSection');
+  blocksSection.innerHTML='';
+  if(d){
+    function _addBlockRow(blk,idx){
+      const row=document.createElement('div');row.className='rs-block-row';
+      const num=document.createElement('span');num.className='rs-block-num';num.textContent=idx+1;
+      const inp=document.createElement('input');inp.className='rs-block-inp';inp.type='text';inp.value=blk.name;inp.dataset.blockid=blk.id;
+      const del=document.createElement('button');del.className='rs-block-del';del.textContent='×';del.title='삭제';
+      del.onclick=()=>{row.remove();_reindexBlockNums();};
+      row.appendChild(num);row.appendChild(inp);row.appendChild(del);
+      blocksSection.appendChild(row);
+    }
+    function _reindexBlockNums(){
+      blocksSection.querySelectorAll('.rs-block-num').forEach((n,i)=>n.textContent=i+1);
+    }
+    d.blocks.forEach(_addBlockRow);
+    document.getElementById('rsBlockAdd').onclick=()=>{
+      const newId='b_'+Date.now();
+      _addBlockRow({id:newId,name:''},d.blocks.length+blocksSection.querySelectorAll('.rs-block-row').length);
+      _reindexBlockNums();
+      blocksSection.lastElementChild?.querySelector('.rs-block-inp')?.focus();
+    };
+    blocksField.style.display='';
+  }else{
+    blocksField.style.display='none';
+  }
+
   document.getElementById('reviewModalOverlay').classList.add('open');
 }
 
@@ -3174,7 +3429,26 @@ document.getElementById('rsSave').addEventListener('click',()=>{
     c.days=parseInt(document.getElementById('rsDaysVal').textContent);
     c.startDate=document.getElementById('rsStartDate').value||null;
     c.weekdayOnly=document.getElementById('rsWeekdayOnly').checked;
+    // save content edits
+    document.querySelectorAll('#rsContentSection .rs-content-inp').forEach(inp=>{
+      if(inp.dataset.isplan==='true'){
+        const planDay=parseInt(inp.dataset.planday);
+        if(c.dailyPlan){const p=c.dailyPlan.find(x=>x.day===planDay);if(p)p.text=inp.value.trim();}
+      }else{
+        const bi=parseInt(inp.dataset.blockidx);
+        if(!isNaN(bi)&&bi>=0&&d.blocks[bi])d.blocks[bi].name=inp.value.trim();
+      }
+    });
   }
+  // save block list edits
+  const newBlocks=[];
+  document.querySelectorAll('#rsBlocksSection .rs-block-row').forEach(row=>{
+    const inp=row.querySelector('.rs-block-inp');
+    const id=inp.dataset.blockid||('b_'+Date.now()+'_'+Math.random().toString(36).slice(2));
+    const name=inp.value.trim();
+    if(name)newBlocks.push({id,name});
+  });
+  if(newBlocks.length)d.blocks=newBlocks;
   saveReviewData(_rsSubjectKey,d);closeReviewModal();renderReview();
 });
 

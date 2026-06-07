@@ -115,22 +115,33 @@
 <div class="review-modal-overlay" id="reviewModalOverlay">
   <div class="review-edit-sheet">
     <div class="review-edit-title" id="reviewEditTitle">회독 설정</div>
-    <div class="review-edit-field">
-      <label class="review-edit-label">기간</label>
-      <div class="review-stepper">
-        <button class="review-stepper-btn" id="rsDaysMinus">−</button>
-        <span class="review-stepper-val" id="rsDaysVal">7</span>
-        <button class="review-stepper-btn" id="rsDaysPlus">+</button>
-        <span style="font-size:12px;color:#9B9A97">일</span>
+    <div class="review-edit-sheet-body">
+      <div class="review-edit-field">
+        <label class="review-edit-label">기간</label>
+        <div class="review-stepper">
+          <button class="review-stepper-btn" id="rsDaysMinus">−</button>
+          <span class="review-stepper-val" id="rsDaysVal">7</span>
+          <button class="review-stepper-btn" id="rsDaysPlus">+</button>
+          <span style="font-size:12px;color:#9B9A97">일</span>
+        </div>
+      </div>
+      <div class="review-edit-field">
+        <label class="review-edit-label">시작일</label>
+        <input type="date" class="review-date-input" id="rsStartDate">
+        <label class="review-auto-label"><input type="checkbox" id="rsAutoDate"> 이전 회독 종료 다음날로 자동 설정</label>
+        <label class="review-auto-label" style="margin-top:6px"><input type="checkbox" id="rsWeekdayOnly"> 주말(토/일) 제외 — 평일만 카운트</label>
+      </div>
+      <div class="review-suggestion" id="rsSuggestion"></div>
+      <div class="review-edit-field" id="rsContentField" style="display:none">
+        <label class="review-edit-label">일별 내용</label>
+        <div class="rs-content-section" id="rsContentSection"></div>
+      </div>
+      <div class="review-edit-field" id="rsBlocksField" style="display:none">
+        <label class="review-edit-label">회독 단위 목록</label>
+        <div id="rsBlocksSection"></div>
+        <button type="button" class="rs-block-add-btn" id="rsBlockAdd">+ 단위 추가</button>
       </div>
     </div>
-    <div class="review-edit-field">
-      <label class="review-edit-label">시작일</label>
-      <input type="date" class="review-date-input" id="rsStartDate">
-      <label class="review-auto-label"><input type="checkbox" id="rsAutoDate"> 이전 회독 종료 다음날로 자동 설정</label>
-      <label class="review-auto-label" style="margin-top:6px"><input type="checkbox" id="rsWeekdayOnly"> 주말(토/일) 제외 — 평일만 카운트</label>
-    </div>
-    <div class="review-suggestion" id="rsSuggestion"></div>
     <div class="review-edit-actions">
       <button class="btn" id="rsCancel">취소</button>
       <button class="btn-primary" id="rsSave">저장</button>
