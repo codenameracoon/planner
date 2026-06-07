@@ -3123,6 +3123,7 @@ function openReviewEditModal(sk,cycleNum,cycles){
   document.getElementById('rsAutoDate').checked=false;
   document.getElementById('rsAutoDate').dataset.prevend=prevEndDate;
   document.getElementById('rsWeekdayOnly').checked=!!(c&&c.weekdayOnly);
+  document.getElementById('rsTotalCount').value=d&&d.totalCount?d.totalCount:'';
   const rec=cycleNum>1?`추천: ${cycleNum}회독은 이전 회독 대비 ~20% 단축 권장`:'';
   document.getElementById('rsSuggestion').textContent=rec;
 
@@ -3219,28 +3220,40 @@ function openReviewEditModal(sk,cycleNum,cycles){
 }
 
 function autoDistributeToContent(){
-  const days=parseInt(document.getElementById('rsDaysVal').textContent);
-  const blockInputs=Array.from(document.querySelectorAll('#rsBlocksSection .rs-block-inp'));
-  const blockNames=blockInputs.map(i=>i.value.trim()).filter(Boolean);
-  if(!days||!blockNames.length)return;
-  const N=blockNames.length,D=days;
-  function autoText(d){
-    const start=Math.floor(d*N/D);
-    const end=Math.floor((d+1)*N/D);
-    const chunk=blockNames.slice(start,end);
-    if(!chunk.length)return'';
-    return chunk.length===1?chunk[0]:`${chunk[0]} ~ ${chunk[chunk.length-1]}`;
-  }
+  const D=parseInt(document.getElementById('rsDaysVal').textContent);
+  if(!D)return;
+  const totalVal=parseInt(document.getElementById('rsTotalCount').value);
   const section=document.getElementById('rsContentSection');
   const field=document.getElementById('rsContentField');
-  section.innerHTML='';
-  field.style.display='';
-  for(let d=0;d<D;d++){
-    const row=document.createElement('div');row.className='rs-content-row';
-    const lbl=document.createElement('span');lbl.className='rs-content-day';lbl.textContent=`${d+1}일`;
-    const inp=document.createElement('input');inp.className='rs-content-inp';inp.type='text';inp.dataset.dailyday=d;
-    inp.value=autoText(d);
-    row.appendChild(lbl);row.appendChild(inp);section.appendChild(row);
+  section.innerHTML='';field.style.display='';
+
+  if(totalVal>0){
+    // numeric range mode: "1~18", "19~36", ...
+    const N=totalVal;
+    for(let d=0;d<D;d++){
+      const start=Math.floor(d*N/D)+1;
+      const end=Math.floor((d+1)*N/D);
+      const row=document.createElement('div');row.className='rs-content-row';
+      const lbl=document.createElement('span');lbl.className='rs-content-day';lbl.textContent=`${d+1}일`;
+      const inp=document.createElement('input');inp.className='rs-content-inp';inp.type='text';inp.dataset.dailyday=d;
+      inp.value=start===end?`${start}`:`${start}~${end}`;
+      row.appendChild(lbl);row.appendChild(inp);section.appendChild(row);
+    }
+  }else{
+    // block name mode
+    const blockNames=Array.from(document.querySelectorAll('#rsBlocksSection .rs-block-inp')).map(i=>i.value.trim()).filter(Boolean);
+    if(!blockNames.length)return;
+    const N=blockNames.length;
+    for(let d=0;d<D;d++){
+      const start=Math.floor(d*N/D);
+      const end=Math.floor((d+1)*N/D);
+      const chunk=blockNames.slice(start,end);
+      const row=document.createElement('div');row.className='rs-content-row';
+      const lbl=document.createElement('span');lbl.className='rs-content-day';lbl.textContent=`${d+1}일`;
+      const inp=document.createElement('input');inp.className='rs-content-inp';inp.type='text';inp.dataset.dailyday=d;
+      inp.value=!chunk.length?'':chunk.length===1?chunk[0]:`${chunk[0]} ~ ${chunk[chunk.length-1]}`;
+      row.appendChild(lbl);row.appendChild(inp);section.appendChild(row);
+    }
   }
 }
 
@@ -3495,6 +3508,8 @@ document.getElementById('rsSave').addEventListener('click',()=>{
     c.days=parseInt(document.getElementById('rsDaysVal').textContent);
     c.startDate=document.getElementById('rsStartDate').value||null;
     c.weekdayOnly=document.getElementById('rsWeekdayOnly').checked;
+  const tc=parseInt(document.getElementById('rsTotalCount').value);
+  if(tc>0)d.totalCount=tc;else delete d.totalCount;
     // save content edits
     document.querySelectorAll('#rsContentSection .rs-content-inp').forEach(inp=>{
       if(inp.dataset.isplan==='true'){
@@ -3526,12 +3541,13 @@ document.getElementById('rsSave').addEventListener('click',()=>{
 initAdminLawData();
 
 function initLaborLawData(){
-  if(loadReviewData('labor_law'))return;
-  const blocks=[
-    "쟁점 1~10","쟁점 11~20","쟁점 21~30","쟁점 31~40","쟁점 41~50",
-    "쟁점 51~60","쟁점 61~70","쟁점 71~80","쟁점 81~90","쟁점 91~100",
-    "쟁점 101~110","쟁점 111~120","쟁점 121~130","쟁점 131~140","쟁점 141~150"
-  ].map((name,i)=>({id:'b'+(i+1),name}));
+  const existing=loadReviewData('labor_law');
+  if(existing){
+    // migration: add totalCount if missing
+    if(!existing.totalCount){existing.totalCount=181;saveReviewData('labor_law',existing);}
+    return;
+  }
+  const blocks=[{id:'b1',name:'쟁점 1~181'}];
   const c12=[
     {num:12,days:2,blocksPerDay:7.5,startDate:'2026-08-06'},
     {num:13,days:2,blocksPerDay:7.5,startDate:'2026-08-08'},
@@ -3557,7 +3573,7 @@ function initLaborLawData(){
     {num:27,days:4,blocksPerDay:null,startDate:'2026-08-26',label:'최종정돈'},
     {num:28,days:1,blocksPerDay:null,startDate:'2026-08-30',label:'D-1'},
   ];
-  saveReviewData('labor_law',{blocks,cycles});
+  saveReviewData('labor_law',{blocks,cycles,totalCount:181});
 }
 initLaborLawData();
 
