@@ -3133,7 +3133,16 @@ function openReviewEditModal(sk,cycleNum,cycles){
   if(c&&d){
     const nb=d.blocks.length;
     let hasContent=false;
-    if(c.dailyPlan){
+    if(c.dailyTexts&&c.dailyTexts.length){
+      hasContent=true;
+      c.dailyTexts.forEach((txt,di)=>{
+        const row=document.createElement('div');row.className='rs-content-row';
+        const lbl=document.createElement('span');lbl.className='rs-content-day';lbl.textContent=`${di+1}일`;
+        const inp=document.createElement('input');inp.className='rs-content-inp';inp.type='text';
+        inp.value=txt;inp.dataset.dailyday=di;
+        row.appendChild(lbl);row.appendChild(inp);contentSection.appendChild(row);
+      });
+    }else if(c.dailyPlan){
       hasContent=true;
       const dg={};
       c.dailyPlan.forEach(p=>{
@@ -3206,51 +3215,17 @@ function openReviewEditModal(sk,cycleNum,cycles){
     blocksField.style.display='none';
   }
 
-  // populate daily distribution
-  const dailyField=document.getElementById('rsDailyField');
-  const dailySection=document.getElementById('rsDailySection');
-  dailySection.innerHTML='';
-  dailyField.style.display='none';
-  if(d&&c&&c.dailyTexts&&c.dailyTexts.length){
-    // show existing saved daily texts
-    c.dailyTexts.forEach((txt,di)=>{
-      const row=document.createElement('div');row.className='rs-block-row';
-      const lbl=document.createElement('span');lbl.className='rs-block-num';lbl.style.minWidth='28px';lbl.textContent=`${di+1}일`;
-      const inp=document.createElement('input');inp.className='rs-block-inp';inp.type='text';inp.dataset.dailyday=di;inp.value=txt;
-      row.appendChild(lbl);row.appendChild(inp);dailySection.appendChild(row);
-    });
-    dailyField.style.display='';
-  }
-  // auto-generate after a tick so rsBlocksSection is rendered
-  setTimeout(()=>updateDailyDistribution(!(c&&c.dailyTexts&&c.dailyTexts.length)),0);
-
   document.getElementById('reviewModalOverlay').classList.add('open');
 }
 
-function updateDailyDistribution(autoGen){
+function autoDistributeToContent(){
   const days=parseInt(document.getElementById('rsDaysVal').textContent);
   const blockInputs=Array.from(document.querySelectorAll('#rsBlocksSection .rs-block-inp'));
   const blockNames=blockInputs.map(i=>i.value.trim()).filter(Boolean);
-  const section=document.getElementById('rsDailySection');
-  const field=document.getElementById('rsDailyField');
-  if(!section||!field)return;
-  if(!days||!blockNames.length){field.style.display='none';return;}
-  field.style.display='';
-
-  // preserve existing manual edits unless autoGen=true
-  const existingTexts={};
-  if(!autoGen){
-    section.querySelectorAll('[data-dailyday]').forEach(inp=>{
-      existingTexts[parseInt(inp.dataset.dailyday)]=inp.value;
-    });
-  }
-
+  if(!days||!blockNames.length)return;
   const N=blockNames.length,D=days;
-
-  // compute auto text for each day
   function autoText(d){
     if(N>=D){
-      // more items than days: each day gets a range, last day gets remainder
       const perDay=Math.floor(N/D);
       const start=d*perDay;
       const end=(d===D-1)?N:start+perDay;
@@ -3258,11 +3233,8 @@ function updateDailyDistribution(autoGen){
       if(!chunk.length)return'';
       return chunk.length===1?chunk[0]:`${chunk[0]} ~ ${chunk[chunk.length-1]}`;
     }else{
-      // fewer items than days: each item spans D/N days (some items get extra day)
-      // blockForDay = floor(d * N / D)
       const blockIdx=Math.floor(d*N/D);
       const name=blockNames[blockIdx]||'';
-      // count how many days this block occupies and which day-of-block this is
       const blockStart=Math.ceil(blockIdx*D/N);
       const blockEnd=Math.ceil((blockIdx+1)*D/N);
       const total=blockEnd-blockStart;
@@ -3270,13 +3242,15 @@ function updateDailyDistribution(autoGen){
       return total===1?name:`${name} (${dayOf}/${total}일차)`;
     }
   }
-
+  const section=document.getElementById('rsContentSection');
+  const field=document.getElementById('rsContentField');
   section.innerHTML='';
+  field.style.display='';
   for(let d=0;d<D;d++){
-    const row=document.createElement('div');row.className='rs-block-row';
-    const lbl=document.createElement('span');lbl.className='rs-block-num';lbl.style.minWidth='28px';lbl.textContent=`${d+1}일`;
-    const inp=document.createElement('input');inp.className='rs-block-inp';inp.type='text';inp.dataset.dailyday=d;
-    inp.value=(!autoGen&&existingTexts[d]!==undefined)?existingTexts[d]:autoText(d);
+    const row=document.createElement('div');row.className='rs-content-row';
+    const lbl=document.createElement('span');lbl.className='rs-content-day';lbl.textContent=`${d+1}일`;
+    const inp=document.createElement('input');inp.className='rs-content-inp';inp.type='text';inp.dataset.dailyday=d;
+    inp.value=autoText(d);
     row.appendChild(lbl);row.appendChild(inp);section.appendChild(row);
   }
 }
@@ -3506,13 +3480,11 @@ function addSingleSubjectSchedule(btn,subjKey,targetDate,stateKey){
 document.getElementById('rsDaysMinus').addEventListener('click',()=>{
   const v=parseInt(document.getElementById('rsDaysVal').textContent);
   if(v>1)document.getElementById('rsDaysVal').textContent=v-1;
-  if(document.getElementById('reviewModalOverlay').classList.contains('open'))updateDailyDistribution(true);
 });
 document.getElementById('rsDaysPlus').addEventListener('click',()=>{
   document.getElementById('rsDaysVal').textContent=parseInt(document.getElementById('rsDaysVal').textContent)+1;
-  if(document.getElementById('reviewModalOverlay').classList.contains('open'))updateDailyDistribution(true);
 });
-document.getElementById('rsDailyRefresh').addEventListener('click',()=>updateDailyDistribution(true));
+document.getElementById('rsAutoDistBtn').addEventListener('click',autoDistributeToContent);
 document.getElementById('rsAutoDate').addEventListener('change',function(){
   if(this.checked&&this.dataset.prevend)document.getElementById('rsStartDate').value=this.dataset.prevend;
 });
@@ -3545,8 +3517,8 @@ document.getElementById('rsSave').addEventListener('click',()=>{
       }
     });
   }
-  // save daily distribution texts
-  const dailyInputs=document.querySelectorAll('#rsDailySection [data-dailyday]');
+  // save daily texts from content section (auto-distributed rows)
+  const dailyInputs=document.querySelectorAll('#rsContentSection [data-dailyday]');
   if(dailyInputs.length){
     c.dailyTexts=Array.from(dailyInputs).map(inp=>inp.value.trim());
   }
