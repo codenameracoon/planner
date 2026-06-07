@@ -2591,12 +2591,8 @@ function renderReviewAll(el,today,vd){
   }
 
   const _allAdded=!!_schedAddedDates['all:'+_allDk];
-  const _hasAnyCurrent=REVIEW_SUBJECTS.some(s=>{const _d=loadReviewData(s.key);return _d&&(_d.cycles||[]).some(c=>getCycleStatus(c,today)==='current');});
-  const _maxCycleNum=REVIEW_SUBJECTS.reduce((mx,s)=>{const _d=loadReviewData(s.key);if(!_d||!_d.cycles||!_d.cycles.length)return mx;return Math.max(mx,_d.cycles[_d.cycles.length-1].num);},0);
-  const _nextRoundNum=_maxCycleNum+1;
   const _tomorrowKey=dateKey(addDays(today,1));
   let html='';
-  if(_hasAnyCurrent)html+=`<div class="review-newround-bar"><span class="review-newround-label">현재 회독 진행 중</span><button class="review-newround-btn" id="newRoundBtn">${_nextRoundNum}회독 시작 (${_tomorrowKey}부터)</button></div>`;
   html+='<div class="review-all-grid">';
   REVIEW_SUBJECTS.forEach(subj=>{
     const data=loadReviewData(subj.key);
@@ -2680,8 +2676,6 @@ function renderReviewAll(el,today,vd){
   });
   const _aBtn=el.querySelector('#allSubjSchedBtn');
   if(_aBtn&&!_allAdded){_aBtn.addEventListener('click',()=>addTodaySchedule(_aBtn,vd,'all:'+_allDk));}
-  const _nrBtn=el.querySelector('#newRoundBtn');
-  if(_nrBtn){_nrBtn.addEventListener('click',()=>{if(!confirm(`현재 회독을 오늘로 종료하고 ${_nextRoundNum}회독을 ${_tomorrowKey}부터 시작할까요?`))return;startNewRound(_tomorrowKey);});}
 }
 
 function renderReviewSubject(el,subj,today){
@@ -3362,17 +3356,15 @@ function getTodayMemoForSubject(sk,tgt){
   const data=loadReviewData(sk);if(!data)return'';
   const refDate=tgt?new Date(tgt):(()=>{const d=new Date();d.setHours(0,0,0,0);return d;})();
   refDate.setHours(0,0,0,0);
-  let cur=null,dayIn=0;
-  (data.cycles||[]).forEach(c=>{
-    if(getCycleStatus(c,refDate)==='current'&&!cur){
-      cur=c;const s=new Date(c.startDate);s.setHours(0,0,0,0);
-      dayIn=Math.floor((refDate-s)/86400000);
-    }
-  });
+  let cur=null;
+  (data.cycles||[]).forEach(c=>{if(getCycleStatus(c,refDate)==='current'&&!cur)cur=c;});
   if(!cur)return'';
+  const dayIn=getCycleDayIn(cur,refDate);
   const cn=cur.label||(cur.num+'회독');
   const items=[];
-  if(cur.dailyPlan){
+  if(cur.dailyTexts&&cur.dailyTexts[dayIn]){
+    items.push(cn+' '+cur.dailyTexts[dayIn]);
+  }else if(cur.dailyPlan){
     cur.dailyPlan.filter(p=>p.day===dayIn).forEach(p=>{
       const blk=data.blocks[p.blockIdx];if(!blk)return;
       items.push(cn+' '+(p.text||blk.name));
