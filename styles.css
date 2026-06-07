@@ -839,3 +839,5 @@ body.dark .rcex-cycle-content{background:#1E1E1C}
 .review-roadmap-content-btn:hover{background:#F7F7F5;color:#37352F}
 body.dark .review-roadmap-content-btn{border-color:#333;color:#555}
 body.dark .review-roadmap-content-btn:hover{background:#272727;color:#E8E8E6}
+body.dark .review-cycle-card [style*="border-top:1px solid #F4F4F2"]{border-top-color:#2D2D2D!important}
+body.dark .rcex-body .rs-content-row span[style*="color:#37352F"]{color:#C0C0BE!important}
