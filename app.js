@@ -3225,22 +3225,11 @@ function autoDistributeToContent(){
   if(!days||!blockNames.length)return;
   const N=blockNames.length,D=days;
   function autoText(d){
-    if(N>=D){
-      const perDay=Math.floor(N/D);
-      const start=d*perDay;
-      const end=(d===D-1)?N:start+perDay;
-      const chunk=blockNames.slice(start,end);
-      if(!chunk.length)return'';
-      return chunk.length===1?chunk[0]:`${chunk[0]} ~ ${chunk[chunk.length-1]}`;
-    }else{
-      const blockIdx=Math.floor(d*N/D);
-      const name=blockNames[blockIdx]||'';
-      const blockStart=Math.ceil(blockIdx*D/N);
-      const blockEnd=Math.ceil((blockIdx+1)*D/N);
-      const total=blockEnd-blockStart;
-      const dayOf=d-blockStart+1;
-      return total===1?name:`${name} (${dayOf}/${total}일차)`;
-    }
+    const start=Math.floor(d*N/D);
+    const end=Math.floor((d+1)*N/D);
+    const chunk=blockNames.slice(start,end);
+    if(!chunk.length)return'';
+    return chunk.length===1?chunk[0]:`${chunk[0]} ~ ${chunk[chunk.length-1]}`;
   }
   const section=document.getElementById('rsContentSection');
   const field=document.getElementById('rsContentField');
