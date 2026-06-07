@@ -3174,7 +3174,67 @@ function openReviewEditModal(sk,cycleNum,cycles){
     blocksField.style.display='none';
   }
 
+  // populate daily distribution
+  const dailyField=document.getElementById('rsDailyField');
+  const dailySection=document.getElementById('rsDailySection');
+  dailySection.innerHTML='';
+  dailyField.style.display='none';
+  if(d&&c&&c.dailyTexts&&c.dailyTexts.length){
+    // show existing saved daily texts
+    c.dailyTexts.forEach((txt,di)=>{
+      const row=document.createElement('div');row.className='rs-block-row';
+      const lbl=document.createElement('span');lbl.className='rs-block-num';lbl.style.minWidth='28px';lbl.textContent=`${di+1}일`;
+      const inp=document.createElement('input');inp.className='rs-block-inp';inp.type='text';inp.dataset.dailyday=di;inp.value=txt;
+      row.appendChild(lbl);row.appendChild(inp);dailySection.appendChild(row);
+    });
+    dailyField.style.display='';
+  }
+  // auto-generate after a tick so rsBlocksSection is rendered
+  setTimeout(()=>updateDailyDistribution(!(c&&c.dailyTexts&&c.dailyTexts.length)),0);
+
   document.getElementById('reviewModalOverlay').classList.add('open');
+}
+
+function updateDailyDistribution(autoGen){
+  const days=parseInt(document.getElementById('rsDaysVal').textContent);
+  const blockInputs=Array.from(document.querySelectorAll('#rsBlocksSection .rs-block-inp'));
+  const blockNames=blockInputs.map(i=>i.value.trim()).filter(Boolean);
+  const section=document.getElementById('rsDailySection');
+  const field=document.getElementById('rsDailyField');
+  if(!section||!field)return;
+  if(!days||!blockNames.length){field.style.display='none';return;}
+  field.style.display='';
+
+  // preserve existing manual edits unless autoGen=true
+  const existingTexts={};
+  if(!autoGen){
+    section.querySelectorAll('[data-dailyday]').forEach(inp=>{
+      existingTexts[parseInt(inp.dataset.dailyday)]=inp.value;
+    });
+  }
+
+  section.innerHTML='';
+  const perDay=Math.floor(blockNames.length/days);
+  let idx=0;
+  for(let d=0;d<days;d++){
+    const isLast=d===days-1;
+    const count=isLast?blockNames.length-idx:perDay;
+    const dayBlocks=blockNames.slice(idx,idx+Math.max(count,0));
+    idx+=Math.max(count,0);
+    const row=document.createElement('div');row.className='rs-block-row';
+    const lbl=document.createElement('span');lbl.className='rs-block-num';lbl.style.minWidth='28px';lbl.textContent=`${d+1}일`;
+    const inp=document.createElement('input');inp.className='rs-block-inp';inp.type='text';inp.dataset.dailyday=d;
+    if(!autoGen&&existingTexts[d]!==undefined){
+      inp.value=existingTexts[d];
+    }else if(dayBlocks.length===0){
+      inp.value='';
+    }else if(dayBlocks.length===1){
+      inp.value=dayBlocks[0];
+    }else{
+      inp.value=`${dayBlocks[0]} ~ ${dayBlocks[dayBlocks.length-1]}`;
+    }
+    row.appendChild(lbl);row.appendChild(inp);section.appendChild(row);
+  }
 }
 
 function closeReviewModal(){
@@ -3404,10 +3464,13 @@ function addSingleSubjectSchedule(btn,subjKey,targetDate,stateKey){
 document.getElementById('rsDaysMinus').addEventListener('click',()=>{
   const v=parseInt(document.getElementById('rsDaysVal').textContent);
   if(v>1)document.getElementById('rsDaysVal').textContent=v-1;
+  if(document.getElementById('reviewModalOverlay').classList.contains('open'))updateDailyDistribution(true);
 });
 document.getElementById('rsDaysPlus').addEventListener('click',()=>{
   document.getElementById('rsDaysVal').textContent=parseInt(document.getElementById('rsDaysVal').textContent)+1;
+  if(document.getElementById('reviewModalOverlay').classList.contains('open'))updateDailyDistribution(true);
 });
+document.getElementById('rsDailyRefresh').addEventListener('click',()=>updateDailyDistribution(true));
 document.getElementById('rsAutoDate').addEventListener('change',function(){
   if(this.checked&&this.dataset.prevend)document.getElementById('rsStartDate').value=this.dataset.prevend;
 });
@@ -3439,6 +3502,11 @@ document.getElementById('rsSave').addEventListener('click',()=>{
         if(!isNaN(bi)&&bi>=0&&d.blocks[bi])d.blocks[bi].name=inp.value.trim();
       }
     });
+  }
+  // save daily distribution texts
+  const dailyInputs=document.querySelectorAll('#rsDailySection [data-dailyday]');
+  if(dailyInputs.length){
+    c.dailyTexts=Array.from(dailyInputs).map(inp=>inp.value.trim());
   }
   // save block list edits
   const newBlocks=[];
