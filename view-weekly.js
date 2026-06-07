@@ -517,18 +517,29 @@ function onContextMenu(e){
     const dot=`<span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:${rs.color};margin-right:6px;flex-shrink:0;vertical-align:middle"></span>`;
     return`<button class="ctx-item" data-action="ins-review" data-subj="${rs.key}" data-start="${startMin}" data-end="${endMin}" data-day="${dayIdx}" data-memo="${escHtml(memo||'')}" style="white-space:normal;max-width:260px;line-height:1.3">${dot}${label}</button>`;
   }).join('');
-  // quick-insert items (defaults + custom localStorage)
+  // quick-insert: fresh 회독 assignments (read on every right-click) + custom localStorage
   const _customQ=_loadQuickItems();
-  const _allQ=[..._QUICK_DEFAULTS.map(i=>({...i,isDefault:true})),..._customQ.map(i=>({...i,isDefault:false}))];
+  const _sklCatMap={labor_law:'노동법',hr_mgmt:'인사노무관리',admin_law:'행정쟹송법',labor_econ:'노동경제학'};
+  const _reviewQuick=[];
+  REVIEW_SUBJECTS.forEach(rs=>{
+    const memo=getTodayMemoForSubject(rs.key,tgt);
+    if(memo){const text=memo.replace(/^\S+\s+/,'');_reviewQuick.push({cat:_sklCatMap[rs.key]||rs.name,text,subjKey:rs.key,isReview:true});}
+  });
+  const _allQ=[..._reviewQuick,..._customQ.map(i=>({...i,isDefault:false}))];
   let quickHtml='';
   if(_allQ.length){
     const _qCats={};
     _allQ.forEach(item=>{if(!_qCats[item.cat])_qCats[item.cat]=[];_qCats[item.cat].push(item);});
     quickHtml=`<div class="ctx-divider"></div><div style="font-size:11px;color:#9B9A97;padding:6px 10px 2px;font-weight:600;letter-spacing:.3px">빠른 입력</div>`;
     Object.entries(_qCats).forEach(([cat,items])=>{
-      const sk=_catToSubjKey(cat);const col=sk?SUBJECTS[sk]?.color:'#9B9A97';
+      const sk=items.find(i=>i.subjKey)?.subjKey||_catToSubjKey(cat);
+      const col=sk?SUBJECTS[sk]?.color:'#9B9A97';
       const dot=`<span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:${col||'#9B9A97'};margin-right:6px;flex-shrink:0;vertical-align:middle"></span>`;
-      items.forEach(item=>{quickHtml+=`<button class="ctx-item" data-action="quick-ins" data-text="${escHtml(item.text)}" data-cat="${escHtml(item.cat)}" data-start="${startMin}" data-end="${endMin}" data-day="${dayIdx}" style="white-space:normal;max-width:260px;line-height:1.3">${dot}${escHtml(item.text)}</button>`;});
+      items.forEach(item=>{
+        const sk2=item.subjKey||_catToSubjKey(item.cat)||'rest';
+        const prefix=item.isReview?'<span style="font-size:10px;color:#9B9A97;margin-right:3px">[오늘 회독]</span>':'';
+        quickHtml+=`<button class="ctx-item" data-action="quick-ins" data-text="${escHtml(item.text)}" data-cat="${escHtml(item.cat)}" data-subj="${sk2}" data-start="${startMin}" data-end="${endMin}" data-day="${dayIdx}" style="white-space:normal;max-width:260px;line-height:1.3">${dot}${prefix}${escHtml(item.text)}</button>`;
+      });
     });
   }
   quickHtml+=`<div class="ctx-divider"></div><button class="ctx-item" data-action="quick-edit" style="color:#9B9A97;font-size:12px">+ 항목 편집</button>`;
@@ -543,7 +554,7 @@ function onContextMenu(e){
       blocks.push(nb);saveWeek();renderBlocks();hideCtx();autoGoalFromBlock(nb);
     }else if(btn.dataset.action==='quick-ins'){
       pushUndo();
-      const sk=_catToSubjKey(btn.dataset.cat)||'rest';
+      const sk=btn.dataset.subj||_catToSubjKey(btn.dataset.cat)||'rest';
       const nb={id:uid(),day:parseInt(btn.dataset.day),startMin:parseInt(btn.dataset.start),endMin:parseInt(btn.dataset.end),subject:sk,memo:btn.dataset.text,note:'',completed:false};
       blocks.push(nb);saveWeek();renderBlocks();hideCtx();autoGoalFromBlock(nb);
     }else if(btn.dataset.action==='quick-edit'){
