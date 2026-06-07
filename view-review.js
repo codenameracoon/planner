@@ -9,16 +9,33 @@ function saveReviewChecks(k,c,d){localStorage.setItem(reviewCheckKey(k,d),JSON.s
 
 function initAdminLawData(){
   const existing=loadReviewData('admin_law');
-  if(existing&&existing.version===3)return;
+  if(existing&&existing.version===4)return;
   const blocks=[
-    "누가 소송을 거는가 — 소송의 한계 + 원고적격 + 협의의 소익",
-    "무엇을 대상으로 소송을 거는가 — 대상적격 (처분성 판단)",
-    "언제, 어떻게 거는가 — 제소기간 + 행정심판 전치주의 + 소의 변경/참가",
-    "재판 중 방어막과 룰 — 가구제 (집행정지) + 심리",
-    "재판의 결과와 효력 — 취소소송의 판결 (기속력, 기판력, 사정판결)",
-    "취소소송 외의 항고소송 — 무효등확인소송 + 부작위위법확인소송",
-    "그 밖의 소송 — 당사자소송 + 객관소송",
-    "행정심판법 — 심판 요건 + 가구제 + 재결의 효력"
+    "무명항고소송",
+    "대상적격",
+    "원고적격",
+    "협의의 소익",
+    "피고적격",
+    "관할",
+    "제소기간",
+    "행정심판 전치주의",
+    "가구제(집행정지)",
+    "병합",
+    "소변경",
+    "참가",
+    "심리",
+    "처분사유의 추가·변경",
+    "주장입증책임",
+    "위법성판단기준시",
+    "사정판결",
+    "기속력",
+    "기판력",
+    "간접강제",
+    "선결문제",
+    "무효등확인소송",
+    "부작위위법확인소송",
+    "당사자소송",
+    "행정심판법"
   ].map((name,i)=>({id:'b'+(i+1),name}));
   const dailyPlan=[
     {day:0,blockIdx:3,text:'블록4 후반 — 심리원칙, 처분사유추가변경'},
@@ -62,7 +79,7 @@ function initAdminLawData(){
     {num:24,days:4,blocksPerDay:null,startDate:'2026-08-26',label:'최종정돈'},
     {num:25,days:1,blocksPerDay:null,startDate:'2026-08-30',label:'D-1'},
   ];
-  saveReviewData('admin_law',{blocks,cycles,version:3});
+  saveReviewData('admin_law',{blocks,cycles,version:4});
 }
 
 function getCalendarEndForCycle(c){
