@@ -517,20 +517,98 @@ function onContextMenu(e){
     const dot=`<span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:${rs.color};margin-right:6px;flex-shrink:0;vertical-align:middle"></span>`;
     return`<button class="ctx-item" data-action="ins-review" data-subj="${rs.key}" data-start="${startMin}" data-end="${endMin}" data-day="${dayIdx}" data-memo="${escHtml(memo||'')}" style="white-space:normal;max-width:260px;line-height:1.3">${dot}${label}</button>`;
   }).join('');
-  menu.innerHTML=`<div style="font-size:11px;color:#9B9A97;padding:6px 10px 2px;font-weight:600;letter-spacing:.3px">회독 내용 삽입 · ${fmtTime(startMin)}</div>`+reviewItems;
+  // quick-insert items (defaults + custom localStorage)
+  const _customQ=_loadQuickItems();
+  const _allQ=[..._QUICK_DEFAULTS.map(i=>({...i,isDefault:true})),..._customQ.map(i=>({...i,isDefault:false}))];
+  let quickHtml='';
+  if(_allQ.length){
+    const _qCats={};
+    _allQ.forEach(item=>{if(!_qCats[item.cat])_qCats[item.cat]=[];_qCats[item.cat].push(item);});
+    quickHtml=`<div class="ctx-divider"></div><div style="font-size:11px;color:#9B9A97;padding:6px 10px 2px;font-weight:600;letter-spacing:.3px">빠른 입력</div>`;
+    Object.entries(_qCats).forEach(([cat,items])=>{
+      const sk=_catToSubjKey(cat);const col=sk?SUBJECTS[sk]?.color:'#9B9A97';
+      const dot=`<span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:${col||'#9B9A97'};margin-right:6px;flex-shrink:0;vertical-align:middle"></span>`;
+      items.forEach(item=>{quickHtml+=`<button class="ctx-item" data-action="quick-ins" data-text="${escHtml(item.text)}" data-cat="${escHtml(item.cat)}" data-start="${startMin}" data-end="${endMin}" data-day="${dayIdx}" style="white-space:normal;max-width:260px;line-height:1.3">${dot}${escHtml(item.text)}</button>`;});
+    });
+  }
+  quickHtml+=`<div class="ctx-divider"></div><button class="ctx-item" data-action="quick-edit" style="color:#9B9A97;font-size:12px">+ 항목 편집</button>`;
+  menu.innerHTML=`<div style="font-size:11px;color:#9B9A97;padding:6px 10px 2px;font-weight:600;letter-spacing:.3px">회독 내용 삽입 · ${fmtTime(startMin)}</div>`+reviewItems+quickHtml;
   menu.style.display='block';menu.style.left=e.clientX+'px';menu.style.top=e.clientY+'px';
   requestAnimationFrame(()=>{const r=menu.getBoundingClientRect();if(r.right>window.innerWidth)menu.style.left=(e.clientX-r.width)+'px';if(r.bottom>window.innerHeight)menu.style.top=(e.clientY-r.height)+'px';});
   menu.onclick=ev=>{
-    const btn=ev.target.closest('[data-action="ins-review"]');if(!btn)return;
-    pushUndo();
-    const nb={id:uid(),day:parseInt(btn.dataset.day),startMin:parseInt(btn.dataset.start),endMin:parseInt(btn.dataset.end),subject:btn.dataset.subj,memo:btn.dataset.memo,note:'',completed:false};
-    blocks.push(nb);
-    saveWeek();renderBlocks();hideCtx();
-    autoGoalFromBlock(nb);
+    const btn=ev.target.closest('[data-action]');if(!btn)return;
+    if(btn.dataset.action==='ins-review'){
+      pushUndo();
+      const nb={id:uid(),day:parseInt(btn.dataset.day),startMin:parseInt(btn.dataset.start),endMin:parseInt(btn.dataset.end),subject:btn.dataset.subj,memo:btn.dataset.memo,note:'',completed:false};
+      blocks.push(nb);saveWeek();renderBlocks();hideCtx();autoGoalFromBlock(nb);
+    }else if(btn.dataset.action==='quick-ins'){
+      pushUndo();
+      const sk=_catToSubjKey(btn.dataset.cat)||'rest';
+      const nb={id:uid(),day:parseInt(btn.dataset.day),startMin:parseInt(btn.dataset.start),endMin:parseInt(btn.dataset.end),subject:sk,memo:btn.dataset.text,note:'',completed:false};
+      blocks.push(nb);saveWeek();renderBlocks();hideCtx();autoGoalFromBlock(nb);
+    }else if(btn.dataset.action==='quick-edit'){
+      hideCtx();_openQuickEditModal();
+    }
   };
 }
 
 function hideCtx(){document.getElementById('ctxMenu').style.display='none';}
+
+// ── quick-insert management ───────────────────────────────────────────────────
+const _QUICK_CATS=['노동법','인사노무관리','행정쟁송법','노동경제학','스터디','기타'];
+const _QUICK_DEFAULTS=[];
+function _catToSubjKey(cat){return{노동법:'labor_law',인사노무관리:'hr_mgmt',행정쟝송법:'admin_law',행정쟁송법:'admin_law',노동경제학:'labor_econ'}[cat]||null;}
+function _loadQuickItems(){try{return JSON.parse(localStorage.getItem('quickInsertItems')||'[]');}catch{return[];}}
+function _saveQuickItems(items){localStorage.setItem('quickInsertItems',JSON.stringify(items));}
+function _openQuickEditModal(){
+  const prev=document.getElementById('_quickEditOverlay');if(prev)prev.remove();
+  const custom=_loadQuickItems();
+  const cats={};
+  custom.forEach((item,idx)=>{if(!cats[item.cat])cats[item.cat]=[];cats[item.cat].push({...item,idx});});
+  let itemsHtml='';
+  if(!custom.length){
+    itemsHtml='<div style="color:#9B9A97;font-size:13px;padding:8px 0">항목이 없습니다. 아래에서 추가하세요.</div>';
+  }else{
+    Object.entries(cats).forEach(([cat,items])=>{
+      itemsHtml+=`<div style="font-size:11px;font-weight:600;color:#9B9A97;margin:10px 0 4px;letter-spacing:.4px">${cat}</div>`;
+      items.forEach(item=>{
+        itemsHtml+=`<div style="display:flex;align-items:center;gap:6px;padding:4px 0;border-bottom:1px solid #F4F4F2"><span style="flex:1;font-size:13px">${escHtml(item.text)}</span><button data-qdel="${item.idx}" style="background:none;border:none;cursor:pointer;font-size:15px;color:#C0BFBC;padding:0 4px;line-height:1">×</button></div>`;
+      });
+    });
+  }
+  const ov=document.createElement('div');
+  ov.id='_quickEditOverlay';
+  ov.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,.35);z-index:10000;display:flex;align-items:center;justify-content:center';
+  ov.innerHTML=`<div style="background:#fff;border-radius:12px;padding:20px 24px;width:360px;max-height:80vh;overflow-y:auto;box-shadow:0 8px 40px rgba(0,0,0,.18);font-family:inherit">
+    <div style="font-weight:600;font-size:15px;margin-bottom:12px">빠른 입력 항목 편집</div>
+    <div id="_qeList">${itemsHtml}</div>
+    <div style="margin-top:16px;border-top:1px solid #F4F4F2;padding-top:14px">
+      <div style="font-size:12px;font-weight:600;color:#9B9A97;margin-bottom:8px">새 항목 추가</div>
+      <select id="_qeCat" style="width:100%;margin-bottom:8px;padding:7px 10px;border:1px solid #E9E9E7;border-radius:6px;font-size:13px;font-family:inherit;background:#fff">${_QUICK_CATS.map(c=>`<option value="${c}">${c}</option>`).join('')}</select>
+      <div style="display:flex;gap:6px"><input id="_qeText" type="text" placeholder="항목 텍스트" style="flex:1;padding:7px 10px;border:1px solid #E9E9E7;border-radius:6px;font-size:13px;font-family:inherit;outline:none"><button id="_qeAdd" style="background:#37352F;color:#fff;border:none;border-radius:6px;padding:7px 14px;font-size:13px;cursor:pointer;font-family:inherit">추가</button></div>
+    </div>
+    <div style="display:flex;justify-content:flex-end;margin-top:16px"><button id="_qeClose" style="background:none;border:1px solid #E9E9E7;border-radius:6px;padding:7px 18px;font-size:13px;cursor:pointer;font-family:inherit">닫기</button></div>
+  </div>`;
+  document.body.appendChild(ov);
+  const close=()=>ov.remove();
+  ov.addEventListener('click',e=>{if(e.target===ov)close();});
+  document.getElementById('_qeClose').onclick=close;
+  ov.addEventListener('click',e=>{
+    const del=e.target.closest('[data-qdel]');if(!del)return;
+    const idx=parseInt(del.dataset.qdel);
+    const items=_loadQuickItems();items.splice(idx,1);_saveQuickItems(items);
+    close();_openQuickEditModal();
+  });
+  const addItem=()=>{
+    const cat=document.getElementById('_qeCat').value;
+    const text=document.getElementById('_qeText').value.trim();
+    if(!text){document.getElementById('_qeText').focus();return;}
+    const items=_loadQuickItems();items.push({cat,text});_saveQuickItems(items);
+    close();_openQuickEditModal();
+  };
+  document.getElementById('_qeAdd').onclick=addItem;
+  document.getElementById('_qeText').addEventListener('keydown',e=>{if(e.key==='Enter')addItem();});
+}
 
 // ── weekday repeat ─────────────────────────────────────────────────────────────
 let _repeatBlkId=null;
