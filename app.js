@@ -3213,42 +3213,40 @@ function updateDailyDistribution(autoGen){
     });
   }
 
-  // build day→blocks mapping
-  // N >= D: floor(N/D) per day, remainder all on last day
-  // N < D : 1 block per day for first N days, remaining days stay empty
   const N=blockNames.length,D=days;
-  const daySlices=[];
-  if(N>=D){
-    const perDay=Math.floor(N/D);
-    let idx=0;
-    for(let d=0;d<D;d++){
-      const count=(d===D-1)?N-idx:perDay;
-      daySlices.push(blockNames.slice(idx,idx+count));
-      idx+=count;
-    }
-  }else{
-    for(let d=0;d<D;d++){
-      daySlices.push(d<N?[blockNames[d]]:[]);
+
+  // compute auto text for each day
+  function autoText(d){
+    if(N>=D){
+      // more items than days: each day gets a range, last day gets remainder
+      const perDay=Math.floor(N/D);
+      const start=d*perDay;
+      const end=(d===D-1)?N:start+perDay;
+      const chunk=blockNames.slice(start,end);
+      if(!chunk.length)return'';
+      return chunk.length===1?chunk[0]:`${chunk[0]} ~ ${chunk[chunk.length-1]}`;
+    }else{
+      // fewer items than days: each item spans D/N days (some items get extra day)
+      // blockForDay = floor(d * N / D)
+      const blockIdx=Math.floor(d*N/D);
+      const name=blockNames[blockIdx]||'';
+      // count how many days this block occupies and which day-of-block this is
+      const blockStart=Math.ceil(blockIdx*D/N);
+      const blockEnd=Math.ceil((blockIdx+1)*D/N);
+      const total=blockEnd-blockStart;
+      const dayOf=d-blockStart+1;
+      return total===1?name:`${name} (${dayOf}/${total}일차)`;
     }
   }
 
   section.innerHTML='';
-  daySlices.forEach((dayBlocks,d)=>{
+  for(let d=0;d<D;d++){
     const row=document.createElement('div');row.className='rs-block-row';
     const lbl=document.createElement('span');lbl.className='rs-block-num';lbl.style.minWidth='28px';lbl.textContent=`${d+1}일`;
     const inp=document.createElement('input');inp.className='rs-block-inp';inp.type='text';inp.dataset.dailyday=d;
-    if(!autoGen&&existingTexts[d]!==undefined){
-      inp.value=existingTexts[d];
-    }else if(dayBlocks.length===0){
-      inp.value='';
-      inp.placeholder='복습 / 비워두기';
-    }else if(dayBlocks.length===1){
-      inp.value=dayBlocks[0];
-    }else{
-      inp.value=`${dayBlocks[0]} ~ ${dayBlocks[dayBlocks.length-1]}`;
-    }
+    inp.value=(!autoGen&&existingTexts[d]!==undefined)?existingTexts[d]:autoText(d);
     row.appendChild(lbl);row.appendChild(inp);section.appendChild(row);
-  });
+  }
 }
 
 function closeReviewModal(){
