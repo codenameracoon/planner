@@ -1375,3 +1375,76 @@ function migrateWeekdayOnly(){
   });
 }
 migrateWeekdayOnly();
+
+// ── app init (runs after all scripts loaded) ──────────────────────────────────
+weeklyGoals=loadWeeklyGoals();
+weeklyTextGoals=loadWeeklyTextGoals();
+monthlyGoals=loadMonthlyGoals(new Date());
+templates=loadTemplates();
+
+if(localStorage.getItem('darkMode')==='1')applyDark(true);
+renderDday();
+if(isMobile()){
+  currentDay=new Date();currentDay.setHours(0,0,0,0);
+  currentMonday=getMondayOf(currentDay);
+}
+blocks=loadWeek(currentMonday);
+ensureGoalLinksForWeek();
+render();
+
+requestAnimationFrame(()=>{document.getElementById('plannerWrapper').scrollTop=minToY(7*60);});
+
+if(isMobile()){
+  document.body.classList.add('goals-m-hidden');
+  const _sp=document.getElementById('statsPanel');
+  const _sh=document.getElementById('statsHdr');
+  if(_sp&&_sh){
+    _sp.classList.add('m-collapsed');
+    const _stog=document.createElement('span');
+    _stog.style.cssText='font-size:11px;color:#9B9A97;margin-left:auto;pointer-events:none;white-space:nowrap';
+    _stog.textContent='펼치기 ▼';
+    _sh.appendChild(_stog);
+    _sh.addEventListener('click',e=>{
+      if(e.target===document.getElementById('statsResolutionInline'))return;
+      _sp.classList.toggle('m-collapsed');
+      const isCol=_sp.classList.contains('m-collapsed');
+      _stog.textContent=isCol?'펼치기 ▼':'접기 ▲';
+      if(!isCol)renderStats();
+      updateStatsPanelTitle();
+    });
+  }
+  const _dg=document.getElementById('ddayGrid');
+  const _dgh=document.getElementById('ddayGridHdr');
+  if(_dg&&_dgh){
+    _dg.classList.add('m-collapsed');
+    _dgh.addEventListener('click',()=>{_dg.classList.toggle('m-collapsed');});
+  }
+  const _wr=document.getElementById('weeklyRetroHdr');
+  if(_wr)_wr.style.cursor='pointer';
+  const _dr=document.getElementById('dailyRetroHdr');
+  if(_dr)_dr.style.cursor='pointer';
+}
+
+initAndSync();
+
+async function _pollSync(){
+  if(document.hidden)return;
+  const{updated,needsPush}=await _loadFromSupabase();
+  if(needsPush.length){try{await _sb.from('planner_data').upsert(needsPush,{onConflict:'key'});needsPush.forEach(r=>_setSyncMeta(r.key,r.updated_at));}catch(e){}}
+  if(updated){
+    weeklyGoals=loadWeeklyGoals();
+    weeklyTextGoals=loadWeeklyTextGoals();
+    monthlyGoals=loadMonthlyGoals(new Date());
+    templates=loadTemplates();
+    blocks=loadWeek(currentMonday);
+    render();
+  }
+}
+setInterval(_pollSync,30000);
+document.addEventListener('visibilitychange',function(){if(!document.hidden)_pollSync();});
+
+if('serviceWorker' in navigator){
+  navigator.serviceWorker.getRegistrations().then(regs=>{regs.forEach(r=>r.update());});
+  if('caches' in window){caches.keys().then(ns=>ns.forEach(n=>caches.delete(n)));}
+  navigator.serviceWorker.register('./sw.js').catch(()=>{});
+}
