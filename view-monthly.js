@@ -353,9 +353,9 @@ function onContextMenu(e){
 function hideCtx(){document.getElementById('ctxMenu').style.display='none';}
 
 // ── weekday repeat ─────────────────────────────────────────────────────────────
-let _repeatBlkId=null;
+let _monthlyRepeatBlkId=null;
 function openRepeatModal(blkId){
-  _repeatBlkId=blkId;
+  _monthlyRepeatBlkId=blkId;
   const blk=getBlock(blkId);if(!blk)return;
   document.querySelectorAll('.repeat-day-chip').forEach(chip=>{
     chip.classList.toggle('on',parseInt(chip.dataset.rday)===blk.day);
@@ -365,7 +365,7 @@ function openRepeatModal(blkId){
 }
 function closeRepeatModal(){
   document.getElementById('repeatModalOverlay').classList.remove('open');
-  _repeatBlkId=null;
+  _monthlyRepeatBlkId=null;
 }
 document.getElementById('repeatCancel').onclick=closeRepeatModal;
 document.getElementById('repeatModalOverlay').onclick=e=>{if(e.target===document.getElementById('repeatModalOverlay'))closeRepeatModal();};
@@ -373,7 +373,7 @@ document.querySelectorAll('.repeat-day-chip').forEach(chip=>{
   chip.addEventListener('click',()=>chip.classList.toggle('on'));
 });
 document.getElementById('repeatApply').onclick=()=>{
-  const blk=getBlock(_repeatBlkId);if(!blk)return;
+  const blk=getBlock(_monthlyRepeatBlkId);if(!blk)return;
   const selDays=[...document.querySelectorAll('.repeat-day-chip.on')].map(c=>parseInt(c.dataset.rday));
   if(!selDays.length){alert('요일을 하나 이상 선택하세요.');return;}
   const period=document.querySelector('input[name="rperiod"]:checked').value;

@@ -316,6 +316,7 @@ function ensureGoalLinksForWeek(){
   });
 }
 
+window.ensureGoalLinksForWeek=ensureGoalLinksForWeek;
 function removeGoalForBlock(blk){
   if(!blk)return;
   const date=addDays(currentMonday,blk.day);
@@ -329,10 +330,6 @@ function removeGoalForBlock(blk){
     if(rowEl){buildGoalRowContent(rowEl,dk);syncGoalRowHeight();}
   }
 }
-
-// ── edit modal ────────────────────────────────────────────────────────────────
-let _editGoalsDk=null;
-
 
 function updateStatsPanelTitle(){
   const titleEl=document.querySelector('#statsHdr .stats-strip-title');
