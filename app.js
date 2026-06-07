@@ -3213,14 +3213,27 @@ function updateDailyDistribution(autoGen){
     });
   }
 
+  // build day→blocks mapping
+  // N >= D: floor(N/D) per day, remainder all on last day
+  // N < D : 1 block per day for first N days, remaining days stay empty
+  const N=blockNames.length,D=days;
+  const daySlices=[];
+  if(N>=D){
+    const perDay=Math.floor(N/D);
+    let idx=0;
+    for(let d=0;d<D;d++){
+      const count=(d===D-1)?N-idx:perDay;
+      daySlices.push(blockNames.slice(idx,idx+count));
+      idx+=count;
+    }
+  }else{
+    for(let d=0;d<D;d++){
+      daySlices.push(d<N?[blockNames[d]]:[]);
+    }
+  }
+
   section.innerHTML='';
-  const perDay=Math.floor(blockNames.length/days);
-  let idx=0;
-  for(let d=0;d<days;d++){
-    const isLast=d===days-1;
-    const count=isLast?blockNames.length-idx:perDay;
-    const dayBlocks=blockNames.slice(idx,idx+Math.max(count,0));
-    idx+=Math.max(count,0);
+  daySlices.forEach((dayBlocks,d)=>{
     const row=document.createElement('div');row.className='rs-block-row';
     const lbl=document.createElement('span');lbl.className='rs-block-num';lbl.style.minWidth='28px';lbl.textContent=`${d+1}일`;
     const inp=document.createElement('input');inp.className='rs-block-inp';inp.type='text';inp.dataset.dailyday=d;
@@ -3228,13 +3241,14 @@ function updateDailyDistribution(autoGen){
       inp.value=existingTexts[d];
     }else if(dayBlocks.length===0){
       inp.value='';
+      inp.placeholder='복습 / 비워두기';
     }else if(dayBlocks.length===1){
       inp.value=dayBlocks[0];
     }else{
       inp.value=`${dayBlocks[0]} ~ ${dayBlocks[dayBlocks.length-1]}`;
     }
     row.appendChild(lbl);row.appendChild(inp);section.appendChild(row);
-  }
+  });
 }
 
 function closeReviewModal(){
