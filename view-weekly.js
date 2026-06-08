@@ -517,17 +517,24 @@ function onContextMenu(e){
     const dot=`<span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:${rs.color};margin-right:6px;flex-shrink:0;vertical-align:middle"></span>`;
     return`<button class="ctx-item" data-action="ins-review" data-subj="${rs.key}" data-start="${startMin}" data-end="${endMin}" data-day="${dayIdx}" data-memo="${escHtml(memo||'')}" style="white-space:normal;max-width:260px;line-height:1.3">${dot}${label}</button>`;
   }).join('');
-  // quick-insert: '스터디' items from localStorage only
-  const _studyItems=_loadQuickItems().filter(i=>i.cat==='스터디');
+  // quick-insert: all user-saved items from localStorage, grouped by category
+  const _allCustom=_loadQuickItems();
   let quickHtml='';
-  if(_studyItems.length){
-    quickHtml=`<div class="ctx-divider"></div><div style="font-size:11px;color:#9B9A97;padding:6px 10px 2px;font-weight:600;letter-spacing:.3px">스터디</div>`;
-    _studyItems.forEach(item=>{
-      const dot=`<span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:#9B9A97;margin-right:6px;flex-shrink:0;vertical-align:middle"></span>`;
-      quickHtml+=`<button class="ctx-item" data-action="quick-ins" data-text="${escHtml(item.text)}" data-cat="${escHtml(item.cat)}" data-subj="rest" data-start="${startMin}" data-end="${endMin}" data-day="${dayIdx}" style="white-space:normal;max-width:260px;line-height:1.3">${dot}${escHtml(item.text)}</button>`;
+  if(_allCustom.length){
+    const _qCats={};
+    _allCustom.forEach(item=>{if(!_qCats[item.cat])_qCats[item.cat]=[];_qCats[item.cat].push(item);});
+    quickHtml+=`<div class="ctx-divider"></div>`;
+    Object.entries(_qCats).forEach(([cat,items])=>{
+      const sk=_catToSubjKey(cat);const col=sk?SUBJECTS[sk]?.color:'#9B9A97';
+      quickHtml+=`<div style="font-size:11px;color:#9B9A97;padding:6px 10px 2px;font-weight:600;letter-spacing:.3px">${cat}</div>`;
+      items.forEach(item=>{
+        const dot=`<span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:${col||'#9B9A97'};margin-right:6px;flex-shrink:0;vertical-align:middle"></span>`;
+        const sk2=sk||'rest';
+        quickHtml+=`<button class="ctx-item" data-action="quick-ins" data-text="${escHtml(item.text)}" data-cat="${escHtml(item.cat)}" data-subj="${sk2}" data-start="${startMin}" data-end="${endMin}" data-day="${dayIdx}" style="white-space:normal;max-width:260px;line-height:1.3">${dot}${escHtml(item.text)}</button>`;
+      });
     });
   }
-  quickHtml+=`<div class="ctx-divider"></div><button class="ctx-item" data-action="quick-edit" style="color:#9B9A97;font-size:12px">+ 항목 편집</button>`;
+  quickHtml+=`<div class="ctx-divider"></div><button class="ctx-item" data-action="quick-edit" style="color:#9B9A97;font-size:12px">+ 바로 추가</button>`;
   menu.innerHTML=`<div style="font-size:11px;color:#9B9A97;padding:6px 10px 2px;font-weight:600;letter-spacing:.3px">회독 내용 삽입 · ${fmtTime(startMin)}</div>`+reviewItems+quickHtml;
   menu.style.display='block';menu.style.left=e.clientX+'px';menu.style.top=e.clientY+'px';
   requestAnimationFrame(()=>{const r=menu.getBoundingClientRect();if(r.right>window.innerWidth)menu.style.left=(e.clientX-r.width)+'px';if(r.bottom>window.innerHeight)menu.style.top=(e.clientY-r.height)+'px';});
