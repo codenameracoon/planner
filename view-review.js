@@ -926,12 +926,18 @@ function autoDistributeToContent(){
     if(hd&&hd.chapters&&hd.issues){
       const NC=hd.chapters.length,NI=hd.issues.length;
       const baseC=Math.floor(NC/D),remC=NC%D,baseI=Math.floor(NI/D),remI=NI%D;
+      let chapOff=0,issueOff=0;
       for(let d=0;d<D;d++){
         const cc=baseC+(d<remC?1:0),ic=baseI+(d<remI?1:0);
+        const chaps=hd.chapters.slice(chapOff,chapOff+cc);
+        const isss=hd.issues.slice(issueOff,issueOff+ic);
+        chapOff+=cc;issueOff+=ic;
+        const issueText=isss.map(s=>s.match(/이슈\d+/)?.[0]||s).join(', ');
+        const val=chaps.join(', ')+(issueText?` + ${issueText}`:'');
         const row=document.createElement('div');row.className='rs-content-row';
         const lbl=document.createElement('span');lbl.className='rs-content-day';lbl.textContent=`${d+1}일`;
         const inp=document.createElement('input');inp.className='rs-content-inp';inp.type='text';inp.dataset.dailyday=d;
-        inp.value=`${cc}편 + ${ic}이슈`;
+        inp.value=val;
         row.appendChild(lbl);row.appendChild(inp);section.appendChild(row);
       }
       return;
