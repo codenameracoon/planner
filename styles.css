@@ -780,6 +780,7 @@ body.dark .review-newround-bar{background:#2A2516;border-color:#7A6C20}
 .rs-block-del:hover{color:#F28B82}
 .rs-block-add-btn{margin-top:8px;width:100%;padding:6px;border:1px dashed #E9E9E7;border-radius:4px;background:none;font-family:inherit;font-size:12px;color:#9B9A97;cursor:pointer;transition:background .1s}
 .rs-block-add-btn:hover{background:#F7F7F5;color:#37352F}
+.rs-block-section-hdr{font-size:11px;font-weight:600;color:#9B9A97;text-transform:uppercase;letter-spacing:.06em;padding:8px 0 4px;border-bottom:2px solid #E9E9E7;margin-bottom:4px;margin-top:8px}
 .rs-auto-dist-btn{margin-left:4px;padding:2px 9px;border:1px solid #E9E9E7;border-radius:4px;background:none;font-family:inherit;font-size:11px;color:#9B9A97;cursor:pointer;transition:background .1s,color .1s;white-space:nowrap}
 .rs-auto-dist-btn:hover{background:#37352F;color:#fff;border-color:#37352F}
 .rs-total-sep{font-size:12px;color:#D0CFCD;margin:0 4px}
@@ -788,6 +789,7 @@ body.dark .review-newround-bar{background:#2A2516;border-color:#7A6C20}
 .rs-total-inp:focus{border-color:#C0BFBC}
 body.dark .rs-total-inp{background:#1E1E1C;color:#E8E8E6;border-color:#444}
 body.dark .rs-block-row{border-color:#2D2D2D}
+body.dark .rs-block-section-hdr{border-color:#333;color:#666}
 body.dark .rs-block-inp{color:#E8E8E6}
 body.dark .rs-block-inp:hover,body.dark .rs-block-inp:focus{background:#272727;border-bottom-color:#444}
 body.dark .review-edit-sheet{background:#1E1E1C;border-color:#333}

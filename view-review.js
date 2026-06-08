@@ -874,25 +874,39 @@ function openReviewEditModal(sk,cycleNum,cycles){
   const blocksSection=document.getElementById('rsBlocksSection');
   blocksSection.innerHTML='';
   if(d){
-    function _addBlockRow(blk,idx){
+    function _addBlockRow(blk,idx,deletable=true){
       const row=document.createElement('div');row.className='rs-block-row';
       const num=document.createElement('span');num.className='rs-block-num';num.textContent=idx+1;
       const inp=document.createElement('input');inp.className='rs-block-inp';inp.type='text';inp.value=blk.name;inp.dataset.blockid=blk.id;
-      const del=document.createElement('button');del.className='rs-block-del';del.textContent='×';del.title='삭제';
-      del.onclick=()=>{row.remove();_reindexBlockNums();};
-      row.appendChild(num);row.appendChild(inp);row.appendChild(del);
+      row.appendChild(num);row.appendChild(inp);
+      if(deletable){
+        const del=document.createElement('button');del.className='rs-block-del';del.textContent='×';del.title='삭제';
+        del.onclick=()=>{row.remove();_reindexBlockNums();};
+        row.appendChild(del);
+      }
       blocksSection.appendChild(row);
     }
     function _reindexBlockNums(){
       blocksSection.querySelectorAll('.rs-block-num').forEach((n,i)=>n.textContent=i+1);
     }
-    d.blocks.forEach(_addBlockRow);
-    document.getElementById('rsBlockAdd').onclick=()=>{
-      const newId='b_'+Date.now();
-      _addBlockRow({id:newId,name:''},d.blocks.length+blocksSection.querySelectorAll('.rs-block-row').length);
-      _reindexBlockNums();
-      blocksSection.lastElementChild?.querySelector('.rs-block-inp')?.focus();
-    };
+    if(d.type==='hr_mgmt'&&d.chapters&&d.issues){
+      const chapHdr=document.createElement('div');chapHdr.className='rs-block-section-hdr';chapHdr.textContent=`편 (${d.chapters.length})`;
+      blocksSection.appendChild(chapHdr);
+      d.chapters.forEach((name,i)=>_addBlockRow({id:'c_'+(i+1),name},i,false));
+      const issueHdr=document.createElement('div');issueHdr.className='rs-block-section-hdr';issueHdr.textContent=`이슈 (${d.issues.length})`;
+      blocksSection.appendChild(issueHdr);
+      d.issues.forEach((name,i)=>_addBlockRow({id:'i_'+(i+1),name},i,false));
+      document.getElementById('rsBlockAdd').style.display='none';
+    }else{
+      d.blocks.forEach(_addBlockRow);
+      document.getElementById('rsBlockAdd').style.display='';
+      document.getElementById('rsBlockAdd').onclick=()=>{
+        const newId='b_'+Date.now();
+        _addBlockRow({id:newId,name:''},d.blocks.length+blocksSection.querySelectorAll('.rs-block-row').length);
+        _reindexBlockNums();
+        blocksSection.lastElementChild?.querySelector('.rs-block-inp')?.focus();
+      };
+    }
     blocksField.style.display='';
   }else{
     blocksField.style.display='none';
@@ -904,10 +918,26 @@ function openReviewEditModal(sk,cycleNum,cycles){
 function autoDistributeToContent(){
   const D=parseInt(document.getElementById('rsDaysVal').textContent);
   if(!D)return;
-  const totalVal=parseInt(document.getElementById('rsTotalCount').value);
   const section=document.getElementById('rsContentSection');
   const field=document.getElementById('rsContentField');
   section.innerHTML='';field.style.display='';
+  if(_rsSubjectKey==='hr_mgmt'){
+    const hd=loadReviewData('hr_mgmt');
+    if(hd&&hd.chapters&&hd.issues){
+      const NC=hd.chapters.length,NI=hd.issues.length;
+      const baseC=Math.floor(NC/D),remC=NC%D,baseI=Math.floor(NI/D),remI=NI%D;
+      for(let d=0;d<D;d++){
+        const cc=baseC+(d<remC?1:0),ic=baseI+(d<remI?1:0);
+        const row=document.createElement('div');row.className='rs-content-row';
+        const lbl=document.createElement('span');lbl.className='rs-content-day';lbl.textContent=`${d+1}일`;
+        const inp=document.createElement('input');inp.className='rs-content-inp';inp.type='text';inp.dataset.dailyday=d;
+        inp.value=`${cc}편 + ${ic}이슈`;
+        row.appendChild(lbl);row.appendChild(inp);section.appendChild(row);
+      }
+      return;
+    }
+  }
+  const totalVal=parseInt(document.getElementById('rsTotalCount').value);
 
   if(totalVal>0){
     // numeric range mode: "1~18", "19~36", ...
@@ -1209,14 +1239,26 @@ document.getElementById('rsSave').addEventListener('click',()=>{
     c.dailyTexts=Array.from(dailyInputs).map(inp=>inp.value.trim());
   }
   // save block list edits
-  const newBlocks=[];
-  document.querySelectorAll('#rsBlocksSection .rs-block-row').forEach(row=>{
-    const inp=row.querySelector('.rs-block-inp');
-    const id=inp.dataset.blockid||('b_'+Date.now()+'_'+Math.random().toString(36).slice(2));
-    const name=inp.value.trim();
-    if(name)newBlocks.push({id,name});
-  });
-  if(newBlocks.length)d.blocks=newBlocks;
+  if(_rsSubjectKey==='hr_mgmt'&&d.chapters&&d.issues){
+    const nc=[],ni=[];
+    document.querySelectorAll('#rsBlocksSection .rs-block-row').forEach(row=>{
+      const inp=row.querySelector('.rs-block-inp');
+      const id=inp.dataset.blockid,name=inp.value.trim();
+      if(id&&id.startsWith('c_'))nc.push(name);
+      else if(id&&id.startsWith('i_'))ni.push(name);
+    });
+    if(nc.length)d.chapters=nc;
+    if(ni.length)d.issues=ni;
+  }else{
+    const newBlocks=[];
+    document.querySelectorAll('#rsBlocksSection .rs-block-row').forEach(row=>{
+      const inp=row.querySelector('.rs-block-inp');
+      const id=inp.dataset.blockid||('b_'+Date.now()+'_'+Math.random().toString(36).slice(2));
+      const name=inp.value.trim();
+      if(name)newBlocks.push({id,name});
+    });
+    if(newBlocks.length)d.blocks=newBlocks;
+  }
   saveReviewData(_rsSubjectKey,d);closeReviewModal();renderReview();
 });
 
@@ -1261,7 +1303,54 @@ initLaborLawData();
 
 function initHrMgmtData(){
   const existing=loadReviewData('hr_mgmt');
-  if(existing&&existing.version===2)return;
+  const chapters=[
+    '제1~2편 총론 및 환경변화',
+    '제3편 전략적 인적자원관리(SHRM)',
+    '제4편 직무관리(직무분석,평가)',
+    '제4편 직무관리(직무설계)',
+    '제5편 확보관리(인력계획,모집)',
+    '제5편 확보관리(선발,선발오류)',
+    '제6편 개발관리(교육훈련)',
+    '제6편 개발관리(경력및조직개발)',
+    '제7편 평가관리(목적,기법)',
+    '제7편 평가관리(평가오류,신뢰성)',
+    '제8편 보상관리(임금수준,체계)',
+    '제8편 보상관리(형태,복리후생)',
+    '제9편 유지관리(근로시간,노사)',
+    '제9편 유지관리(안전보건,스트레스)',
+    '제10편 이직관리'
+  ];
+  const issues=[
+    '이슈1 성과주의 인사관리',
+    '이슈2 윤리경영',
+    '이슈3 지속가능경영',
+    '이슈4 다양성경영',
+    '이슈5 국제 인적자원관리',
+    '이슈6 여성인력',
+    '이슈7 비정규직',
+    '이슈8 핵심인재',
+    '이슈9 승계계획',
+    '이슈10 저성과자 관리',
+    '이슈11 고령인력',
+    '이슈12 역량기반 CB-HRM',
+    '이슈13 지식경영',
+    '이슈14 고성과 작업시스템',
+    '이슈15 가족친화경영 FFM',
+    '이슈16 근로생활의 질 QWL',
+    '이슈17 스마트워크',
+    '이슈18 인사감사',
+    '이슈19 조직문화',
+    '이슈20 사회적 자본'
+  ];
+  if(existing){
+    if(existing.version===3)return;
+    if(!existing.chapters)existing.chapters=chapters;
+    if(!existing.issues)existing.issues=issues;
+    if(!existing.type)existing.type='hr_mgmt';
+    existing.version=3;
+    saveReviewData('hr_mgmt',existing);
+    return;
+  }
   const blocks=[
     "제1~2편 총론 및 환경변화 + 이슈1(성과주의) + 이슈2(윤리경영)",
     "제3편 전략적 인적자원관리(SHRM) + 이슈3(지속가능경영)",
@@ -1321,7 +1410,7 @@ function initHrMgmtData(){
     {num:27,days:4,blocksPerDay:null,startDate:'2026-08-26',label:'최종정돈'},
     {num:28,days:1,blocksPerDay:null,startDate:'2026-08-30',label:'D-1'},
   ];
-  saveReviewData('hr_mgmt',{blocks,cycles,version:2});
+  saveReviewData('hr_mgmt',{blocks,cycles,chapters,issues,type:'hr_mgmt',version:3});
 }
 initHrMgmtData();
 
