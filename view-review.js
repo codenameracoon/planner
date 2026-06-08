@@ -111,6 +111,7 @@ function getCycleDayCalDate(c,dayIndex){
 }
 function getCycleStatus(c,today){
   if(!c.startDate)return 'future';
+  if(c.manualEnd)return'done';
   const start=new Date(c.startDate);start.setHours(0,0,0,0);
   const end=getCalendarEndForCycle(c);
   if(today>=end)return 'done';
