@@ -267,7 +267,7 @@ function hitTestSelection(x1,y1,x2,y2){const l=Math.min(x1,x2),r=Math.max(x1,x2)
 function renderDday(){
   const today=new Date();today.setHours(0,0,0,0);
   const exam=new Date(EXAM_DATE);exam.setHours(0,0,0,0);
-  const diff=Math.round((exam-today)/86400000);
+  const diff=Math.round((exam-today)/86400000)-1;
   const el=document.getElementById('ddayBadge');
   el.textContent=diff>0?`2차 시험 D-${diff}`:diff===0?'2차 시험 D-Day':`2차 시험 D+${Math.abs(diff)}`;
 }
