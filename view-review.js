@@ -522,8 +522,8 @@ function renderReviewSubject(el,subj,today){
 
     // speed analysis
     const doneCnt=cycles.filter(c=>getCycleStatus(c,today)==='done').length;
-    const examDate=new Date('2026-08-31');examDate.setHours(0,0,0,0);
-    const daysToExam=Math.round((examDate-today)/86400000);
+    const examDate=new Date('2026-08-30');examDate.setHours(0,0,0,0);
+    const daysToExam=Math.round((examDate-today)/86400000)-1;
     const completedDays=getCompletedDaysInCycle(subj.key,cur,data);
     const delayDays=dayIn-completedDays;
     const paceStr=delayDays>0?`+${delayDays}일 지연`:delayDays<0?`${-delayDays}일 앞당김`:'예정 준수';
