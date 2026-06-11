@@ -191,7 +191,7 @@ function buildDdayGrid(){
   const today=new Date();today.setHours(0,0,0,0);
   const examMs=DDAY_EXAM.getTime();
   const todayMs=today.getTime();
-  const diffDays=Math.ceil((examMs-todayMs)/86400000);
+  const diffDays=Math.ceil((examMs-todayMs)/86400000)-1;
 
   // collect all days in range
   const days=[];
