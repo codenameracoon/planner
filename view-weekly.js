@@ -32,7 +32,7 @@ function render(){
     todayBtn.classList.add('u-hidden');granGroup.classList.remove('u-hidden');
     document.getElementById('dailyRetro').classList.add('u-hidden');
     document.getElementById('navLabel').textContent=weekLabelStr(currentMonday);
-    buildTimeAxis();buildDayCols();renderBlocks();
+    buildTimeAxis();buildDayCols();applyWeekdayTemplates();renderBlocks();
     if(isMobile()){requestAnimationFrame(()=>{const tc=document.querySelector('.day-col.today');if(tc){const pw=document.getElementById('plannerWrapper');pw.scrollLeft=Math.max(0,tc.offsetLeft-40);}});}
     renderWeeklyRetro();buildDdayGrid();
     renderRoutine();
@@ -266,7 +266,7 @@ function buildBlockEl(blk){
     `<div class="block-time-label">${fmtTime(blk.startMin)}–${fmtTime(blk.endMin)}</div>`+
     (!isGhost&&dur>90?`<div class="block-warn">90분 초과 <button class="warn-btn" data-add-rest="${blk.id}">휴식 추가?</button></div>`:'')+
     `<div class="block-duration">${fmtDuration(dur)}</div>`+
-    (blk.repeat?`<span class="block-repeat-icon">🔁</span>`:'')+
+    (blk.repeat||blk.weekdayRepeat?`<span class="block-repeat-icon">🔁</span>`:'')+
     `<div class="resize-w" data-rid="${blk.id}" data-rdir="w"></div>`+
     `<div class="resize-e" data-rid="${blk.id}" data-rdir="e"></div>`+
     `<div class="resize-s" data-rid="${blk.id}" data-rdir="s"></div>`;
@@ -483,7 +483,7 @@ function onContextMenu(e){
     menu.innerHTML=
       (blk.ghost?`<button class="ctx-item" data-action="confirm" data-id="${blk.id}">복습 확정 (일반 블록으로)</button><div class="ctx-divider"></div>`:'')+
       (()=>{const st=blk.status||(blk.completed?'done':'');const lbl=st===''?'완료로 표시':st==='done'?'실패로 표시':'미완료로 표시';return`<button class="ctx-item" data-action="toggle" data-id="${blk.id}">${lbl}</button>`;})()+
-      (!blk.ghost?`<button class="ctx-item" data-action="save-tmpl" data-id="${blk.id}">반복 템플릿으로 저장</button><button class="ctx-item" data-action="review" data-id="${blk.id}">복습 예약 (+3/+7/+14일)</button><button class="ctx-item" data-action="repeat-set" data-id="${blk.id}">요일 반복 설정</button>${blk.repeat?`<button class="ctx-item" data-action="repeat-clear" data-id="${blk.id}">반복 해제</button>`:``}`:'')+
+      (!blk.ghost?`<button class="ctx-item" data-action="save-tmpl" data-id="${blk.id}">반복 템플릿으로 저장</button><button class="ctx-item" data-action="review" data-id="${blk.id}">복습 예약 (+3/+7/+14일)</button><button class="ctx-item" data-action="repeat-set" data-id="${blk.id}">요일 반복 설정</button>${blk.repeat?`<button class="ctx-item" data-action="repeat-clear" data-id="${blk.id}">반복 해제</button>`:``}${blk.weekdayRepeat?`<button class="ctx-item" data-action="wd-repeat-clear-blk" data-id="${blk.id}" data-day="${blk.day}">이후 반복 해제</button>`:``}`:'')+
       `<div class="ctx-divider"></div>`+
       `<button class="ctx-item danger" data-action="delete" data-id="${blk.id}">삭제</button>`;
     menu.style.display='block';menu.style.left=e.clientX+'px';menu.style.top=e.clientY+'px';
@@ -498,6 +498,34 @@ function onContextMenu(e){
       else if(btn.dataset.action==='confirm'){confirmGhost(id);}
       else if(btn.dataset.action==='repeat-set'){if(b)openRepeatModal(b.id);}
       else if(btn.dataset.action==='repeat-clear'){if(b){pushUndo();b.repeat=false;saveWeek();renderBlocks();}}
+      else if(btn.dataset.action==='wd-repeat-clear-blk'){if(b){const day=parseInt(btn.dataset.day);clearWeekdayTemplate(day);blocks.filter(bl=>bl.day===day&&bl.weekdayRepeat).forEach(bl=>{bl.weekdayRepeat=false;});saveWeek();renderBlocks();showPlannerToast('다음 주부터 이 요일의 반복이 해제됩니다. 이번 주 블록은 유지됩니다.');}}
+      hideCtx();
+    };
+    return;
+  }
+  // day header right-click
+  const dayHdr=e.target.closest('.day-header');
+  if(dayHdr){
+    e.preventDefault();e.stopPropagation();
+    const col=dayHdr.closest('.day-col');if(!col)return;
+    const d=parseInt(col.dataset.day);
+    const menu=document.getElementById('ctxMenu');
+    menu.innerHTML=`<button class="ctx-item" data-action="wd-repeat-set" data-day="${d}">이 요일 매주 반복 설정</button>`;
+    menu.style.display='block';menu.style.left=e.clientX+'px';menu.style.top=e.clientY+'px';
+    requestAnimationFrame(()=>{const r=menu.getBoundingClientRect();if(r.right>window.innerWidth)menu.style.left=(e.clientX-r.width)+'px';if(r.bottom>window.innerHeight)menu.style.top=(e.clientY-r.height)+'px';});
+    menu.onclick=ev=>{
+      const btn=ev.target.closest('[data-action]');if(!btn)return;
+      const day=parseInt(btn.dataset.day);
+      if(btn.dataset.action==='wd-repeat-set'){
+        const dayBlks=blocks.filter(b=>b.day===day&&!b.ghost);
+        if(!dayBlks.length){showPlannerToast('이 요일에 블록이 없습니다.');hideCtx();return;}
+        const tpl=dayBlks.map(b=>({startMin:b.startMin,endMin:b.endMin,subject:b.subject,memo:b.memo||'',note:b.note||''}));
+        saveWeekdayTemplate(day,tpl);
+        pushUndo();
+        dayBlks.forEach(b=>{b.weekdayRepeat=true;});
+        saveWeek();renderBlocks();
+        showPlannerToast(`✓ ${DAYS[day]}요일 매주 반복이 설정되었습니다`);
+      }
       hideCtx();
     };
     return;
@@ -672,6 +700,23 @@ function showPlannerToast(msg){
   if(!t){t=document.createElement('div');t.id='plannerToast';t.style.cssText='position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:#37352F;color:#fff;padding:8px 16px;border-radius:6px;font-size:13px;z-index:9999;opacity:0;transition:opacity .2s;pointer-events:none;white-space:nowrap;';document.body.appendChild(t);}
   t.textContent=msg;t.style.opacity='1';
   clearTimeout(t._h);t._h=setTimeout(()=>t.style.opacity='0',2500);
+}
+
+// ── weekday full-day repeat ───────────────────────────────────────────────────
+function loadWeekdayTemplate(d){try{return JSON.parse(localStorage.getItem('weekdayRepeat_'+d)||'null');}catch{return null;}}
+function saveWeekdayTemplate(d,tpl){localStorage.setItem('weekdayRepeat_'+d,JSON.stringify(tpl));}
+function clearWeekdayTemplate(d){localStorage.removeItem('weekdayRepeat_'+d);}
+function applyWeekdayTemplates(){
+  const EXAM=new Date(2026,7,30);EXAM.setHours(23,59,59,999);
+  if(currentMonday>EXAM)return;
+  let changed=false;
+  for(let d=0;d<7;d++){
+    const tpl=loadWeekdayTemplate(d);if(!tpl||!tpl.length)continue;
+    if(blocks.some(b=>b.day===d&&!b.ghost))continue;
+    tpl.forEach(t=>{blocks.push({id:uid(),day:d,startMin:t.startMin,endMin:t.endMin,subject:t.subject,memo:t.memo||'',note:t.note||'',completed:false,weekdayRepeat:true});});
+    changed=true;
+  }
+  if(changed)saveWeek();
 }
 
 // ── subject picker ────────────────────────────────────────────────────────────
