@@ -365,7 +365,7 @@ function activateInlineEdit(blockId){
   memoEl.contentEditable='true';memoEl.textContent=origMemo;memoEl.focus();
   const range=document.createRange();range.selectNodeContents(memoEl);range.collapse(false);
   const sel=window.getSelection();sel.removeAllRanges();sel.addRange(range);
-  function commit(){if(committed)return;committed=true;inlineEditingId=null;const nm=memoEl.textContent.trim();const cb=getBlock(blockId);if(cb&&nm!==origMemo)pushUndo();if(cb)cb.memo=nm;memoEl.contentEditable='false';saveWeek();renderBlocks();}
+  function commit(){if(committed)return;committed=true;inlineEditingId=null;const nm=memoEl.textContent.trim();const cb=getBlock(blockId);if(cb&&nm!==origMemo)pushUndo();if(cb)cb.memo=nm;memoEl.contentEditable='false';saveWeek();if(cb)autoGoalFromBlock(cb);renderBlocks();}
   function revert(){committed=true;inlineEditingId=null;memoEl.contentEditable='false';memoEl.textContent=origMemo;}
   memoEl.addEventListener('blur',commit,{once:true});
   memoEl.addEventListener('keydown',ev=>{

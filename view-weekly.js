@@ -734,7 +734,7 @@ function showSubjectPicker(blockId,anchor){
     item.innerHTML=`<span style="${dotStyle}"></span><span>${subj.name}</span>`;
     item.addEventListener('mousedown',ev=>{
       ev.stopPropagation();
-      if(key!==blk.subject){pushUndo();blk.subject=key;saveWeek();renderBlocks();}
+      if(key!==blk.subject){pushUndo();blk.subject=key;saveWeek();autoGoalFromBlock(blk);renderBlocks();}
       hideSubjectPicker();
     });
     picker.appendChild(item);
