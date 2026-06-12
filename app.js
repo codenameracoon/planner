@@ -6,6 +6,7 @@ const SUPABASE_ANON_KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYm
 let _sb=null;
 let _syncTimer=null;
 let _savedAt={};
+let _syncQueue=Promise.resolve();
 
 const _CLOUD_CHECK=`<svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M6.657 18c-2.572 0 -4.657 -2.007 -4.657 -4.483c0 -2.475 2.085 -4.482 4.657 -4.482c.393 -1.762 1.794 -3.2 3.675 -3.773c1.88 -.572 3.956 -.193 5.444 1c1.488 1.19 2.162 3.007 1.77 4.769h.99c1.913 0 3.464 1.56 3.464 3.486c0 1.927 -1.551 3.487 -3.465 3.487h-11.878"/><path d="M9 12l2 2l4 -4"/></svg>`;
 const _CLOUD_UPLOAD=`<svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M7 18a4.6 4.4 0 0 1 0 -9a5 4.5 0 0 1 11 2h1a3.5 3.5 0 0 1 0 7h-1"/><polyline points="9 15 12 12 15 15"/><line x1="12" y1="12" x2="12" y2="21"/></svg>`;
@@ -30,10 +31,14 @@ async function syncToSupabase(key,valueStr){
   _savedAt[key]=Date.now();
   if(!_sb)return;
   setSyncStatus('saving');
-  try{
-    await _sb.from('planner_data').upsert({key,value:valueStr,updated_at:ts},{onConflict:'key'});
-    setSyncStatus('synced');
-  }catch(e){setSyncStatus('synced');}
+  _syncQueue=_syncQueue.then(async()=>{
+    try{
+      await _sb.from('planner_data').upsert({key,value:valueStr,updated_at:ts},{onConflict:'key'});
+      const metaV=localStorage.getItem('_planner_sync_meta')||'{}';
+      await _sb.from('planner_data').upsert({key:'_planner_sync_meta',value:metaV,updated_at:new Date().toISOString()},{onConflict:'key'}).catch(()=>{});
+      setSyncStatus('synced');
+    }catch(e){setSyncStatus('synced');}
+  });
 }
 
 function _isPlannerKey(k){
@@ -58,6 +63,10 @@ async function _loadFromSupabase(){
     let updated=false;
     const now=Date.now();
     data.forEach(row=>{
+      if(row.key==='_planner_sync_meta'){
+        try{const remote=JSON.parse(row.value||'{}');const local=_getSyncMeta();Object.entries(remote).forEach(([k,ts])=>{if(!local[k]||ts>local[k])local[k]=ts;});localStorage.setItem('_planner_sync_meta',JSON.stringify(local));}catch{}
+        return;
+      }
       if(_savedAt[row.key]&&now-_savedAt[row.key]<15000)return;
       const localTs=meta[row.key];
       if(localTs&&row.updated_at<=localTs){
@@ -135,7 +144,7 @@ const ROUTINES=[
 ];
 const START_H=7, END_H=24, START_M=420, END_M=1440, TOTAL_M=1020;
 const PPM = {10:2.5, 30:1.5, 60:1.0};
-const EXAM_DATE = new Date(2026,7,30);
+const EXAM_DATE = new Date(2026,7,30);EXAM_DATE.setHours(0,0,0,0);
 
 const REVIEW_SUBJECTS=[
   {key:'labor_law',  name:'노동법',       color:'#F28B82'},
