@@ -109,63 +109,41 @@ function buildGoalRowContent(rowEl, dk){
   });
   html+=`</div><button class="dgrow-add" tabindex="-1">+ 목표</button>`;
   rowEl.innerHTML=html;
-  rowEl.querySelectorAll('[data-dgcheck]').forEach(el=>{
-    el.addEventListener('mousedown',e=>e.stopPropagation());
-    el.addEventListener('click',e=>{
-      e.stopPropagation();
-      const gs=loadDailyGoals(dk);
-      const g=gs.find(x=>x.id===el.dataset.dgcheck);
-      if(g){
-        const cur=getGoalStatus(g);
-        const next=cur===''?'done':cur==='done'?'fail':'';
-        g.status=next;g.done=next==='done';
-        gs.sort((a,b)=>(getGoalStatus(a)===''?0:1)-(getGoalStatus(b)===''?0:1));
-        saveDailyGoals(dk,gs);
-        if(g.blkId){const blk=getBlock(g.blkId);if(blk){blk.status=next;blk.completed=next==='done';saveWeek();renderBlocks();}}
-        buildGoalRowContent(rowEl,dk);
-        syncGoalRowHeight();
-      }
-    });
-  });
-  rowEl.querySelectorAll('[data-dgtext]').forEach(inp=>{
-    inp.addEventListener('mousedown',e=>e.stopPropagation());
-    inp.addEventListener('click',e=>e.stopPropagation());
-    const _saveGoalText=()=>{const gs=loadDailyGoals(dk);const g=gs.find(x=>x.id===inp.dataset.dgtext);if(g){g.text=inp.value.trim();saveDailyGoals(dk,gs);}};
-    inp.addEventListener('input',_saveGoalText);
-    inp.addEventListener('change',_saveGoalText);
-    inp.addEventListener('keydown',e=>{
-      if(e.key==='Tab'){e.preventDefault();return;}
-      if(e.key==='Enter'){
-        e.preventDefault();
-        const curId=inp.dataset.dgtext;
-        const gs=loadDailyGoals(dk);
-        const curIdx=gs.findIndex(x=>x.id===curId);
-        if(curIdx>=0)gs[curIdx].text=inp.value.trim();
-        const ng={id:uid(),text:'',status:'',done:false};
-        gs.splice(curIdx>=0?curIdx+1:gs.length,0,ng);
-        saveDailyGoals(dk,gs);buildGoalRowContent(rowEl,dk);syncGoalRowHeight();
-        const ni=rowEl.querySelector(`[data-dgtext="${ng.id}"]`);if(ni)ni.focus();
-        return;
-      }
-      if(e.key==='Backspace'&&inp.value===''){
-        e.preventDefault();
-        const curId=inp.dataset.dgtext;
-        let gs=loadDailyGoals(dk);
-        const curIdx=gs.findIndex(x=>x.id===curId);
-        gs=gs.filter(x=>x.id!==curId);
-        saveDailyGoals(dk,gs);buildGoalRowContent(rowEl,dk);syncGoalRowHeight();
-        const inps=[...rowEl.querySelectorAll('[data-dgtext]')];
-        if(inps.length)inps[Math.max(0,curIdx-1)].focus();
-      }
-    });
-  });
-  rowEl.querySelectorAll('[data-dgdel]').forEach(btn=>{
-    btn.addEventListener('mousedown',e=>e.stopPropagation());
-    btn.addEventListener('click',e=>{e.stopPropagation();let gs=loadDailyGoals(dk);gs=gs.filter(x=>x.id!==btn.dataset.dgdel);saveDailyGoals(dk,gs);buildGoalRowContent(rowEl,dk);syncGoalRowHeight();});
-  });
-  const addBtn=rowEl.querySelector('.dgrow-add');
-  addBtn.addEventListener('mousedown',e=>e.stopPropagation());
-  addBtn.addEventListener('click',e=>{e.stopPropagation();const gs=loadDailyGoals(dk);gs.push({id:uid(),text:'',status:'',done:false});saveDailyGoals(dk,gs);buildGoalRowContent(rowEl,dk);syncGoalRowHeight();const inps=rowEl.querySelectorAll('[data-dgtext]');if(inps.length)inps[inps.length-1].focus();});
+  rowEl.onmousedown=e=>e.stopPropagation();
+  rowEl.onclick=e=>{
+    e.stopPropagation();
+    const chk=e.target.closest('[data-dgcheck]');
+    if(chk){
+      const gs=loadDailyGoals(dk);const g=gs.find(x=>x.id===chk.dataset.dgcheck);
+      if(g){const cur=getGoalStatus(g);const next=cur===''?'done':cur==='done'?'fail':'';g.status=next;g.done=next==='done';gs.sort((a,b)=>(getGoalStatus(a)===''?0:1)-(getGoalStatus(b)===''?0:1));saveDailyGoals(dk,gs);if(g.blkId){const blk=getBlock(g.blkId);if(blk){blk.status=next;blk.completed=next==='done';saveWeek();renderBlocks();}}buildGoalRowContent(rowEl,dk);syncGoalRowHeight();}
+      return;
+    }
+    const del=e.target.closest('[data-dgdel]');
+    if(del){let gs=loadDailyGoals(dk);gs=gs.filter(x=>x.id!==del.dataset.dgdel);saveDailyGoals(dk,gs);buildGoalRowContent(rowEl,dk);syncGoalRowHeight();return;}
+    const add=e.target.closest('.dgrow-add');
+    if(add){const gs=loadDailyGoals(dk);gs.push({id:uid(),text:'',status:'',done:false});saveDailyGoals(dk,gs);buildGoalRowContent(rowEl,dk);syncGoalRowHeight();const inps=rowEl.querySelectorAll('[data-dgtext]');if(inps.length)inps[inps.length-1].focus();return;}
+  };
+  rowEl.oninput=e=>{const inp=e.target.closest('[data-dgtext]');if(!inp)return;const gs=loadDailyGoals(dk);const g=gs.find(x=>x.id===inp.dataset.dgtext);if(g){g.text=inp.value.trim();saveDailyGoals(dk,gs);}};
+  rowEl.onkeydown=e=>{
+    const inp=e.target.closest('[data-dgtext]');if(!inp)return;
+    if(e.key==='Tab'){e.preventDefault();return;}
+    if(e.key==='Enter'){
+      e.preventDefault();
+      const curId=inp.dataset.dgtext;const gs=loadDailyGoals(dk);const curIdx=gs.findIndex(x=>x.id===curId);
+      if(curIdx>=0)gs[curIdx].text=inp.value.trim();
+      const ng={id:uid(),text:'',status:'',done:false};
+      gs.splice(curIdx>=0?curIdx+1:gs.length,0,ng);
+      saveDailyGoals(dk,gs);buildGoalRowContent(rowEl,dk);syncGoalRowHeight();
+      const ni=rowEl.querySelector(`[data-dgtext="${ng.id}"]`);if(ni)ni.focus();
+      return;
+    }
+    if(e.key==='Backspace'&&inp.value===''){
+      e.preventDefault();
+      const curId=inp.dataset.dgtext;let gs=loadDailyGoals(dk);const curIdx=gs.findIndex(x=>x.id===curId);
+      gs=gs.filter(x=>x.id!==curId);saveDailyGoals(dk,gs);buildGoalRowContent(rowEl,dk);syncGoalRowHeight();
+      const inps=[...rowEl.querySelectorAll('[data-dgtext]')];if(inps.length)inps[Math.max(0,curIdx-1)].focus();
+    }
+  };
 }
 
 function buildDayCols(){
@@ -295,7 +273,13 @@ function updateDailyGoalRows(){
   });
 }
 
+let _rbTimer=null;
 function renderBlocks(){
+  if(_rbTimer)clearTimeout(_rbTimer);
+  _rbTimer=setTimeout(_doRenderBlocks,16);
+}
+function _doRenderBlocks(){
+  _rbTimer=null;
   if(_renderingBlocks)return;
   _renderingBlocks=true;
   document.querySelectorAll('.block').forEach(el=>el.remove());

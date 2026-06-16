@@ -28,11 +28,9 @@ function renderStats(){
       `<textarea class="week-resolution-inp" id="monthResolutionInp" placeholder="이번 달 나에게 하고 싶은 말...">${escHtml(mrVal)}</textarea>`+
     `</div>`;
     body.innerHTML=col3+col2;
-    body.querySelectorAll('[data-mkey]').forEach(inp=>{
-      inp.addEventListener('change',()=>{const k=inp.dataset.mkey;const obj=loadMonthlyTextGoals(currentMonday);obj[k]=inp.value.trim();saveMonthlyTextGoals(currentMonday,obj);});
-    });
+    body.onchange=e=>{const inp=e.target.closest('[data-mkey]');if(!inp)return;const k=inp.dataset.mkey;const obj=loadMonthlyTextGoals(currentMonday);obj[k]=inp.value.trim();saveMonthlyTextGoals(currentMonday,obj);};
     const resInp=body.querySelector('#monthResolutionInp');
-    if(resInp){resInp.addEventListener('change',()=>{const v=resInp.value;localStorage.setItem(mrKey,v);syncToSupabase(mrKey,v);updateStatsPanelTitle();});}
+    if(resInp){resInp.onchange=()=>{const v=resInp.value;localStorage.setItem(mrKey,v);syncToSupabase(mrKey,v);updateStatsPanelTitle();};}
     return;
   }
 
@@ -77,8 +75,8 @@ function renderStats(){
     `</div>`;
     body.innerHTML=col3+col2;
     const resInp=body.querySelector('#dayResolutionInp');
-    if(resInp){resInp.addEventListener('change',()=>{const v=resInp.value;localStorage.setItem(drKey,v);syncToSupabase(drKey,v);updateStatsPanelTitle();updateDailyGoalRows();});}
-    body.querySelectorAll('[data-wkey]').forEach(inp=>{inp.addEventListener('change',()=>{const k=inp.dataset.wkey;if(!weeklyTextGoals[k])weeklyTextGoals[k]={text:'',done:false};weeklyTextGoals[k].text=inp.value.trim();saveWeeklyTextGoals();});});
+    if(resInp){resInp.onchange=()=>{const v=resInp.value;localStorage.setItem(drKey,v);syncToSupabase(drKey,v);updateStatsPanelTitle();updateDailyGoalRows();};}
+    body.onchange=e=>{const inp=e.target.closest('[data-wkey]');if(!inp)return;const k=inp.dataset.wkey;if(!weeklyTextGoals[k])weeklyTextGoals[k]={text:'',done:false};weeklyTextGoals[k].text=inp.value.trim();saveWeeklyTextGoals();};
     return;
   }
 
@@ -105,7 +103,7 @@ function renderStats(){
   `</div>`;
   body.innerHTML=col3+col2;
   const resInp=body.querySelector('#weekResolutionInp');
-  if(resInp){resInp.addEventListener('change',()=>{const v=resInp.value;localStorage.setItem(wrKey,v);syncToSupabase(wrKey,v);updateStatsPanelTitle();});}
+  if(resInp){resInp.onchange=()=>{const v=resInp.value;localStorage.setItem(wrKey,v);syncToSupabase(wrKey,v);updateStatsPanelTitle();};}
   if(isMobile()){
     [['stats-col-goals','_mGoalsCollapsed'],['stats-col-hours','_mHoursCollapsed']].forEach(([cls,stateKey])=>{
       const col=body.querySelector('.'+cls);if(!col)return;
@@ -115,29 +113,15 @@ function renderStats(){
       arr.style.cssText='float:right;color:#9B9A97;font-size:10px;font-weight:400;margin-left:6px';
       arr.textContent=window[stateKey]?'▶':'▼';
       lbl.appendChild(arr);
-      lbl.addEventListener('click',()=>{
+      lbl.onclick=()=>{
         col.classList.toggle('m-col-collapsed');
         window[stateKey]=col.classList.contains('m-col-collapsed');
         arr.textContent=window[stateKey]?'▶':'▼';
-      });
+      };
     });
   }
-  body.querySelectorAll('[data-wcheck]').forEach(el=>{
-    el.addEventListener('click',()=>{
-      const k=el.dataset.wcheck;
-      if(!weeklyTextGoals[k])weeklyTextGoals[k]={text:'',done:false};
-      weeklyTextGoals[k].done=!weeklyTextGoals[k].done;
-      saveWeeklyTextGoals();renderStats();
-    });
-  });
-  body.querySelectorAll('[data-wkey]').forEach(inp=>{
-    inp.addEventListener('change',()=>{
-      const k=inp.dataset.wkey;
-      if(!weeklyTextGoals[k])weeklyTextGoals[k]={text:'',done:false};
-      weeklyTextGoals[k].text=inp.value.trim();
-      saveWeeklyTextGoals();
-    });
-  });
+  body.onclick=e=>{const el=e.target.closest('[data-wcheck]');if(!el)return;const k=el.dataset.wcheck;if(!weeklyTextGoals[k])weeklyTextGoals[k]={text:'',done:false};weeklyTextGoals[k].done=!weeklyTextGoals[k].done;saveWeeklyTextGoals();renderStats();};
+  body.onchange=e=>{const inp=e.target.closest('[data-wkey]');if(!inp)return;const k=inp.dataset.wkey;if(!weeklyTextGoals[k])weeklyTextGoals[k]={text:'',done:false};weeklyTextGoals[k].text=inp.value.trim();saveWeeklyTextGoals();};
 }
 
 // ── toolbar progress bar ──────────────────────────────────────────────────────
@@ -197,10 +181,23 @@ function buildDdayGrid(){
   const days=[];
   for(let d=new Date(DDAY_START);d<=DDAY_EXAM;d.setDate(d.getDate()+1))days.push(new Date(d));
 
+  // cache week data: read each localStorage key once, not once per day
+  const _wkCache={};
+  const _dayRate=d=>{
+    const mon=getMondayOf(d);const key=weekKey(mon);
+    if(!(key in _wkCache)){try{_wkCache[key]=JSON.parse(localStorage.getItem(key)||'[]');}catch{_wkCache[key]=[];}}
+    const wb=_wkCache[key];const di=dayIdx(d);
+    const db=wb.filter(b=>b.day===di&&!b.ghost);
+    if(!db.length)return -1;
+    const total=db.reduce((s,b)=>s+(b.endMin-b.startMin),0);
+    const done=db.filter(b=>b.completed).reduce((s,b)=>s+(b.endMin-b.startMin),0);
+    return total>0?done/total*100:0;
+  };
+
   let doneCount=0,missCount=0;
   days.forEach(d=>{
     if(d>=today)return;
-    const rate=computeDayCompletionRate(d);
+    const rate=_dayRate(d);
     if(rate<0)missCount++;       // no blocks = missed
     else if(rate>=80)doneCount++;
     else missCount++;
@@ -228,7 +225,7 @@ function buildDdayGrid(){
       sq.style.background='#fff';
       sq.style.border='2px solid #37352F';
     } else if(isPast){
-      const rate=computeDayCompletionRate(d);
+      const rate=_dayRate(d);
       if(rate<0)sq.style.background='#E0E0E0';
       else if(rate>=80)sq.style.background='#81C995';
       else sq.style.background='#FDD663';

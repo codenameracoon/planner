@@ -1,9 +1,9 @@
 // ── review feature ────────────────────────────────────────────────────────────
-
+const _reviewCache={};
 function reviewStorageKey(k){return 'review_subject_'+k;}
 function reviewCheckKey(k,d){return 'review_check_'+dateKey(d||new Date())+'_'+k;}
-function loadReviewData(k){try{return JSON.parse(localStorage.getItem(reviewStorageKey(k))||'null');}catch{return null;}}
-function saveReviewData(k,d){const key=reviewStorageKey(k);const v=JSON.stringify(d);localStorage.setItem(key,v);syncToSupabase(key,v);}
+function loadReviewData(k){if(k in _reviewCache)return _reviewCache[k];try{_reviewCache[k]=JSON.parse(localStorage.getItem(reviewStorageKey(k))||'null');}catch{_reviewCache[k]=null;}return _reviewCache[k];}
+function saveReviewData(k,d){_reviewCache[k]=d;const key=reviewStorageKey(k);const v=JSON.stringify(d);localStorage.setItem(key,v);syncToSupabase(key,v);}
 function loadReviewChecks(k,d){try{return JSON.parse(localStorage.getItem(reviewCheckKey(k,d))||'null')||{};}catch{return{};}}
 function saveReviewChecks(k,c,d){const key=reviewCheckKey(k,d);const v=JSON.stringify(c);localStorage.setItem(key,v);syncToSupabase(key,v);}
 
