@@ -350,6 +350,7 @@ function checkEventAlarms(){
   });
 }
 setInterval(checkEventAlarms,30000);
+setInterval(renderDday,60000);
 
 
 
