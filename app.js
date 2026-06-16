@@ -573,7 +573,87 @@ document.getElementById('nextBtn').onclick=()=>{
 };
 document.getElementById('todayBtn').onclick=()=>{currentDay=new Date();currentDay.setHours(0,0,0,0);currentMonday=getMondayOf(currentDay);blocks=loadWeek(currentMonday);ensureGoalLinksForWeek();renderDailyView();};
 
-function navigate(days){clearSelection();clearHistory();currentMonday=addDays(currentMonday,days);blocks=loadWeek(currentMonday);weeklyTextGoals=loadWeeklyTextGoals();ensureGoalLinksForWeek();render();}
+function navigate(days){
+  clearSelection();clearHistory();
+  const _depMonday=new Date(currentMonday);
+  const _depKey=weekKey(currentMonday);
+  const _depBlocks=days>0?blocks.filter(b=>!b.ghost):null;
+  const _depTextGoals=days>0?JSON.parse(JSON.stringify(weeklyTextGoals)):null;
+  currentMonday=addDays(currentMonday,days);blocks=loadWeek(currentMonday);weeklyTextGoals=loadWeeklyTextGoals();ensureGoalLinksForWeek();render();
+  if(days>0&&_depBlocks&&_depBlocks.length>0&&!localStorage.getItem('weekReportShown_'+_depKey)){
+    localStorage.setItem('weekReportShown_'+_depKey,'1');
+    showWeeklyReport(_depMonday,_depBlocks,_depTextGoals);
+  }
+}
+
+function showWeeklyReport(monday,blks,textGoals){
+  const studyKeys=Object.keys(SUBJECTS).filter(k=>k!=='rest'&&k!=='precedent');
+  const stats={};studyKeys.forEach(k=>{stats[k]={total:0,done:0};});
+  blks.forEach(b=>{
+    const k=b.subject;if(!SUBJECTS[k]||k==='rest'||k==='precedent')return;
+    const dur=(b.endMin-b.startMin)/60;
+    stats[k].total+=dur;if(b.completed)stats[k].done+=dur;
+  });
+  const totalH=studyKeys.reduce((s,k)=>s+stats[k].total,0);
+  const doneH=studyKeys.reduce((s,k)=>s+stats[k].done,0);
+  const pct=totalH>0?Math.round(doneH/totalH*100):0;
+
+  document.getElementById('weekReportTitle').textContent=weekLabelStr(monday)+' 마감 리포트';
+  document.getElementById('weekReportSummary').textContent=`공부 ${totalH.toFixed(1)}h · 완료 ${doneH.toFixed(1)}h · 완료율 ${pct}%`;
+
+  let sHtml='';
+  studyKeys.forEach(k=>{
+    const subj=SUBJECTS[k];const t=stats[k].total;const d=stats[k].done;
+    const fillPct=t>0?Math.round(d/t*100):0;
+    sHtml+=`<div class="wreport-subj-row">`+
+      `<span class="wreport-dot" style="background:${subj.color}"></span>`+
+      `<span class="wreport-subj-name">${subj.short}</span>`+
+      `<div class="wreport-bar-track"><div class="wreport-bar-fill" style="width:${fillPct}%;background:${subj.color}"></div></div>`+
+      `<span class="wreport-subj-stat">${d.toFixed(1)}h / ${t>0?t.toFixed(1)+'h':'—'}</span>`+
+    `</div>`;
+  });
+  document.getElementById('weekReportSubjects').innerHTML=sHtml;
+
+  const goalKeys=Object.keys(textGoals);
+  let gHtml='';const unmet=[];
+  goalKeys.forEach(k=>{
+    const g=textGoals[k];if(!g||!g.text)return;
+    const subj=SUBJECTS[k];
+    gHtml+=`<div class="wreport-goal${g.done?' done':''}">`+
+      `<span class="wreport-goal-icon">${g.done?'✓':'○'}</span>`+
+      `<span class="wreport-dot-sm" style="background:${subj?.color||'#ccc'}"></span>`+
+      escHtml(g.text)+`</div>`;
+    if(!g.done&&g.text)unmet.push({k,text:g.text,subj});
+  });
+  document.getElementById('weekReportGoals').innerHTML=gHtml||'<span style="color:#9B9A97;font-size:12px">등록된 목표 없음</span>';
+
+  let cHtml='';
+  if(unmet.length){
+    cHtml=`<div class="wreport-section-label">다음 주 이어받기</div>`;
+    unmet.forEach(({k,text,subj})=>{
+      const safeText=escHtml(text).replace(/"/g,'&quot;');
+      cHtml+=`<label class="wreport-carry-row"><input type="checkbox" class="wreport-carry-chk" data-gkey="${k}" data-gtext="${safeText}" checked>`+
+        `<span class="wreport-dot-sm" style="background:${subj?.color||'#ccc'}"></span>`+
+        escHtml(text)+`</label>`;
+    });
+  }
+  document.getElementById('weekReportCarry').innerHTML=cHtml;
+  document.getElementById('weekReportOverlay').classList.add('open');
+}
+
+function closeWeeklyReport(){document.getElementById('weekReportOverlay').classList.remove('open');}
+document.getElementById('weekReportCloseX').onclick=closeWeeklyReport;
+document.getElementById('weekReportDismiss').onclick=closeWeeklyReport;
+document.getElementById('weekReportSave').onclick=()=>{
+  document.querySelectorAll('.wreport-carry-chk:checked').forEach(chk=>{
+    const k=chk.dataset.gkey;const text=chk.dataset.gtext;
+    if(!weeklyTextGoals[k])weeklyTextGoals[k]={text:'',done:false};
+    weeklyTextGoals[k].text=text;weeklyTextGoals[k].done=false;
+  });
+  saveWeeklyTextGoals();
+  closeWeeklyReport();
+  if(!statsCollapsed)renderStats();
+};
 
 document.getElementById('copyPrevWeek').onclick=()=>{
   if(blocks.length>0&&!confirm('현재 주에 데이터가 있습니다. 전주 내용으로 교체할까요?'))return;
@@ -612,6 +692,7 @@ document.getElementById('redoBtn').addEventListener('click',redo);
 function isTypingContext(){const el=document.activeElement;return el&&(el.tagName==='INPUT'||el.tagName==='TEXTAREA'||el.contentEditable==='true');}
 
 document.addEventListener('keydown',e=>{
+  if(document.getElementById('weekReportOverlay').classList.contains('open')){if(e.key==='Escape')closeWeeklyReport();return;}
   if(document.getElementById('repeatModalOverlay').classList.contains('open')){if(e.key==='Escape')closeRepeatModal();return;}
   if(document.getElementById('modalOverlay').classList.contains('open')){if(e.key==='Escape')closeModal();return;}
   const meta=e.metaKey||e.ctrlKey;
