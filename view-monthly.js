@@ -450,6 +450,11 @@ function renderDailyRetro(){
     inp.addEventListener('change',()=>{const d=loadRetro('day',currentDay);d[key]=inp.value.trim();saveRetro('day',currentDay,d);});
     row.appendChild(lbl);row.appendChild(inp);body.appendChild(row);
   });
+  const thoughtRow=document.createElement('div');thoughtRow.className='retro-row';thoughtRow.style.alignItems='flex-start';
+  const thoughtLbl=document.createElement('span');thoughtLbl.className='retro-label';thoughtLbl.style.paddingTop='4px';thoughtLbl.textContent='오늘 생각';
+  const thoughtTa=document.createElement('textarea');thoughtTa.className='retro-thoughts';thoughtTa.value=data.thoughts||'';thoughtTa.placeholder='오늘 떠오른 생각, 느낀 점...';
+  thoughtTa.addEventListener('change',()=>{const d=loadRetro('day',currentDay);d.thoughts=thoughtTa.value.trim();saveRetro('day',currentDay,d);});
+  thoughtRow.appendChild(thoughtLbl);thoughtRow.appendChild(thoughtTa);body.appendChild(thoughtRow);
 }
 
 function renderWeeklyRetro(){
