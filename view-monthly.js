@@ -531,13 +531,6 @@ function renderMonthlyRetro(wrap){
   wrap.appendChild(panel);
 }
 
-// retro collapse toggles
-document.getElementById('dailyRetroHdr').addEventListener('click',()=>{
-  const body=document.getElementById('dailyRetroBody');
-  const btn=document.getElementById('dailyRetroToggle');
-  const collapsed=body.style.display==='none';
-  body.style.display=collapsed?'':'none';btn.textContent=collapsed?'접기 ▲':'펼치기 ▼';
-});
 document.getElementById('weeklyRetroHdr').addEventListener('click',()=>{
   const el=document.getElementById('weeklyRetro');
   const body=document.getElementById('weeklyRetroBody');
