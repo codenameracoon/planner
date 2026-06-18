@@ -19,5 +19,13 @@ function renderDailySummary(){
   db.forEach(b=>{const k=SUBJECTS[b.subject]?b.subject:'rest';bySubj[k]=(bySubj[k]||0)+(b.endMin-b.startMin)/60;});
   let html=`<span class="daily-summary-total">오늘 ${total.toFixed(1)}h (완료 ${done.toFixed(1)}h)</span>`;
   Object.keys(bySubj).forEach(k=>{const s=SUBJECTS[k];html+=`<span class="daily-summary-item"><span class="daily-sum-dot" style="background:${s.color}"></span>${s.short} ${bySubj[k].toFixed(1)}h</span>`;});
+  html+=`<button class="daily-retro-link" id="dailyRetroLnk">| 회고</button>`;
   el.innerHTML=html;
+  el.querySelector('#dailyRetroLnk').onclick=()=>{
+    const body=document.getElementById('dailyRetroBody');
+    const btn=document.getElementById('dailyRetroToggle');
+    const collapsed=body.style.display==='none';
+    body.style.display=collapsed?'':'none';
+    btn.textContent=collapsed?'접기 ▲':'펼치기 ▼';
+  };
 }

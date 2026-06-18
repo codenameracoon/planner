@@ -421,40 +421,45 @@ function renderDailyRetro(){
   const data=loadRetro('day',currentDay);
   const body=document.getElementById('dailyRetroBody');
   body.innerHTML='';
-  // mood row
-  const moodRow=document.createElement('div');moodRow.className='retro-row';moodRow.style.flexDirection='column';moodRow.style.alignItems='flex-start';
-  const moodLbl=document.createElement('span');moodLbl.className='retro-label';moodLbl.textContent='오늘 기분';
+  // Row 1: mood emojis + divider + stars
+  const topRow=document.createElement('div');topRow.className='retro-row-top';
   const moodGrid=document.createElement('div');moodGrid.className='mood-grid';
   MOODS.forEach(m=>{
     const btn=document.createElement('button');btn.className='mood-btn'+(data.mood===m.id?' active':'');
     btn.textContent=m.emoji;btn.title=m.label;
-    btn.addEventListener('click',()=>{
+    btn.onclick=()=>{
       const d=loadRetro('day',currentDay);
       d.mood=d.mood===m.id?null:m.id;
       saveRetro('day',currentDay,d);
       moodGrid.querySelectorAll('.mood-btn').forEach((b,i)=>b.classList.toggle('active',MOODS[i].id===d.mood));
-    });
+    };
     moodGrid.appendChild(btn);
   });
-  moodRow.appendChild(moodLbl);moodRow.appendChild(moodGrid);body.appendChild(moodRow);
-  // star row
-  const starRow=document.createElement('div');starRow.className='retro-row';
-  const starLbl=document.createElement('span');starLbl.className='retro-label';starLbl.textContent='오늘 별점';
+  const vdiv=document.createElement('div');vdiv.className='retro-vdiv';
   const stars=makeStars(data.rating||0,v=>{const d=loadRetro('day',currentDay);d.rating=v;saveRetro('day',currentDay,d);},undefined,3);
-  starRow.appendChild(starLbl);starRow.appendChild(stars);body.appendChild(starRow);
-  const fields=[['good','잘 된 것'],['bad','안 된 것'],['tomorrow','내일 가장 먼저 할 것']];
-  fields.forEach(([key,label])=>{
-    const row=document.createElement('div');row.className='retro-row';
-    const lbl=document.createElement('span');lbl.className='retro-label';lbl.textContent=label;
-    const inp=document.createElement('input');inp.className='retro-input';inp.type='text';inp.value=data[key]||'';inp.placeholder='입력...';
-    inp.addEventListener('change',()=>{const d=loadRetro('day',currentDay);d[key]=inp.value.trim();saveRetro('day',currentDay,d);});
-    row.appendChild(lbl);row.appendChild(inp);body.appendChild(row);
+  topRow.appendChild(moodGrid);topRow.appendChild(vdiv);topRow.appendChild(stars);body.appendChild(topRow);
+  // Row 2: 잘 된 것 | 안 된 것 (2-column textarea)
+  const twoCol=document.createElement('div');twoCol.className='retro-2col';
+  [['good','잘 된 것'],['bad','안 된 것']].forEach(([key,label])=>{
+    const col=document.createElement('div');col.className='retro-col';
+    const lbl=document.createElement('span');lbl.className='retro-col-label';lbl.textContent=label;
+    const ta=document.createElement('textarea');ta.className='retro-col-ta';ta.value=data[key]||'';ta.placeholder='입력...';ta.rows=2;
+    ta.onchange=()=>{const d=loadRetro('day',currentDay);d[key]=ta.value.trim();saveRetro('day',currentDay,d);};
+    col.appendChild(lbl);col.appendChild(ta);twoCol.appendChild(col);
   });
-  const thoughtRow=document.createElement('div');thoughtRow.className='retro-row';thoughtRow.style.alignItems='flex-start';
-  const thoughtLbl=document.createElement('span');thoughtLbl.className='retro-label';thoughtLbl.style.paddingTop='4px';thoughtLbl.textContent='오늘 생각';
-  const thoughtTa=document.createElement('textarea');thoughtTa.className='retro-thoughts';thoughtTa.value=data.thoughts||'';thoughtTa.placeholder='오늘 떠오른 생각, 느낀 점...';
-  thoughtTa.addEventListener('change',()=>{const d=loadRetro('day',currentDay);d.thoughts=thoughtTa.value.trim();saveRetro('day',currentDay,d);});
-  thoughtRow.appendChild(thoughtLbl);thoughtRow.appendChild(thoughtTa);body.appendChild(thoughtRow);
+  body.appendChild(twoCol);
+  // Row 3: 내일 가장 먼저 할 것 (full width, 1 line)
+  const tmrRow=document.createElement('div');tmrRow.className='retro-row';
+  const tmrLbl=document.createElement('span');tmrLbl.className='retro-label';tmrLbl.textContent='내일 가장 먼저';
+  const tmrInp=document.createElement('input');tmrInp.className='retro-input';tmrInp.type='text';tmrInp.value=data.tomorrow||'';tmrInp.placeholder='입력...';
+  tmrInp.onchange=()=>{const d=loadRetro('day',currentDay);d.tomorrow=tmrInp.value.trim();saveRetro('day',currentDay,d);};
+  tmrRow.appendChild(tmrLbl);tmrRow.appendChild(tmrInp);body.appendChild(tmrRow);
+  // Row 4: 오늘 생각 (full width, 1 line)
+  const thtRow=document.createElement('div');thtRow.className='retro-row';
+  const thtLbl=document.createElement('span');thtLbl.className='retro-label';thtLbl.textContent='오늘 생각';
+  const thtInp=document.createElement('input');thtInp.className='retro-input';thtInp.type='text';thtInp.value=data.thoughts||'';thtInp.placeholder='오늘 떠오른 생각...';
+  thtInp.onchange=()=>{const d=loadRetro('day',currentDay);d.thoughts=thtInp.value.trim();saveRetro('day',currentDay,d);};
+  thtRow.appendChild(thtLbl);thtRow.appendChild(thtInp);body.appendChild(thtRow);
 }
 
 function renderWeeklyRetro(){
