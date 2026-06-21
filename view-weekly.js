@@ -397,7 +397,8 @@ function onMouseMove(e){
   if(drag.type==='select'){updateSelRect(drag.startX,drag.startY,e.clientX,e.clientY);hitTestSelection(drag.startX,drag.startY,e.clientX,e.clientY);return;}
   if(drag.type==='create'){
     drag.endMin=Math.max(clampMin(snapMin(yToMin(bodyY(drag.body,e.clientY)))),drag.startMin+gran);
-    drag.ghost.style.height=Math.max(minToY(drag.endMin)-minToY(drag.startMin),4)+'px';return;
+    drag.ghost.style.height=Math.max(minToY(drag.endMin)-minToY(drag.startMin),4)+'px';
+    drag.endX=e.clientX;drag.endY=e.clientY;return;
   }
   if(drag.type==='resize'){
     const blk=getBlock(drag.id);if(!blk)return;
@@ -452,8 +453,16 @@ function onMouseUp(){
   if(drag.type==='select'){removeSelRect();drag=null;endDrag();return;}
   if(drag.type==='create'){
     drag.ghost.remove();
-    if(drag.endMin-drag.startMin>=gran){pushUndo();const nb={id:uid(),day:drag.day,startMin:drag.startMin,endMin:drag.endMin,subject:lastSubject,memo:'',note:'',completed:false};blocks.push(nb);saveWeek();autoGoalFromBlock(nb);}
-  } else if(drag.type==='resize'||drag.type==='move'){saveWeek();}
+    if(drag.endMin-drag.startMin>=gran){
+      const ex=drag.endX??drag.startX,ey=drag.endY??drag.startY;
+      const dayIdx=drag.day,sm=drag.startMin,em=drag.endMin;
+      drag=null;endDrag();
+      showInsertPopover(dayIdx,sm,em,ex,ey);
+      return;
+    }
+    drag=null;endDrag();return;
+  }
+  if(drag.type==='resize'||drag.type==='move'){saveWeek();}
   drag=null;endDrag();renderBlocks();
 }
 
@@ -514,22 +523,34 @@ function onContextMenu(e){
     };
     return;
   }
-  // empty cell right-click — show review content insertion menu
+  // empty cell right-click — show insert popover
   const body=findDayBody(e.target);if(!body)return;
   e.preventDefault();e.stopPropagation();
   const dayIdx=parseInt(body.dataset.day);
-  const targetDate=addDays(currentMonday,dayIdx);
-  const tgt=dateKey(targetDate);
   const startMin=snapMin(clampMin(yToMin(bodyY(body,e.clientY))));
   const endMin=startMin+60;
+  showInsertPopover(dayIdx,startMin,endMin,e.clientX,e.clientY);
+}
+
+function showInsertPopover(dayIdx,startMin,endMin,clientX,clientY){
+  const tgt=dateKey(addDays(currentMonday,dayIdx));
   const menu=document.getElementById('ctxMenu');
+  const BADGE_DEFS=[
+    {key:'labor_law',label:'노동법',bg:'#F28B82',fg:'#fff'},
+    {key:'hr_mgmt',label:'인사',bg:'#81C995',fg:'#fff'},
+    {key:'admin_law',label:'행정',bg:'#8AB4F8',fg:'#fff'},
+    {key:'labor_econ',label:'노경',bg:'#FDD663',fg:'#37352F'},
+    {key:'rest',label:'휴식',bg:'#EBEBEA',fg:'#37352F'},
+  ];
+  const badgeRow=`<div style="display:flex;gap:4px;padding:5px 8px 5px;border-bottom:1px solid #F4F4F2;flex-wrap:wrap">`+
+    BADGE_DEFS.map(b=>`<button data-action="badge-create" data-subj="${b.key}" data-start="${startMin}" data-end="${endMin}" data-day="${dayIdx}" style="padding:2px 8px;font-size:11px;border-radius:10px;background:${b.bg};color:${b.fg};border:none;font-family:inherit;cursor:pointer;font-weight:600;white-space:nowrap;line-height:1.6">${b.label}</button>`).join('')+
+    `</div>`;
   const reviewItems=REVIEW_SUBJECTS.map(rs=>{
     const memo=getTodayMemoForSubject(rs.key,tgt);
     const label=memo?escHtml(memo):rs.name;
-    const dot=`<span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:${rs.color};margin-right:6px;flex-shrink:0;vertical-align:middle"></span>`;
-    return`<button class="ctx-item" data-action="ins-review" data-subj="${rs.key}" data-start="${startMin}" data-end="${endMin}" data-day="${dayIdx}" data-memo="${escHtml(memo||'')}" style="white-space:normal;max-width:260px;line-height:1.3">${dot}${label}</button>`;
+    const dot=`<span style="display:inline-block;width:7px;height:7px;border-radius:50%;background:${rs.color};margin-right:6px;flex-shrink:0;vertical-align:middle"></span>`;
+    return`<button class="ctx-item" data-action="ins-review" data-subj="${rs.key}" data-start="${startMin}" data-end="${endMin}" data-day="${dayIdx}" data-memo="${escHtml(memo||'')}" style="white-space:normal;max-width:260px;line-height:1.3;font-size:11px;padding:4px 8px">${dot}${label}</button>`;
   }).join('');
-  // quick-insert: all user-saved items from localStorage, grouped by category
   const _allCustom=_loadQuickItems();
   let quickHtml='';
   if(_allCustom.length){
@@ -538,21 +559,27 @@ function onContextMenu(e){
     quickHtml+=`<div class="ctx-divider"></div>`;
     Object.entries(_qCats).forEach(([cat,items])=>{
       const sk=_catToSubjKey(cat);const col=sk?SUBJECTS[sk]?.color:'#9B9A97';
-      quickHtml+=`<div style="font-size:11px;color:#9B9A97;padding:6px 10px 2px;font-weight:600;letter-spacing:.3px">${cat}</div>`;
+      quickHtml+=`<div style="font-size:10px;color:#9B9A97;padding:4px 8px 2px;font-weight:600;letter-spacing:.3px">${cat}</div>`;
       items.forEach(item=>{
-        const dot=`<span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:${col||'#9B9A97'};margin-right:6px;flex-shrink:0;vertical-align:middle"></span>`;
-        const sk2=sk||'rest';
-        quickHtml+=`<button class="ctx-item" data-action="quick-ins" data-text="${escHtml(item.text)}" data-cat="${escHtml(item.cat)}" data-subj="${sk2}" data-start="${startMin}" data-end="${endMin}" data-day="${dayIdx}" style="white-space:normal;max-width:260px;line-height:1.3">${dot}${escHtml(item.text)}</button>`;
+        const dot=`<span style="display:inline-block;width:7px;height:7px;border-radius:50%;background:${col||'#9B9A97'};margin-right:6px;flex-shrink:0;vertical-align:middle"></span>`;
+        quickHtml+=`<button class="ctx-item" data-action="quick-ins" data-text="${escHtml(item.text)}" data-cat="${escHtml(item.cat)}" data-subj="${sk||'rest'}" data-start="${startMin}" data-end="${endMin}" data-day="${dayIdx}" style="white-space:normal;max-width:260px;line-height:1.3;font-size:11px;padding:4px 8px">${dot}${escHtml(item.text)}</button>`;
       });
     });
   }
-  quickHtml+=`<div class="ctx-divider"></div><button class="ctx-item" data-action="quick-edit" style="color:#9B9A97;font-size:12px">+ 바로 추가</button>`;
-  menu.innerHTML=`<div style="font-size:11px;color:#9B9A97;padding:6px 10px 2px;font-weight:600;letter-spacing:.3px">회독 내용 삽입 · ${fmtTime(startMin)}</div>`+reviewItems+quickHtml;
-  menu.style.display='block';menu.style.left=e.clientX+'px';menu.style.top=e.clientY+'px';
-  requestAnimationFrame(()=>{const r=menu.getBoundingClientRect();if(r.right>window.innerWidth)menu.style.left=(e.clientX-r.width)+'px';if(r.bottom>window.innerHeight)menu.style.top=(e.clientY-r.height)+'px';});
+  quickHtml+=`<div class="ctx-divider"></div><button class="ctx-item" data-action="quick-edit" style="color:#9B9A97;font-size:11px;padding:4px 8px">+ 바로 추가</button>`;
+  menu.innerHTML=badgeRow+
+    `<div style="font-size:10px;color:#9B9A97;padding:4px 8px 2px;font-weight:600;letter-spacing:.3px">회독 내용 삽입 · ${fmtTime(startMin)}</div>`+
+    reviewItems+quickHtml;
+  menu.style.display='block';menu.style.left=clientX+'px';menu.style.top=clientY+'px';
+  requestAnimationFrame(()=>{const r=menu.getBoundingClientRect();if(r.right>window.innerWidth)menu.style.left=(clientX-r.width)+'px';if(r.bottom>window.innerHeight)menu.style.top=(clientY-r.height)+'px';});
   menu.onclick=ev=>{
     const btn=ev.target.closest('[data-action]');if(!btn)return;
-    if(btn.dataset.action==='ins-review'){
+    if(btn.dataset.action==='badge-create'){
+      pushUndo();
+      const memo=getTodayMemoForSubject(btn.dataset.subj,tgt)||'';
+      const nb={id:uid(),day:parseInt(btn.dataset.day),startMin:parseInt(btn.dataset.start),endMin:parseInt(btn.dataset.end),subject:btn.dataset.subj,memo,note:'',completed:false};
+      blocks.push(nb);saveWeek();renderBlocks();hideCtx();autoGoalFromBlock(nb);
+    }else if(btn.dataset.action==='ins-review'){
       pushUndo();
       const nb={id:uid(),day:parseInt(btn.dataset.day),startMin:parseInt(btn.dataset.start),endMin:parseInt(btn.dataset.end),subject:btn.dataset.subj,memo:btn.dataset.memo,note:'',completed:false};
       blocks.push(nb);saveWeek();renderBlocks();hideCtx();autoGoalFromBlock(nb);
