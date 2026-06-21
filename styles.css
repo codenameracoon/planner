@@ -134,6 +134,11 @@ body{font-family:'Inter',system-ui,sans-serif;background:#fff;color:#37352F;font
 .repeat-day-chips{display:flex;gap:6px;flex-wrap:wrap;margin-top:4px}
 .repeat-day-chip{width:32px;height:32px;border:1px solid #E9E9E7;border-radius:50%;background:none;font-family:inherit;font-size:13px;font-weight:600;cursor:pointer;color:#9B9A97;transition:background .1s,color .1s,border-color .1s;display:flex;align-items:center;justify-content:center;padding:0;line-height:1}
 .repeat-day-chip.on{background:#37352F;color:#fff;border-color:#37352F}
+.repeat-quick-btns{display:flex;gap:6px;margin-top:8px}
+.repeat-quick-btns button{padding:3px 12px;border:1px solid #E9E9E7;border-radius:12px;background:none;font-family:inherit;font-size:12px;font-weight:600;cursor:pointer;color:#9B9A97;transition:background .1s,color .1s,border-color .1s}
+.repeat-quick-btns button:hover{background:#37352F;color:#fff;border-color:#37352F}
+body.dark .repeat-quick-btns button{border-color:#2D2D2D;color:#777}
+body.dark .repeat-quick-btns button:hover{background:#E8E8E6;color:#191919;border-color:#E8E8E6}
 .repeat-period-opts{display:flex;flex-direction:column;gap:8px;margin-top:4px}
 .repeat-period-opt{font-size:13px;display:flex;align-items:center;gap:7px;cursor:pointer;color:#37352F;line-height:1.4}
 .repeat-period-opt input{cursor:pointer;accent-color:#37352F}

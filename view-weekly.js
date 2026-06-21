@@ -645,6 +645,14 @@ document.getElementById('repeatModalOverlay').onclick=e=>{if(e.target===document
 document.querySelectorAll('.repeat-day-chip').forEach(chip=>{
   chip.addEventListener('click',()=>chip.classList.toggle('on'));
 });
+document.getElementById('repeatQuickWeekday').onclick=()=>{
+  document.querySelectorAll('.repeat-day-chip').forEach(chip=>{
+    const d=parseInt(chip.dataset.rday);chip.classList.toggle('on',d>=0&&d<=4);
+  });
+};
+document.getElementById('repeatQuickEvery').onclick=()=>{
+  document.querySelectorAll('.repeat-day-chip').forEach(chip=>chip.classList.add('on'));
+};
 document.getElementById('repeatApply').onclick=()=>{
   const blk=getBlock(_repeatBlkId);if(!blk)return;
   const selDays=[...document.querySelectorAll('.repeat-day-chip.on')].map(c=>parseInt(c.dataset.rday));
