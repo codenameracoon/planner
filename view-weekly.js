@@ -481,7 +481,7 @@ function onContextMenu(e){
       else if(btn.dataset.action==='review'){if(b)scheduleReview(b);}
       else if(btn.dataset.action==='confirm'){confirmGhost(id);}
       else if(btn.dataset.action==='repeat-set'){if(b)openRepeatModal(b.id);}
-      else if(btn.dataset.action==='repeat-clear'){if(b){pushUndo();b.repeat=false;saveWeek();renderBlocks();}}
+      else if(btn.dataset.action==='repeat-clear'){if(b){pushUndo();const{startMin,endMin,subject}=b;const curWk=weekKey(currentMonday);blocks=blocks.filter(bl=>!(bl.repeat&&bl.startMin===startMin&&bl.endMin===endMin&&bl.subject===subject));saveWeek();for(let i=0;i<localStorage.length;i++){const k=localStorage.key(i);if(!k||!k.startsWith('week_')||k<=curWk)continue;try{let wb=JSON.parse(localStorage.getItem(k)||'[]');const before=wb.length;wb=wb.filter(bl=>!(bl.repeat&&bl.startMin===startMin&&bl.endMin===endMin&&bl.subject===subject));if(wb.length!==before){const v=JSON.stringify(wb);localStorage.setItem(k,v);syncToSupabase(k,v);}}catch{}}renderBlocks();showPlannerToast('이후 모든 반복 블록이 삭제되었습니다');}}
       else if(btn.dataset.action==='wd-repeat-clear-blk'){if(b){const day=parseInt(btn.dataset.day);clearWeekdayTemplate(day);blocks.filter(bl=>bl.day===day&&bl.weekdayRepeat).forEach(bl=>{bl.weekdayRepeat=false;});saveWeek();renderBlocks();showPlannerToast('다음 주부터 이 요일의 반복이 해제됩니다. 이번 주 블록은 유지됩니다.');}}
       hideCtx();
     };
