@@ -799,7 +799,8 @@ function openReviewEditModal(sk,cycleNum,cycles){
   const c=d&&cycleNum?d.cycles.find(x=>x.num===cycleNum):null;
   document.getElementById('reviewEditTitle').textContent=cycleNum?`${cycleNum}회독 설정`:'회독 설정';
   document.getElementById('rsDaysVal').textContent=c?c.days:7;
-  document.getElementById('rsStartDate').value=c&&c.startDate?c.startDate:'';
+  const todayStr=dateKey(new Date());
+  document.getElementById('rsStartDate').value=c&&c.startDate?c.startDate:todayStr;
   const prev=cycles&&cycleNum>1?cycles.find(x=>x.num===cycleNum-1):null;
   const prevEndDate=prev&&prev.startDate?dateKey(addDays(new Date(prev.startDate),prev.days)):'';
   document.getElementById('rsAutoDate').checked=false;
