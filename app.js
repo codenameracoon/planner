@@ -636,7 +636,7 @@ document.addEventListener('keydown',e=>{
   if(e.key==='Escape')hideCtx();
 });
 
-document.addEventListener('click',e=>{if(!document.getElementById('ctxMenu').contains(e.target))hideCtx();});
+document.addEventListener('pointerdown',e=>{if(!document.getElementById('ctxMenu').contains(e.target))hideCtx();});
 
 // ── retrospectives ────────────────────────────────────────────────────────────
 function retroStorageKey(type,d){

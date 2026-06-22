@@ -1,4 +1,4 @@
-const CACHE = 'planner-v23';
+const CACHE = 'planner-v24';
 const ASSETS = [
   './icon-192.png',
   './icon-512.png',
