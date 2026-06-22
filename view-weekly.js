@@ -873,7 +873,14 @@ function onTouchEnd(e){
       if(selectedIds.has(id)){clearSelection();}
       else{clearSelection();selectedIds.add(id);blkEl.classList.add('selected');}
     } else if(!blkEl){
-      clearSelection();
+      // 빈 영역 탭 → 과목 선택 팝오버
+      const body=findDayBody(e.target);
+      if(body){
+        const startMin=snapMin(clampMin(yToMin(bodyY(body,t.clientY))));
+        showInsertPopover(parseInt(body.dataset.day),startMin,startMin+60,t.clientX,t.clientY);
+      } else {
+        clearSelection();
+      }
     }
   }
 }
