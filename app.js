@@ -7,6 +7,7 @@ let _sb=null;
 let _syncTimer=null;
 let _savedAt={};
 let _syncQueue=Promise.resolve();
+const _localSaves=new Set(); // keys saved locally in this session
 
 const _CLOUD_CHECK=`<svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M6.657 18c-2.572 0 -4.657 -2.007 -4.657 -4.483c0 -2.475 2.085 -4.482 4.657 -4.482c.393 -1.762 1.794 -3.2 3.675 -3.773c1.88 -.572 3.956 -.193 5.444 1c1.488 1.19 2.162 3.007 1.77 4.769h.99c1.913 0 3.464 1.56 3.464 3.486c0 1.927 -1.551 3.487 -3.465 3.487h-11.878"/><path d="M9 12l2 2l4 -4"/></svg>`;
 const _CLOUD_UPLOAD=`<svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M7 18a4.6 4.4 0 0 1 0 -9a5 4.5 0 0 1 11 2h1a3.5 3.5 0 0 1 0 7h-1"/><polyline points="9 15 12 12 15 15"/><line x1="12" y1="12" x2="12" y2="21"/></svg>`;
@@ -29,6 +30,7 @@ async function syncToSupabase(key,valueStr){
   const ts=new Date().toISOString();
   _setSyncMeta(key,ts);
   _savedAt[key]=Date.now();
+  _localSaves.add(key);
   if(!_sb)return;
   setSyncStatus('saving');
   _syncQueue=_syncQueue.then(async()=>{
@@ -48,7 +50,7 @@ function _isPlannerKey(k){
     k.startsWith('dailyGoals_')||k.startsWith('retro_')||k.startsWith('routine_')||
     k.startsWith('weekRes_')||k.startsWith('dayRes_')||k.startsWith('monthRes_')||
     k.startsWith('monthlyTextGoals_')||k.startsWith('monthEvents_')||
-    k.startsWith('review_')
+    k.startsWith('review_')||k.startsWith('weekdayRepeat_')||k==='quickInsertItems'
   );
 }
 
@@ -67,19 +69,23 @@ async function _loadFromSupabase(){
         try{const remote=JSON.parse(row.value||'{}');const local=_getSyncMeta();Object.entries(remote).forEach(([k,ts])=>{if(!local[k]||ts>local[k])local[k]=ts;});localStorage.setItem('_planner_sync_meta',JSON.stringify(local));}catch{}
         return;
       }
-      if(_savedAt[row.key]&&now-_savedAt[row.key]<15000)return;
-      const localTs=meta[row.key];
-      if(localTs&&row.updated_at<=localTs){
-        const current=localStorage.getItem(row.key);
-        if(current&&current!==row.value)needsPush.push({key:row.key,value:current,updated_at:localTs});
-        return;
+      // 이번 세션에서 직접 저장한 키: 15초 보호 + timestamp 비교
+      if(_localSaves.has(row.key)){
+        if(_savedAt[row.key]&&now-_savedAt[row.key]<15000)return;
+        const localTs=meta[row.key];
+        if(localTs&&row.updated_at<=localTs){
+          const current=localStorage.getItem(row.key);
+          if(current&&current!==row.value)needsPush.push({key:row.key,value:current,updated_at:localTs});
+          return;
+        }
       }
+      // 이번 세션에서 건드리지 않은 키: 원격 값이 다르면 무조건 적용 (클럭 스큐 무관)
       const current=localStorage.getItem(row.key);
       if(current!==row.value){
         localStorage.setItem(row.key,row.value);
         _setSyncMeta(row.key,row.updated_at);
         updated=true;
-      } else if(!localTs){
+      } else if(!meta[row.key]){
         _setSyncMeta(row.key,row.updated_at);
       }
     });
