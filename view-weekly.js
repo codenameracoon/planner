@@ -542,14 +542,18 @@ function showInsertPopover(dayIdx,startMin,endMin,clientX,clientY){
     {key:'labor_econ',label:'노경',bg:'#FDD663',fg:'#37352F'},
     {key:'rest',label:'휴식',bg:'#EBEBEA',fg:'#37352F'},
   ];
-  const badgeRow=`<div style="display:flex;gap:4px;padding:5px 8px 5px;border-bottom:1px solid #F4F4F2;flex-wrap:wrap">`+
+  const badgeRow=`<div style="display:flex;gap:4px;padding:5px 8px;border-bottom:1px solid #F4F4F2;flex-wrap:wrap">`+
     BADGE_DEFS.map(b=>`<button data-action="badge-create" data-subj="${b.key}" data-start="${startMin}" data-end="${endMin}" data-day="${dayIdx}" style="padding:2px 8px;font-size:11px;border-radius:10px;background:${b.bg};color:${b.fg};border:none;font-family:inherit;cursor:pointer;font-weight:600;white-space:nowrap;line-height:1.6">${b.label}</button>`).join('')+
     `</div>`;
+  function _itemBtn(action,attrs,col,prefixHtml,textContent){
+    const dot=`<span style="display:inline-block;width:7px;height:7px;border-radius:50%;background:${col};flex-shrink:0;margin-right:5px;margin-top:1px"></span>`;
+    const inner=`<span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;flex:1;font-size:12px;line-height:1.3">${prefixHtml}${textContent}</span>`;
+    return`<button class="ctx-item" ${attrs} style="display:flex;align-items:center;padding:4px 12px;max-width:220px;overflow:hidden;font-size:12px">${dot}${inner}</button>`;
+  }
   const reviewItems=REVIEW_SUBJECTS.map(rs=>{
     const memo=getTodayMemoForSubject(rs.key,tgt);
     const label=memo?escHtml(memo):rs.name;
-    const dot=`<span style="display:inline-block;width:7px;height:7px;border-radius:50%;background:${rs.color};margin-right:6px;flex-shrink:0;vertical-align:middle"></span>`;
-    return`<button class="ctx-item" data-action="ins-review" data-subj="${rs.key}" data-start="${startMin}" data-end="${endMin}" data-day="${dayIdx}" data-memo="${escHtml(memo||'')}" style="white-space:normal;max-width:260px;line-height:1.3;font-size:11px;padding:4px 8px">${dot}${label}</button>`;
+    return _itemBtn('ins-review',`data-action="ins-review" data-subj="${rs.key}" data-start="${startMin}" data-end="${endMin}" data-day="${dayIdx}" data-memo="${escHtml(memo||'')}"`,rs.color,'',label);
   }).join('');
   const _allCustom=_loadQuickItems();
   let quickHtml='';
@@ -557,18 +561,31 @@ function showInsertPopover(dayIdx,startMin,endMin,clientX,clientY){
     const _qCats={};
     _allCustom.forEach(item=>{if(!_qCats[item.cat])_qCats[item.cat]=[];_qCats[item.cat].push(item);});
     quickHtml+=`<div class="ctx-divider"></div>`;
+    let hasNonSubj=false;
+    // subject-mapped items first (no header, abbrev inline)
     Object.entries(_qCats).forEach(([cat,items])=>{
-      const sk=_catToSubjKey(cat);const col=sk?SUBJECTS[sk]?.color:'#9B9A97';
-      quickHtml+=`<div style="font-size:10px;color:#9B9A97;padding:4px 8px 2px;font-weight:600;letter-spacing:.3px">${cat}</div>`;
+      const sk=_catToSubjKey(cat);if(!sk){hasNonSubj=true;return;}
+      const col=SUBJECTS[sk]?.color||'#9B9A97';
+      const abbrev=SUBJ_SHORT[sk]||cat;
+      const prefix=`<span style="color:#9B9A97;font-weight:600;font-size:11px;flex-shrink:0;margin-right:3px">${abbrev}</span><span style="color:#C0BFBC;font-size:11px;margin-right:4px;flex-shrink:0">·</span>`;
       items.forEach(item=>{
-        const dot=`<span style="display:inline-block;width:7px;height:7px;border-radius:50%;background:${col||'#9B9A97'};margin-right:6px;flex-shrink:0;vertical-align:middle"></span>`;
-        quickHtml+=`<button class="ctx-item" data-action="quick-ins" data-text="${escHtml(item.text)}" data-cat="${escHtml(item.cat)}" data-subj="${sk||'rest'}" data-start="${startMin}" data-end="${endMin}" data-day="${dayIdx}" style="white-space:normal;max-width:260px;line-height:1.3;font-size:11px;padding:4px 8px">${dot}${escHtml(item.text)}</button>`;
+        quickHtml+=_itemBtn('quick-ins',`data-action="quick-ins" data-text="${escHtml(item.text)}" data-cat="${escHtml(cat)}" data-subj="${sk}" data-start="${startMin}" data-end="${endMin}" data-day="${dayIdx}"`,col,prefix,escHtml(item.text));
       });
     });
+    // non-subject items (스터디, 기타) with section label
+    if(hasNonSubj){
+      Object.entries(_qCats).forEach(([cat,items])=>{
+        const sk=_catToSubjKey(cat);if(sk)return;
+        quickHtml+=`<div style="font-size:10px;color:#9B9A97;padding:4px 12px 2px;font-weight:600;letter-spacing:.3px">${cat}</div>`;
+        items.forEach(item=>{
+          quickHtml+=_itemBtn('quick-ins',`data-action="quick-ins" data-text="${escHtml(item.text)}" data-cat="${escHtml(cat)}" data-subj="rest" data-start="${startMin}" data-end="${endMin}" data-day="${dayIdx}"` ,'#9B9A97','',escHtml(item.text));
+        });
+      });
+    }
   }
-  quickHtml+=`<div class="ctx-divider"></div><button class="ctx-item" data-action="quick-edit" style="color:#9B9A97;font-size:11px;padding:4px 8px">+ 바로 추가</button>`;
+  quickHtml+=`<div class="ctx-divider"></div><button class="ctx-item" data-action="quick-edit" style="color:#9B9A97;font-size:11px;padding:4px 12px">+ 바로 추가</button>`;
   menu.innerHTML=badgeRow+
-    `<div style="font-size:10px;color:#9B9A97;padding:4px 8px 2px;font-weight:600;letter-spacing:.3px">회독 내용 삽입 · ${fmtTime(startMin)}</div>`+
+    `<div style="font-size:10px;color:#9B9A97;padding:4px 12px 2px;font-weight:600;letter-spacing:.3px">회독 내용 삽입 · ${fmtTime(startMin)}</div>`+
     reviewItems+quickHtml;
   menu.style.display='block';menu.style.left=clientX+'px';menu.style.top=clientY+'px';
   requestAnimationFrame(()=>{const r=menu.getBoundingClientRect();if(r.right>window.innerWidth)menu.style.left=(clientX-r.width)+'px';if(r.bottom>window.innerHeight)menu.style.top=(clientY-r.height)+'px';});
