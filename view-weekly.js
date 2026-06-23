@@ -593,8 +593,7 @@ function showInsertPopover(dayIdx,startMin,endMin,clientX,clientY){
     const btn=ev.target.closest('[data-action]');if(!btn)return;
     if(btn.dataset.action==='badge-create'){
       pushUndo();
-      const memo=getTodayMemoForSubject(btn.dataset.subj,tgt)||'';
-      const nb={id:uid(),day:parseInt(btn.dataset.day),startMin:parseInt(btn.dataset.start),endMin:parseInt(btn.dataset.end),subject:btn.dataset.subj,memo,note:'',completed:false};
+      const nb={id:uid(),day:parseInt(btn.dataset.day),startMin:parseInt(btn.dataset.start),endMin:parseInt(btn.dataset.end),subject:btn.dataset.subj,memo:'',note:'',completed:false};
       blocks.push(nb);saveWeek();renderBlocks();hideCtx();autoGoalFromBlock(nb);
     }else if(btn.dataset.action==='ins-review'){
       pushUndo();
