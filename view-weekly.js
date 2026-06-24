@@ -115,7 +115,7 @@ function buildGoalRowContent(rowEl, dk){
     const chk=e.target.closest('[data-dgcheck]');
     if(chk){
       const gs=loadDailyGoals(dk);const g=gs.find(x=>x.id===chk.dataset.dgcheck);
-      if(g){const cur=getGoalStatus(g);const next=cur===''?'done':cur==='done'?'fail':'';g.status=next;g.done=next==='done';gs.sort((a,b)=>(getGoalStatus(a)===''?0:1)-(getGoalStatus(b)===''?0:1));saveDailyGoals(dk,gs);if(g.blkId){const blk=getBlock(g.blkId);if(blk){blk.status=next;blk.completed=next==='done';saveWeek();renderBlocks();}}buildGoalRowContent(rowEl,dk);syncGoalRowHeight();}
+      if(g){const cur=getGoalStatus(g);const next=cur===''?'done':cur==='done'?'fail':'';g.status=next;g.done=next==='done';gs.sort((a,b)=>(getGoalStatus(a)===''?0:1)-(getGoalStatus(b)===''?0:1));saveDailyGoals(dk,gs);if(g.blkId){const blk=getBlock(g.blkId);if(blk){blk.status=next;blk.completed=next==='done';console.log('BLOCK CREATED HERE goalCheck-saveWeek',new Error().stack);saveWeek();renderBlocks();}}buildGoalRowContent(rowEl,dk);syncGoalRowHeight();}
       return;
     }
     const del=e.target.closest('[data-dgdel]');
@@ -329,7 +329,7 @@ function onMouseDown(e){
   if(e.target.dataset&&e.target.dataset.done){
     e.preventDefault();e.stopPropagation();
     const blk=getBlock(e.target.dataset.done);
-    if(blk){if(blk.ghost){confirmGhost(blk.id);return;}pushUndo();const cur=blk.status||(blk.completed?'done':'');blk.status=cur===''?'done':cur==='done'?'fail':'';blk.completed=(blk.status==='done');saveWeek();renderBlocks();const _bdk=dateKey(addDays(currentMonday,blk.day));const _bgs=loadDailyGoals(_bdk);const _bg=_bgs.find(g=>g.blkId===blk.id);if(_bg){_bg.status=blk.status;_bg.done=blk.completed;saveDailyGoals(_bdk,_bgs);const _brow=document.querySelector(`.daily-goal-row[data-day="${blk.day}"]`);if(_brow){buildGoalRowContent(_brow,_bdk);syncGoalRowHeight();}}}
+    if(blk){if(blk.ghost){confirmGhost(blk.id);return;}pushUndo();const cur=blk.status||(blk.completed?'done':'');blk.status=cur===''?'done':cur==='done'?'fail':'';blk.completed=(blk.status==='done');console.log('BLOCK CREATED HERE done-btn-saveWeek',new Error().stack);saveWeek();renderBlocks();const _bdk=dateKey(addDays(currentMonday,blk.day));const _bgs=loadDailyGoals(_bdk);const _bg=_bgs.find(g=>g.blkId===blk.id);if(_bg){_bg.status=blk.status;_bg.done=blk.completed;saveDailyGoals(_bdk,_bgs);const _brow=document.querySelector(`.daily-goal-row[data-day="${blk.day}"]`);if(_brow){buildGoalRowContent(_brow,_bdk);syncGoalRowHeight();}}}
     return;
   }
   // 90-min rest
@@ -468,7 +468,7 @@ function onMouseUp(){
     setTimeout(()=>showInsertPopover(savedDay,savedSm,savedEm,savedX,savedY),150);
     return;
   }
-  if(drag.type==='resize'||drag.type==='move'){saveWeek();}
+  if(drag.type==='resize'||drag.type==='move'){console.log('BLOCK CREATED HERE resize-move-saveWeek',new Error().stack);saveWeek();}
   drag=null;endDrag();renderBlocks();
 }
 
@@ -490,14 +490,14 @@ function onContextMenu(e){
     menu.onclick=ev=>{
       const btn=ev.target.closest('[data-action]');if(!btn)return;
       const id=btn.dataset.id;const b=getBlock(id);
-      if(btn.dataset.action==='toggle'){if(b){pushUndo();const cur=b.status||(b.completed?'done':'');b.status=cur===''?'done':cur==='done'?'fail':'';b.completed=(b.status==='done');saveWeek();renderBlocks();const _bdk=dateKey(addDays(currentMonday,b.day));const _bgs=loadDailyGoals(_bdk);const _bg=_bgs.find(g=>g.blkId===b.id);if(_bg){_bg.status=b.status;_bg.done=b.completed;saveDailyGoals(_bdk,_bgs);const _brow=document.querySelector(`.daily-goal-row[data-day="${b.day}"]`);if(_brow){buildGoalRowContent(_brow,_bdk);syncGoalRowHeight();}}}}
-      else if(btn.dataset.action==='delete'){pushUndo();if(b)removeGoalForBlock(b);blocks=blocks.filter(x=>x.id!==id);selectedIds.delete(id);saveWeek();renderBlocks();}
+      if(btn.dataset.action==='toggle'){if(b){pushUndo();const cur=b.status||(b.completed?'done':'');b.status=cur===''?'done':cur==='done'?'fail':'';b.completed=(b.status==='done');console.log('BLOCK CREATED HERE ctx-toggle-saveWeek',new Error().stack);saveWeek();renderBlocks();const _bdk=dateKey(addDays(currentMonday,b.day));const _bgs=loadDailyGoals(_bdk);const _bg=_bgs.find(g=>g.blkId===b.id);if(_bg){_bg.status=b.status;_bg.done=b.completed;saveDailyGoals(_bdk,_bgs);const _brow=document.querySelector(`.daily-goal-row[data-day="${b.day}"]`);if(_brow){buildGoalRowContent(_brow,_bdk);syncGoalRowHeight();}}}}
+      else if(btn.dataset.action==='delete'){pushUndo();if(b)removeGoalForBlock(b);blocks=blocks.filter(x=>x.id!==id);selectedIds.delete(id);console.log('BLOCK CREATED HERE ctx-delete-saveWeek',new Error().stack);saveWeek();renderBlocks();}
       else if(btn.dataset.action==='save-tmpl'){if(b)saveAsTemplate(b);}
       else if(btn.dataset.action==='review'){if(b)scheduleReview(b);}
       else if(btn.dataset.action==='confirm'){confirmGhost(id);}
       else if(btn.dataset.action==='repeat-set'){if(b)openRepeatModal(b.id);}
-      else if(btn.dataset.action==='repeat-clear'){if(b){pushUndo();const{startMin,endMin,subject}=b;const curWk=weekKey(currentMonday);blocks=blocks.filter(bl=>!(bl.repeat&&bl.startMin===startMin&&bl.endMin===endMin&&bl.subject===subject));saveWeek();for(let i=0;i<localStorage.length;i++){const k=localStorage.key(i);if(!k||!k.startsWith('week_')||k<=curWk)continue;try{let wb=JSON.parse(localStorage.getItem(k)||'[]');const before=wb.length;wb=wb.filter(bl=>!(bl.repeat&&bl.startMin===startMin&&bl.endMin===endMin&&bl.subject===subject));if(wb.length!==before){const v=JSON.stringify(wb);localStorage.setItem(k,v);syncToSupabase(k,v);}}catch{}}renderBlocks();showPlannerToast('이후 모든 반복 블록이 삭제되었습니다');}}
-      else if(btn.dataset.action==='wd-repeat-clear-blk'){if(b){const day=parseInt(btn.dataset.day);clearWeekdayTemplate(day);blocks.filter(bl=>bl.day===day&&bl.weekdayRepeat).forEach(bl=>{bl.weekdayRepeat=false;});saveWeek();renderBlocks();showPlannerToast('다음 주부터 이 요일의 반복이 해제됩니다. 이번 주 블록은 유지됩니다.');}}
+      else if(btn.dataset.action==='repeat-clear'){if(b){pushUndo();const{startMin,endMin,subject}=b;const curWk=weekKey(currentMonday);blocks=blocks.filter(bl=>!(bl.repeat&&bl.startMin===startMin&&bl.endMin===endMin&&bl.subject===subject));console.log('BLOCK CREATED HERE repeat-clear-saveWeek',new Error().stack);saveWeek();for(let i=0;i<localStorage.length;i++){const k=localStorage.key(i);if(!k||!k.startsWith('week_')||k<=curWk)continue;try{let wb=JSON.parse(localStorage.getItem(k)||'[]');const before=wb.length;wb=wb.filter(bl=>!(bl.repeat&&bl.startMin===startMin&&bl.endMin===endMin&&bl.subject===subject));if(wb.length!==before){const v=JSON.stringify(wb);localStorage.setItem(k,v);syncToSupabase(k,v);}}catch{}}renderBlocks();showPlannerToast('이후 모든 반복 블록이 삭제되었습니다');}}
+      else if(btn.dataset.action==='wd-repeat-clear-blk'){if(b){const day=parseInt(btn.dataset.day);clearWeekdayTemplate(day);blocks.filter(bl=>bl.day===day&&bl.weekdayRepeat).forEach(bl=>{bl.weekdayRepeat=false;});console.log('BLOCK CREATED HERE wd-repeat-clear-saveWeek',new Error().stack);saveWeek();renderBlocks();showPlannerToast('다음 주부터 이 요일의 반복이 해제됩니다. 이번 주 블록은 유지됩니다.');}}
       hideCtx();
     };
     return;
@@ -522,7 +522,7 @@ function onContextMenu(e){
         saveWeekdayTemplate(day,tpl);
         pushUndo();
         dayBlks.forEach(b=>{b.weekdayRepeat=true;});
-        saveWeek();renderBlocks();
+        console.log('BLOCK CREATED HERE wd-repeat-set-saveWeek',new Error().stack);saveWeek();renderBlocks();
         showPlannerToast(`✓ ${DAYS[day]}요일 매주 반복이 설정되었습니다`);
       }
       hideCtx();
@@ -602,16 +602,16 @@ function showInsertPopover(dayIdx,startMin,endMin,clientX,clientY){
     if(btn.dataset.action==='badge-create'){
       pushUndo();
       const nb={id:uid(),day:parseInt(btn.dataset.day),startMin:parseInt(btn.dataset.start),endMin:parseInt(btn.dataset.end),subject:btn.dataset.subj,memo:'',note:'',completed:false};
-      blocks.push(nb);saveWeek();renderBlocks();hideCtx();autoGoalFromBlock(nb);
+      console.log('BLOCK CREATED HERE badge-create',new Error().stack);blocks.push(nb);saveWeek();renderBlocks();hideCtx();autoGoalFromBlock(nb);
     }else if(btn.dataset.action==='ins-review'){
       pushUndo();
       const nb={id:uid(),day:parseInt(btn.dataset.day),startMin:parseInt(btn.dataset.start),endMin:parseInt(btn.dataset.end),subject:btn.dataset.subj,memo:btn.dataset.memo,note:'',completed:false};
-      blocks.push(nb);saveWeek();renderBlocks();hideCtx();autoGoalFromBlock(nb);
+      console.log('BLOCK CREATED HERE ins-review',new Error().stack);blocks.push(nb);saveWeek();renderBlocks();hideCtx();autoGoalFromBlock(nb);
     }else if(btn.dataset.action==='quick-ins'){
       pushUndo();
       const sk=btn.dataset.subj||_catToSubjKey(btn.dataset.cat)||'rest';
       const nb={id:uid(),day:parseInt(btn.dataset.day),startMin:parseInt(btn.dataset.start),endMin:parseInt(btn.dataset.end),subject:sk,memo:btn.dataset.text,note:'',completed:false};
-      blocks.push(nb);saveWeek();renderBlocks();hideCtx();autoGoalFromBlock(nb);
+      console.log('BLOCK CREATED HERE quick-ins',new Error().stack);blocks.push(nb);saveWeek();renderBlocks();hideCtx();autoGoalFromBlock(nb);
     }else if(btn.dataset.action==='quick-edit'){
       hideCtx();_openQuickEditModal();
     }
@@ -735,12 +735,12 @@ document.getElementById('repeatApply').onclick=()=>{
       created++;changed=true;
     });
     if(changed){
-      if(isCur)saveWeek();
+      if(isCur){console.log('BLOCK CREATED HERE repeatApply-cur-saveWeek',new Error().stack);saveWeek();}
       else{const v=JSON.stringify(wb);localStorage.setItem(wk,v);syncToSupabase(wk,v);}
     }
   });
   // blk.repeat=true 플래그를 현재 주에 저장 (블록 추가가 없어도 반드시 저장)
-  saveWeek();
+  console.log('BLOCK CREATED HERE repeatApply-final-saveWeek',new Error().stack);saveWeek();
   renderBlocks();
   closeRepeatModal();
   showPlannerToast(`✓ ${created}개 블록이 생성되었습니다`);
@@ -764,10 +764,10 @@ function applyWeekdayTemplates(){
     const tpl=loadWeekdayTemplate(d);if(!tpl||!tpl.length)continue;
     if(blocks.some(b=>b.day===d&&!b.ghost&&!b.weekdayRepeat))continue;
     blocks=blocks.filter(b=>!(b.day===d&&b.weekdayRepeat));
-    tpl.forEach(t=>{blocks.push({id:uid(),day:d,startMin:t.startMin,endMin:t.endMin,subject:t.subject,memo:t.memo||'',note:t.note||'',completed:false,weekdayRepeat:true});});
+    tpl.forEach(t=>{console.log('BLOCK CREATED HERE applyWeekdayTemplates',new Error().stack);blocks.push({id:uid(),day:d,startMin:t.startMin,endMin:t.endMin,subject:t.subject,memo:t.memo||'',note:t.note||'',completed:false,weekdayRepeat:true});});
     changed=true;
   }
-  if(changed&&_syncReady)saveWeek();
+  if(changed&&_syncReady){console.log('BLOCK CREATED HERE applyWeekdayTemplates-saveWeek',new Error().stack);saveWeek();}
 }
 
 // ── subject picker ────────────────────────────────────────────────────────────
@@ -785,7 +785,7 @@ function showSubjectPicker(blockId,anchor){
     item.innerHTML=`<span style="${dotStyle}"></span><span>${subj.name}</span>`;
     item.addEventListener('mousedown',ev=>{
       ev.stopPropagation();
-      if(key!==blk.subject){pushUndo();blk.subject=key;saveWeek();autoGoalFromBlock(blk);renderBlocks();}
+      if(key!==blk.subject){pushUndo();blk.subject=key;console.log('BLOCK CREATED HERE subjPicker-saveWeek',new Error().stack);saveWeek();autoGoalFromBlock(blk);renderBlocks();}
       hideSubjectPicker();
     });
     picker.appendChild(item);
@@ -818,9 +818,9 @@ function showMobileCtx(blockId,x,y){
   menu.onclick=ev=>{
     const btn=ev.target.closest('[data-action]');if(!btn)return;
     const id=btn.dataset.id;const b=getBlock(id);
-    if(btn.dataset.action==='toggle'){if(b){pushUndo();const cur=b.status||(b.completed?'done':'');b.status=cur===''?'done':cur==='done'?'fail':'';b.completed=(b.status==='done');saveWeek();renderBlocks();const _bdk=dateKey(addDays(currentMonday,b.day));const _bgs=loadDailyGoals(_bdk);const _bg=_bgs.find(g=>g.blkId===b.id);if(_bg){_bg.status=b.status;_bg.done=b.completed;saveDailyGoals(_bdk,_bgs);const _brow=document.querySelector(`.daily-goal-row[data-day="${b.day}"]`);if(_brow){buildGoalRowContent(_brow,_bdk);syncGoalRowHeight();}}}}
+    if(btn.dataset.action==='toggle'){if(b){pushUndo();const cur=b.status||(b.completed?'done':'');b.status=cur===''?'done':cur==='done'?'fail':'';b.completed=(b.status==='done');console.log('BLOCK CREATED HERE mobile-toggle-saveWeek',new Error().stack);saveWeek();renderBlocks();const _bdk=dateKey(addDays(currentMonday,b.day));const _bgs=loadDailyGoals(_bdk);const _bg=_bgs.find(g=>g.blkId===b.id);if(_bg){_bg.status=b.status;_bg.done=b.completed;saveDailyGoals(_bdk,_bgs);const _brow=document.querySelector(`.daily-goal-row[data-day="${b.day}"]`);if(_brow){buildGoalRowContent(_brow,_bdk);syncGoalRowHeight();}}}}
     else if(btn.dataset.action==='edit'){openEditModal(id);}
-    else if(btn.dataset.action==='delete'){if(b){pushUndo();removeGoalForBlock(b);blocks=blocks.filter(x=>x.id!==id);selectedIds.delete(id);saveWeek();renderBlocks();}}
+    else if(btn.dataset.action==='delete'){if(b){pushUndo();removeGoalForBlock(b);blocks=blocks.filter(x=>x.id!==id);selectedIds.delete(id);console.log('BLOCK CREATED HERE mobile-delete-saveWeek',new Error().stack);saveWeek();renderBlocks();}}
     hideCtx();
   };
 }
@@ -952,7 +952,7 @@ function onResizeTouchEnd(){
   if(!touchResizeState)return;
   document.removeEventListener('touchmove',onResizeTouchMove);
   document.removeEventListener('touchend',onResizeTouchEnd);
-  pushUndo();saveWeek();renderBlocks();
+  pushUndo();console.log('BLOCK CREATED HERE touchResize-saveWeek',new Error().stack);saveWeek();renderBlocks();
   touchResizeState=null;
 }
 
