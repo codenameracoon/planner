@@ -456,7 +456,8 @@ function onMouseUp(){
     const ex=drag.endX??drag.startX,ey=drag.endY??drag.startY;
     const di=drag.day,sm=drag.startMin,em=Math.max(drag.endMin||sm+gran,sm+gran);
     drag=null;endDrag();
-    showInsertPopover(di,sm,em,ex,ey);
+    // defer past the drag-release click event to prevent badge click-through
+    setTimeout(()=>showInsertPopover(di,sm,em,ex,ey),0);
     return;
   }
   if(drag.type==='resize'||drag.type==='move'){saveWeek();}
@@ -885,12 +886,13 @@ function onTouchEnd(e){
       }
     }
   } else if(moved&&onEmptyBody&&Math.abs(dy)<80&&Math.abs(dx)<60){
-    // touch drag on empty time grid → show insert popover
+    // touch drag on empty time grid → show insert popover (deferred to skip synthesized click)
     const body=findDayBody(document.elementFromPoint(t.clientX,t.clientY));
     if(body){
       const sm=snapMin(clampMin(yToMin(bodyY(body,startTouchY))));
       const em=Math.max(snapMin(clampMin(yToMin(bodyY(body,t.clientY)))),sm+gran);
-      showInsertPopover(parseInt(body.dataset.day),sm,em,t.clientX,t.clientY);
+      const _di=parseInt(body.dataset.day),_x=t.clientX,_y=t.clientY;
+      setTimeout(()=>showInsertPopover(_di,sm,em,_x,_y),0);
     }
   }
 }
