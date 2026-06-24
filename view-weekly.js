@@ -456,8 +456,7 @@ function onMouseUp(){
     const ex=drag.endX??drag.startX,ey=drag.endY??drag.startY;
     const di=drag.day,sm=drag.startMin,em=Math.max(drag.endMin||sm+gran,sm+gran);
     drag=null;endDrag();
-    // defer past the drag-release click event to prevent badge click-through
-    setTimeout(()=>showInsertPopover(di,sm,em,ex,ey),0);
+    setTimeout(()=>showInsertPopover(di,sm,em,ex,ey),150);
     return;
   }
   if(drag.type==='resize'||drag.type==='move'){saveWeek();}
@@ -587,7 +586,9 @@ function showInsertPopover(dayIdx,startMin,endMin,clientX,clientY){
     reviewItems+quickHtml;
   menu.style.display='block';menu.style.left=clientX+'px';menu.style.top=clientY+'px';
   requestAnimationFrame(()=>{const r=menu.getBoundingClientRect();if(r.right>window.innerWidth)menu.style.left=(clientX-r.width)+'px';if(r.bottom>window.innerHeight)menu.style.top=(clientY-r.height)+'px';});
+  const _popoverShownAt=Date.now();
   menu.onclick=ev=>{
+    if(Date.now()-_popoverShownAt<200)return;
     const btn=ev.target.closest('[data-action]');if(!btn)return;
     if(btn.dataset.action==='badge-create'){
       pushUndo();
