@@ -449,7 +449,12 @@ function onMouseMove(e){
 
 function onMouseUp(){
   if(!drag)return;
-  if(drag.type==='create-or-select'){drag=null;endDrag();return;}
+  if(drag.type==='create-or-select'){
+    const savedDay=drag.day,savedSm=drag.startMin,savedX=drag.startX,savedY=drag.startY;
+    drag=null;endDrag();
+    setTimeout(()=>showInsertPopover(savedDay,savedSm,savedSm+60,savedX,savedY),150);
+    return;
+  }
   if(drag.type==='select'){removeSelRect();drag=null;endDrag();return;}
   if(drag&&drag.type==='create'){
     const savedDay=drag.day;
