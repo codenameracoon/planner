@@ -451,12 +451,16 @@ function onMouseUp(){
   if(!drag)return;
   if(drag.type==='create-or-select'){drag=null;endDrag();return;}
   if(drag.type==='select'){removeSelRect();drag=null;endDrag();return;}
-  if(drag.type==='create'){
-    drag.ghost.remove();
-    const ex=drag.endX??drag.startX,ey=drag.endY??drag.startY;
-    const di=drag.day,sm=drag.startMin,em=Math.max(drag.endMin||sm+gran,sm+gran);
-    drag=null;endDrag();
-    setTimeout(()=>showInsertPopover(di,sm,em,ex,ey),150);
+  if(drag&&drag.type==='create'){
+    const savedDay=drag.day;
+    const savedSm=drag.startMin;
+    const savedEm=Math.max(drag.endMin||drag.startMin+gran,drag.startMin+gran);
+    const savedX=drag.endX??drag.startX;
+    const savedY=drag.endY??drag.startY;
+    drag.ghost?.remove();
+    drag=null;
+    endDrag();
+    setTimeout(()=>showInsertPopover(savedDay,savedSm,savedEm,savedX,savedY),150);
     return;
   }
   if(drag.type==='resize'||drag.type==='move'){saveWeek();}
