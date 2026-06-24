@@ -1088,10 +1088,9 @@ function getTodayMemoForSubject(sk,tgt){
       items.push(cn+' '+(p.text||blk.name));
     });
   }else if(cur.blocksPerDay){
-    getTodayBlockIndices(dayIn,cur.blocksPerDay,data.blocks.length).forEach(bi=>{
-      const blk=data.blocks[bi];if(!blk)return;
-      items.push(cn+' '+blk.name);
-    });
+    const idxs=getTodayBlockIndices(dayIn,cur.blocksPerDay,data.blocks.length);
+    const names=idxs.map(bi=>data.blocks[bi]?.name).filter(Boolean);
+    if(names.length)items.push(cn+' '+names.join(' ~ '));
   }
   return items.join(' / ');
 }
