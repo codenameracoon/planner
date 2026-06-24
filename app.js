@@ -120,6 +120,7 @@ async function initAndSync(){
     _sb=window.supabase.createClient(SUPABASE_URL,SUPABASE_ANON_KEY);
   }catch(e){_sb=null;return;}
   const{updated,remoteKeys,needsPush}=await _loadFromSupabase();
+  if(typeof _clearReviewCache==='function')_clearReviewCache();
   if(needsPush.length){try{await _sb.from('planner_data').upsert(needsPush,{onConflict:'key'});needsPush.forEach(r=>_setSyncMeta(r.key,r.updated_at));}catch(e){}}
   await _pushMissingToSupabase(remoteKeys);
   if(updated){
