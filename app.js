@@ -8,6 +8,7 @@ let _syncTimer=null;
 let _savedAt={};
 let _syncQueue=Promise.resolve();
 const _localSaves=new Set(); // keys saved locally in this session
+let _syncReady=false;
 
 const _CLOUD_CHECK=`<svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M6.657 18c-2.572 0 -4.657 -2.007 -4.657 -4.483c0 -2.475 2.085 -4.482 4.657 -4.482c.393 -1.762 1.794 -3.2 3.675 -3.773c1.88 -.572 3.956 -.193 5.444 1c1.488 1.19 2.162 3.007 1.77 4.769h.99c1.913 0 3.464 1.56 3.464 3.486c0 1.927 -1.551 3.487 -3.465 3.487h-11.878"/><path d="M9 12l2 2l4 -4"/></svg>`;
 const _CLOUD_UPLOAD=`<svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M7 18a4.6 4.4 0 0 1 0 -9a5 4.5 0 0 1 11 2h1a3.5 3.5 0 0 1 0 7h-1"/><polyline points="9 15 12 12 15 15"/><line x1="12" y1="12" x2="12" y2="21"/></svg>`;
@@ -131,6 +132,7 @@ async function initAndSync(){
     render();
   }
   setSyncStatus('synced');
+  _syncReady=true;
 }
 
 const SUBJECTS = {
@@ -586,7 +588,18 @@ document.getElementById('copyPrevWeek').onclick=()=>{
   pushUndo();const prev=loadWeek(addDays(currentMonday,-7));blocks=prev.map(b=>({...b,id:uid(),completed:false,status:''}));saveWeek();blocks.forEach(b=>autoGoalFromBlock(b));renderBlocks();
 };
 document.getElementById('resetWeek').onclick=()=>{
-  if(!confirm('이번 주 데이터를 모두 삭제할까요?'))return;pushUndo();blocks=[];selectedIds.clear();saveWeek();renderBlocks();
+  if(!confirm('이번 주 데이터를 모두 삭제할까요?'))return;
+  const _bkKey='_backup_'+weekKey(currentMonday);
+  const _bkVal=JSON.stringify(blocks);
+  syncToSupabase(_bkKey,_bkVal);
+  pushUndo();blocks=[];selectedIds.clear();saveWeek();renderBlocks();
+  let _undoTimer;
+  const _t=document.createElement('div');
+  _t.style.cssText='position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:#37352F;color:#fff;padding:10px 20px;border-radius:8px;font-size:13px;z-index:9999;display:flex;gap:12px;align-items:center;white-space:nowrap;box-shadow:0 4px 16px rgba(0,0,0,.3)';
+  _t.innerHTML='이번 주 데이터 삭제됨 <button style="background:#F28B82;color:#fff;border:none;border-radius:4px;padding:3px 10px;font-size:12px;cursor:pointer;font-family:inherit">복원</button>';
+  document.body.appendChild(_t);
+  _undoTimer=setTimeout(()=>_t.remove(),8000);
+  _t.querySelector('button').onclick=()=>{clearTimeout(_undoTimer);_t.remove();undo();};
 };
 
 // ── view toggle ───────────────────────────────────────────────────────────────

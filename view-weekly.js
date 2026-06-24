@@ -718,7 +718,7 @@ document.getElementById('repeatApply').onclick=()=>{
     const wk=weekKey(wMon);
     const isCur=weekKey(currentMonday)===wk;
     const wb=isCur?blocks:loadWeek(wMon);
-    let changed=isCur;
+    let changed=false;
     selDays.forEach(day=>{
       if(isCur&&day===blk.day)return;
       if(wb.some(b=>b.day===day&&!b.ghost&&b.startMin<blk.endMin&&b.endMin>blk.startMin))return;
@@ -730,6 +730,8 @@ document.getElementById('repeatApply').onclick=()=>{
       else{const v=JSON.stringify(wb);localStorage.setItem(wk,v);syncToSupabase(wk,v);}
     }
   });
+  // blk.repeat=true 플래그를 현재 주에 저장 (블록 추가가 없어도 반드시 저장)
+  saveWeek();
   renderBlocks();
   closeRepeatModal();
   showPlannerToast(`✓ ${created}개 블록이 생성되었습니다`);
@@ -756,7 +758,7 @@ function applyWeekdayTemplates(){
     tpl.forEach(t=>{blocks.push({id:uid(),day:d,startMin:t.startMin,endMin:t.endMin,subject:t.subject,memo:t.memo||'',note:t.note||'',completed:false,weekdayRepeat:true});});
     changed=true;
   }
-  if(changed)saveWeek();
+  if(changed&&_syncReady)saveWeek();
 }
 
 // ── subject picker ────────────────────────────────────────────────────────────
