@@ -453,14 +453,11 @@ function onMouseUp(){
   if(drag.type==='select'){removeSelRect();drag=null;endDrag();return;}
   if(drag.type==='create'){
     drag.ghost.remove();
-    if(drag.endMin-drag.startMin>=gran){
-      const ex=drag.endX??drag.startX,ey=drag.endY??drag.startY;
-      const dayIdx=drag.day,sm=drag.startMin,em=drag.endMin;
-      drag=null;endDrag();
-      showInsertPopover(dayIdx,sm,em,ex,ey);
-      return;
-    }
-    drag=null;endDrag();return;
+    const ex=drag.endX??drag.startX,ey=drag.endY??drag.startY;
+    const di=drag.day,sm=drag.startMin,em=Math.max(drag.endMin||sm+gran,sm+gran);
+    drag=null;endDrag();
+    showInsertPopover(di,sm,em,ex,ey);
+    return;
   }
   if(drag.type==='resize'||drag.type==='move'){saveWeek();}
   drag=null;endDrag();renderBlocks();
@@ -611,6 +608,7 @@ function showInsertPopover(dayIdx,startMin,endMin,clientX,clientY){
 }
 
 function hideCtx(){document.getElementById('ctxMenu').style.display='none';}
+document.addEventListener('keydown',e=>{if(e.key==='Escape'){hideCtx();hideSubjectPicker();}});
 
 // ── quick-insert management ───────────────────────────────────────────────────
 const _QUICK_CATS=['노동법','인사노무관리','행정쟁송법','노동경제학','스터디','기타'];
@@ -821,9 +819,10 @@ function onTouchStart(e){
   if(longPressTimer){clearTimeout(longPressTimer);longPressTimer=null;}
   const t=e.touches[0];
   const tx=t.clientX,ty=t.clientY;
-  touchState={x:tx,y:ty,t:Date.now(),moved:false};
   // long press on a block (not on a button) → context menu
   const blkEl=findBlockEl(e.target);
+  const onEmptyBody=!blkEl&&!!findDayBody(e.target);
+  touchState={x:tx,y:ty,t:Date.now(),moved:false,onEmptyBody};
   if(blkEl&&!e.target.closest('.block-done-btn')&&!e.target.closest('.block-focus-btn')){
     const id=blkEl.dataset.id;
     longPressTimer=setTimeout(()=>{
@@ -852,6 +851,8 @@ function onTouchEnd(e){
   const dy=t.clientY-touchState.y;
   const dt=Date.now()-touchState.t;
   const moved=touchState.moved;
+  const startTouchY=touchState.y;
+  const onEmptyBody=touchState.onEmptyBody;
   touchState=null;
 
   // horizontal swipe → navigate day
@@ -882,6 +883,14 @@ function onTouchEnd(e){
       } else {
         clearSelection();
       }
+    }
+  } else if(moved&&onEmptyBody&&Math.abs(dy)<80&&Math.abs(dx)<60){
+    // touch drag on empty time grid → show insert popover
+    const body=findDayBody(document.elementFromPoint(t.clientX,t.clientY));
+    if(body){
+      const sm=snapMin(clampMin(yToMin(bodyY(body,startTouchY))));
+      const em=Math.max(snapMin(clampMin(yToMin(bodyY(body,t.clientY)))),sm+gran);
+      showInsertPopover(parseInt(body.dataset.day),sm,em,t.clientX,t.clientY);
     }
   }
 }

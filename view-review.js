@@ -91,6 +91,11 @@ function getCalendarEndForCycle(c){
   while(count<c.days){const dow=d.getDay();if(dow!==0&&dow!==6)count++;if(count<c.days)d=addDays(d,1);}
   return addDays(d,1);
 }
+function nextWeekdayDate(date){
+  let d=addDays(new Date(date),1);d.setHours(0,0,0,0);
+  while(d.getDay()===0||d.getDay()===6)d=addDays(d,1);
+  return d;
+}
 function getCycleDayIn(c,date){
   if(!c||!c.startDate)return 0;
   const start=new Date(c.startDate);start.setHours(0,0,0,0);
@@ -760,7 +765,13 @@ function renderReviewSubject(el,subj,today){
 function addReviewCycle(sk){
   const d=loadReviewData(sk)||{blocks:Array.from({length:8},(_,i)=>({id:'b'+(i+1),name:'블록 '+(i+1)})),cycles:[]};
   const next=(d.cycles.length?d.cycles[d.cycles.length-1].num:0)+1;
-  d.cycles.push({num:next,days:7,blocksPerDay:1,startDate:null});
+  const prevCycle=d.cycles.length?d.cycles[d.cycles.length-1]:null;
+  let startDate=null;
+  if(prevCycle&&prevCycle.startDate){
+    const _pe=getCalendarEndForCycle(prevCycle);
+    if(_pe)startDate=dateKey(nextWeekdayDate(addDays(_pe,-1)));
+  }
+  d.cycles.push({num:next,days:7,blocksPerDay:1,startDate});
   saveReviewData(sk,d);renderReview();
 }
 
@@ -803,7 +814,11 @@ function openReviewEditModal(sk,cycleNum,cycles){
   const todayStr=dateKey(new Date());
   document.getElementById('rsStartDate').value=c&&c.startDate?c.startDate:todayStr;
   const prev=cycles&&cycleNum>1?cycles.find(x=>x.num===cycleNum-1):null;
-  const prevEndDate=prev&&prev.startDate?dateKey(addDays(new Date(prev.startDate),prev.days)):'';
+  let prevEndDate='';
+  if(prev&&prev.startDate){
+    const _pe=getCalendarEndForCycle(prev);
+    prevEndDate=_pe?dateKey(nextWeekdayDate(addDays(_pe,-1))):dateKey(addDays(new Date(prev.startDate),prev.days));
+  }
   document.getElementById('rsAutoDate').checked=false;
   document.getElementById('rsAutoDate').dataset.prevend=prevEndDate;
   document.getElementById('rsWeekdayOnly').checked=!!(c&&c.weekdayOnly);
@@ -1039,7 +1054,8 @@ function tryAutoNextCycle(sk,data){
   }
   if(next.startDate)return;
   const _calEnd=getCalendarEndForCycle(cur);
-  next.startDate=dateKey(_calEnd||addDays(new Date(cur.startDate),cur.days));
+  const _lastDay=_calEnd?addDays(_calEnd,-1):addDays(new Date(cur.startDate),cur.days-1);
+  next.startDate=dateKey(nextWeekdayDate(_lastDay));
   saveReviewData(sk,data);
   showReviewToast(`${cur.label||cur.num+'회독'} 완료!`);
   const banner=document.getElementById('reviewBanner');
