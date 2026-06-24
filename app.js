@@ -592,7 +592,17 @@ document.getElementById('resetWeek').onclick=()=>{
   const _bkKey='_backup_'+weekKey(currentMonday);
   const _bkVal=JSON.stringify(blocks);
   syncToSupabase(_bkKey,_bkVal);
-  pushUndo();blocks=[];selectedIds.clear();saveWeek();renderBlocks();
+  pushUndo();blocks=[];selectedIds.clear();saveWeek();
+  for(let d=0;d<7;d++){
+    const dk=dateKey(addDays(currentMonday,d));
+    const gk='dailyGoals_'+dk;
+    localStorage.removeItem(gk);
+    syncToSupabase(gk,'[]');
+    const rk='retro_'+dk;
+    localStorage.removeItem(rk);
+    syncToSupabase(rk,'null');
+  }
+  renderBlocks();
   let _undoTimer;
   const _t=document.createElement('div');
   _t.style.cssText='position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:#37352F;color:#fff;padding:10px 20px;border-radius:8px;font-size:13px;z-index:9999;display:flex;gap:12px;align-items:center;white-space:nowrap;box-shadow:0 4px 16px rgba(0,0,0,.3)';
