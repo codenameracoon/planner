@@ -452,7 +452,7 @@ function onMouseUp(){
   if(drag.type==='create-or-select'){
     const savedDay=drag.day,savedSm=drag.startMin,savedX=drag.startX,savedY=drag.startY;
     drag=null;endDrag();
-    setTimeout(()=>showInsertPopover(savedDay,savedSm,savedSm+60,savedX,savedY),150);
+    setTimeout(()=>showDragPicker(savedDay,savedSm,savedSm+60,savedX,savedY),150);
     return;
   }
   if(drag.type==='select'){removeSelRect();drag=null;endDrag();return;}
@@ -465,7 +465,7 @@ function onMouseUp(){
     drag.ghost?.remove();
     drag=null;
     endDrag();
-    setTimeout(()=>showInsertPopover(savedDay,savedSm,savedEm,savedX,savedY),150);
+    setTimeout(()=>showDragPicker(savedDay,savedSm,savedEm,savedX,savedY),150);
     return;
   }
   if(drag.type==='resize'||drag.type==='move'){saveWeek();}
@@ -619,7 +619,41 @@ function showInsertPopover(dayIdx,startMin,endMin,clientX,clientY){
 }
 
 function hideCtx(){document.getElementById('ctxMenu').style.display='none';}
-document.addEventListener('keydown',e=>{if(e.key==='Escape'){hideCtx();hideSubjectPicker();}});
+document.addEventListener('keydown',e=>{if(e.key==='Escape'){hideCtx();hideSubjectPicker();closeDragPicker();}});
+
+function showDragPicker(day,sm,em,x,y){
+  let picker=document.getElementById('dragSubjPicker');
+  if(!picker){
+    picker=document.createElement('div');
+    picker.id='dragSubjPicker';
+    picker.style.cssText='position:fixed;z-index:9999;display:flex;gap:6px;padding:8px 10px;background:#2a2a2a;border:1px solid #444;border-radius:8px;box-shadow:0 4px 12px rgba(0,0,0,.5);';
+    document.body.appendChild(picker);
+  }
+  const subjs=[
+    {key:'labor_law',label:'노동법',color:'#F28B82'},
+    {key:'hr_mgmt',label:'인사',color:'#81C995'},
+    {key:'admin_law',label:'행쟁',color:'#8AB4F8'},
+    {key:'labor_econ',label:'노경',color:'#FDD663'},
+    {key:'rest',label:'휴식',color:'#888'},
+  ];
+  picker.innerHTML=subjs.map(s=>`<button data-subj="${s.key}" style="background:${s.color};color:#111;border:none;border-radius:5px;padding:5px 11px;font-size:13px;font-weight:600;cursor:pointer;">${s.label}</button>`).join('');
+  picker.style.display='flex';
+  picker.style.left=Math.min(x,window.innerWidth-260)+'px';
+  picker.style.top=Math.min(y+6,window.innerHeight-60)+'px';
+  let onKey,onOutside;
+  function close(){picker.style.display='none';document.removeEventListener('keydown',onKey);document.removeEventListener('mousedown',onOutside);}
+  onKey=e=>{if(e.key==='Escape')close();};
+  onOutside=e=>{if(!picker.contains(e.target))close();};
+  picker.onclick=ev=>{
+    const btn=ev.target.closest('[data-subj]');if(!btn)return;
+    close();
+    pushUndo();
+    const nb={id:uid(),day,startMin:sm,endMin:em,subject:btn.dataset.subj,memo:'',note:'',completed:false};
+    blocks.push(nb);saveWeek();renderBlocks();autoGoalFromBlock(nb);
+  };
+  setTimeout(()=>{document.addEventListener('keydown',onKey);document.addEventListener('mousedown',onOutside);},0);
+}
+function closeDragPicker(){const p=document.getElementById('dragSubjPicker');if(p)p.style.display='none';}
 
 // ── quick-insert management ───────────────────────────────────────────────────
 const _QUICK_CATS=['노동법','인사노무관리','행정쟁송법','노동경제학','스터디','기타'];
@@ -902,7 +936,7 @@ function onTouchEnd(e){
       const sm=snapMin(clampMin(yToMin(bodyY(body,startTouchY))));
       const em=Math.max(snapMin(clampMin(yToMin(bodyY(body,t.clientY)))),sm+gran);
       const _di=parseInt(body.dataset.day),_x=t.clientX,_y=t.clientY;
-      setTimeout(()=>showInsertPopover(_di,sm,em,_x,_y),0);
+      setTimeout(()=>showDragPicker(_di,sm,em,_x,_y),0);
     }
   }
 }
