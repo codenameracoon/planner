@@ -284,7 +284,8 @@ function autoGoalFromBlock(blk){
     // adopt an orphaned goal with the same text instead of duplicating
     const orphan=gs.find(g=>!g.blkId&&g.text===text);
     if(orphan){orphan.blkId=blk.id;}
-    else{gs.push({id:uid(),text,status:'',done:false,blkId:blk.id});}
+    // skip if any goal (linked or not) already has the same text on this day
+    else if(!gs.some(g=>g.text===text)){gs.push({id:uid(),text,status:'',done:false,blkId:blk.id});}
   }
   saveDailyGoals(dk,gs);
   const rowEl=document.querySelector(`.daily-goal-row[data-day="${blk.day}"]`);
