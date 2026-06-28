@@ -70,9 +70,9 @@ async function _loadFromSupabase(){
         try{const remote=JSON.parse(row.value||'{}');const local=_getSyncMeta();Object.entries(remote).forEach(([k,ts])=>{if(!local[k]||ts>local[k])local[k]=ts;});localStorage.setItem('_planner_sync_meta',JSON.stringify(local));}catch{}
         return;
       }
-      // 이번 세션에서 직접 저장한 키: 15초 보호 + timestamp 비교
+      // 이번 세션에서 직접 저장한 키: 60초 보호 + timestamp 비교
       if(_localSaves.has(row.key)){
-        if(_savedAt[row.key]&&now-_savedAt[row.key]<15000)return;
+        if(_savedAt[row.key]&&now-_savedAt[row.key]<60000)return;
         const localTs=meta[row.key];
         if(localTs&&row.updated_at<=localTs){
           const current=localStorage.getItem(row.key);
@@ -80,12 +80,18 @@ async function _loadFromSupabase(){
           return;
         }
       }
-      // 이번 세션에서 건드리지 않은 키: 원격 값이 다르면 무조건 적용 (클럭 스큐 무관)
+      // 이번 세션에서 건드리지 않은 키: local meta 타임스탬프가 더 최신이면 remote 덮어쓰기 방지
       const current=localStorage.getItem(row.key);
       if(current!==row.value){
-        localStorage.setItem(row.key,row.value);
-        _setSyncMeta(row.key,row.updated_at);
-        updated=true;
+        const localTs=meta[row.key];
+        if(localTs&&localTs>row.updated_at){
+          // 로컬이 더 최신 → 원격에 밀어넣기 (덮어쓰지 않음)
+          if(current)needsPush.push({key:row.key,value:current,updated_at:localTs});
+        }else{
+          localStorage.setItem(row.key,row.value);
+          _setSyncMeta(row.key,row.updated_at);
+          updated=true;
+        }
       } else if(!meta[row.key]){
         _setSyncMeta(row.key,row.updated_at);
       }
@@ -128,7 +134,10 @@ async function initAndSync(){
     weeklyTextGoals=loadWeeklyTextGoals();
     monthlyGoals=loadMonthlyGoals(new Date());
     templates=loadTemplates();
+    // preserve any in-memory completion state toggled before initAndSync finished
+    const _memCompletionMap=new Map(blocks.map(b=>[b.id,{status:b.status,completed:b.completed}]));
     blocks=loadWeek(currentMonday);
+    blocks.forEach(b=>{const m=_memCompletionMap.get(b.id);if(m){b.status=m.status;b.completed=m.completed;}});
     ensureGoalLinksForWeek();
     render();
   }
