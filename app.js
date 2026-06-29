@@ -271,7 +271,7 @@ function loadDailyGoals(dk){
 function hasDailyGoals(dk){return localStorage.getItem('dailyGoals_'+dk)!==null;}
 function saveDailyGoals(dk,goals){const k='dailyGoals_'+dk;const v=JSON.stringify(goals);localStorage.setItem(k,v);syncToSupabase(k,v);}
 function cleanupAllDailyGoals(){
-  const mKey='_dailyGoalsDeduped_v1';
+  const mKey='_dailyGoalsDeduped_v2';
   if(localStorage.getItem(mKey))return;
   const keys=[];
   for(let i=0;i<localStorage.length;i++){const k=localStorage.key(i);if(k&&k.startsWith('dailyGoals_'))keys.push(k);}
