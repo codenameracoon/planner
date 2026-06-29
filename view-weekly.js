@@ -90,7 +90,7 @@ function syncGoalRowHeight(){
 }
 
 function buildGoalRowContent(rowEl, dk){
-  const goals=autoPopulateDailyGoals(dk);
+  const goals=autoPopulateDailyGoals(dk);goals.sort((a,b)=>(a.blkId?1:0)-(b.blkId?1:0));
   const d=parseInt(rowEl.dataset.day);
   const{planned,actual}=computeDayHours(d);
   const dayResText=viewMode==='week'?(localStorage.getItem('dayRes_'+dk)||''):'';
@@ -115,7 +115,7 @@ function buildGoalRowContent(rowEl, dk){
     const chk=e.target.closest('[data-dgcheck]');
     if(chk){
       const gs=loadDailyGoals(dk);const g=gs.find(x=>x.id===chk.dataset.dgcheck);
-      if(g){const cur=getGoalStatus(g);const next=cur===''?'done':cur==='done'?'fail':'';g.status=next;g.done=next==='done';gs.sort((a,b)=>(getGoalStatus(a)===''?0:1)-(getGoalStatus(b)===''?0:1));saveDailyGoals(dk,gs);if(g.blkId){const blk=getBlock(g.blkId);if(blk){blk.status=next;blk.completed=next==='done';saveWeek();renderBlocks();}}buildGoalRowContent(rowEl,dk);syncGoalRowHeight();}
+      if(g){const cur=getGoalStatus(g);const next=cur===''?'done':cur==='done'?'fail':'';g.status=next;g.done=next==='done';saveDailyGoals(dk,gs);if(g.blkId){const blk=getBlock(g.blkId);if(blk){blk.status=next;blk.completed=next==='done';saveWeek();renderBlocks();}}buildGoalRowContent(rowEl,dk);syncGoalRowHeight();}
       return;
     }
     const del=e.target.closest('[data-dgdel]');
