@@ -1513,6 +1513,7 @@ if(isMobile()){
   currentMonday=getMondayOf(currentDay);
 }
 blocks=loadWeek(currentMonday);
+cleanupAllDailyGoals();
 ensureGoalLinksForWeek();
 render();
 

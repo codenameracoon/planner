@@ -259,9 +259,32 @@ function loadMonthlyGoals(d){try{const r=localStorage.getItem('monthlyGoals_'+mo
 function saveMonthlyGoals(){const k='monthlyGoals_'+monthStorageKey(new Date());const v=JSON.stringify(monthlyGoals);localStorage.setItem(k,v);syncToSupabase(k,v);}
 function loadTemplates(){try{const r=localStorage.getItem('templates');return r?JSON.parse(r):[];}catch{return[];}}
 function saveTemplates(){const v=JSON.stringify(templates);localStorage.setItem('templates',v);syncToSupabase('templates',v);}
-function loadDailyGoals(dk){try{const r=localStorage.getItem('dailyGoals_'+dk);return r?JSON.parse(r):[];}catch{return[];}}
+function loadDailyGoals(dk){
+  try{
+    const r=localStorage.getItem('dailyGoals_'+dk);
+    if(!r)return[];
+    const arr=JSON.parse(r);
+    const seen=new Set();
+    return arr.filter(g=>{if(seen.has(g.text))return false;seen.add(g.text);return true;});
+  }catch{return[];}
+}
 function hasDailyGoals(dk){return localStorage.getItem('dailyGoals_'+dk)!==null;}
 function saveDailyGoals(dk,goals){const k='dailyGoals_'+dk;const v=JSON.stringify(goals);localStorage.setItem(k,v);syncToSupabase(k,v);}
+function cleanupAllDailyGoals(){
+  const mKey='_dailyGoalsDeduped_v1';
+  if(localStorage.getItem(mKey))return;
+  const keys=[];
+  for(let i=0;i<localStorage.length;i++){const k=localStorage.key(i);if(k&&k.startsWith('dailyGoals_'))keys.push(k);}
+  keys.forEach(k=>{
+    try{
+      const arr=JSON.parse(localStorage.getItem(k)||'[]');
+      const seen=new Set();
+      const deduped=arr.filter(g=>{if(seen.has(g.text))return false;seen.add(g.text);return true;});
+      if(deduped.length<arr.length){const v=JSON.stringify(deduped);localStorage.setItem(k,v);syncToSupabase(k,v);}
+    }catch{}
+  });
+  localStorage.setItem(mKey,'1');
+}
 function autoPopulateDailyGoals(dk){
   if(hasDailyGoals(dk))return loadDailyGoals(dk);
   return[];
