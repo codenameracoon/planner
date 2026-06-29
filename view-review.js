@@ -886,6 +886,54 @@ function openReviewEditModal(sk,cycleNum,cycles){
     contentField.style.display='none';
   }
 
+  // copy-from-prev button
+  const copyPrevBtn=document.getElementById('rsCopyPrevBtn');
+  const prevCopyable=cycleNum>1?(d?d.cycles.find(x=>x.num===cycleNum-1):null):null;
+  if(prevCopyable&&(prevCopyable.dailyTexts?.length||prevCopyable.dailyPlan||prevCopyable.blocksPerDay)){
+    copyPrevBtn.style.display='';
+    copyPrevBtn.onclick=()=>{
+      contentSection.innerHTML='';contentField.style.display='';
+      const pc=prevCopyable;const nb=d?d.blocks.length:0;
+      if(pc.dailyTexts&&pc.dailyTexts.length){
+        pc.dailyTexts.forEach((txt,di)=>{
+          const row=document.createElement('div');row.className='rs-content-row';
+          const lbl=document.createElement('span');lbl.className='rs-content-day';lbl.textContent=`${di+1}일`;
+          const inp=document.createElement('input');inp.className='rs-content-inp';inp.type='text';
+          inp.value=txt;inp.dataset.dailyday=di;
+          row.appendChild(lbl);row.appendChild(inp);contentSection.appendChild(row);
+        });
+      }else if(pc.dailyPlan){
+        const dg={};
+        pc.dailyPlan.forEach(p=>{
+          if(!dg[p.day])dg[p.day]=[];
+          const blk=d&&d.blocks[p.blockIdx];
+          dg[p.day].push(p.text||blk?.name||'');
+        });
+        Object.keys(dg).sort((a,b)=>+a-+b).forEach((day,idx)=>{
+          const di=parseInt(day);const txt=dg[day].join(' / ');
+          const row=document.createElement('div');row.className='rs-content-row';
+          const lbl=document.createElement('span');lbl.className='rs-content-day';lbl.textContent=`${di+1}일`;
+          const inp=document.createElement('input');inp.className='rs-content-inp';inp.type='text';
+          inp.value=txt;inp.dataset.dailyday=idx;
+          row.appendChild(lbl);row.appendChild(inp);contentSection.appendChild(row);
+        });
+      }else if(pc.blocksPerDay){
+        for(let day=0;day<pc.days;day++){
+          const idxs=getTodayBlockIndices(day,pc.blocksPerDay,nb);if(!idxs.length)continue;
+          const names=idxs.map(bi=>d&&d.blocks[bi]?.name).filter(Boolean);
+          const txt=names.length===1?names[0]:`${names[0]} ~ ${names[names.length-1]}`;
+          const row=document.createElement('div');row.className='rs-content-row';
+          const lbl=document.createElement('span');lbl.className='rs-content-day';lbl.textContent=`${day+1}일`;
+          const inp=document.createElement('input');inp.className='rs-content-inp';inp.type='text';
+          inp.value=txt;inp.dataset.dailyday=day;
+          row.appendChild(lbl);row.appendChild(inp);contentSection.appendChild(row);
+        }
+      }
+    };
+  }else{
+    copyPrevBtn.style.display='none';
+  }
+
   // populate blocks editing section
   const blocksField=document.getElementById('rsBlocksField');
   const blocksSection=document.getElementById('rsBlocksSection');

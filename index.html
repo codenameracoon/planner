@@ -134,7 +134,10 @@
       </div>
       <div class="review-suggestion" id="rsSuggestion"></div>
       <div class="review-edit-field" id="rsContentField" style="display:none">
-        <label class="review-edit-label">일별 내용</label>
+        <div style="display:flex;align-items:center;gap:6px;margin-bottom:6px">
+          <label class="review-edit-label" style="margin-bottom:0">일별 내용</label>
+          <button type="button" class="rs-auto-dist-btn" id="rsCopyPrevBtn" style="display:none">이전 회독 복사</button>
+        </div>
         <div class="rs-content-section" id="rsContentSection"></div>
       </div>
       <div class="review-edit-field" id="rsBlocksField" style="display:none">
